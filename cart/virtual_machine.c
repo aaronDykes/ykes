@@ -521,12 +521,14 @@ Interpretation run()
             break;
         case OP_NOOP:
             break;
-        case OP_RETURN:
+        case OP_PRINT:
             tmp = POP();
             if (tmp.type == ARENA_VAR)
                 print(find_entry(&machine.d.map, &tmp));
             else
                 print(tmp);
+            break;
+        case OP_RETURN:
             return INTERPRET_SUCCESS;
         }
     }

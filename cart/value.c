@@ -34,25 +34,25 @@ void print(arena ar)
     switch (ar.type)
     {
     case ARENA_BYTE:
-        printf("[ %d ]\n", ar.as.Byte);
+        printf("%d\n", ar.as.Byte);
         break;
     case ARENA_CHAR:
-        printf("[ %c ]\n", ar.as.Char);
+        printf("%c\n", ar.as.Char);
         break;
     case ARENA_DOUBLE:
-        printf("[ %f ]\n", ar.as.Double);
+        printf("%f\n", ar.as.Double);
         break;
     case ARENA_INT:
-        printf("[ %d ]\n", ar.as.Int);
+        printf("%d\n", ar.as.Int);
         break;
     case ARENA_LONG:
-        printf("[ %lld ]\n", ar.as.Long);
+        printf("%lld\n", ar.as.Long);
         break;
     case ARENA_BOOL:
-        printf("[ %s ]\n", (ar.as.Bool == true) ? "true" : "false");
+        printf("%s\n", (ar.as.Bool == true) ? "true" : "false");
         break;
     case ARENA_STR:
-        printf("[ %s ]\n", ar.as.String);
+        printf("%s\n", ar.as.String);
         break;
     case ARENA_INT_PTR:
         printf("[ ");

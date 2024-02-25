@@ -1,0 +1,2 @@
+hello="okay, " + " fuck my life." + " This is awkward";
+print hello;

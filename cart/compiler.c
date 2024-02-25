@@ -12,6 +12,12 @@ static Chunk compile_chunk;
 static void consume(token_type t, const char *str);
 static void advance_compiler();
 
+static void declaration();
+static void statement();
+static void print_statement();
+
+static bool match(token_type t);
+static bool check(token_type t);
 static void expression();
 static void grouping();
 static PRule *get_rule(token_type t);
@@ -117,6 +123,40 @@ static void advance_compiler()
             break;
         current_err(parser.cur.start);
     }
+}
+
+static void declaration()
+{
+    statement();
+}
+static void statement()
+{
+    if (match(TOKEN_PRINT))
+        print_statement();
+    else
+    {
+        expression();
+        consume(TOKEN_CH_SEMI, "Expect `;` after expression.");
+    }
+}
+
+static void print_statement()
+{
+    expression();
+    consume(TOKEN_CH_SEMI, "Expect ';' after value.");
+    emit_byte(OP_PRINT);
+}
+
+static bool match(token_type t)
+{
+    if (!check(t))
+        return false;
+    advance_compiler();
+    return true;
+}
+static bool check(token_type t)
+{
+    return parser.cur.type == t;
 }
 
 static void expression()
@@ -336,7 +376,9 @@ bool compile(const char *src, Chunk ch)
     compile_chunk = ch;
 
     advance_compiler();
-    expression();
+
+    while (!match(TOKEN_EOF))
+        declaration();
     consume(TOKEN_EOF, "Expect end of expression");
 
     end_compile();
