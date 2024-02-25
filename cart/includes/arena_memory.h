@@ -7,9 +7,10 @@
 #define CAPACITY 50
 #define INC 2
 #define PAGE 16384 * 16
-#define ARENA_SIZE 250
-#define STACK_SIZE 250
-#define TABLE_SIZE 1000
+#define ARENA_SIZE 100
+#define STACK_SIZE 100
+#define TABLE_SIZE 100
+#define IP_SIZE 50
 #define MEM_OFFSET 1
 
 #define GROW_CAPACITY(capacity) \

@@ -22,6 +22,13 @@ typedef enum
     OP_GE,
     OP_NE,
 
+    OP_JEQ,
+    OP_JLT,
+    OP_JLE,
+    OP_JGT,
+    OP_JGE,
+    OP_JNE,
+
     OP_AND,
     OP_OR,
     OP_NOOP,

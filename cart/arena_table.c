@@ -40,8 +40,10 @@ Table arena_realloc_table(Table t, size_t size)
         return NULL;
     }
 
-    size_t new_size = (size <= (t - 1)->size) ? size / sizeof(table) : (t - 1)->size;
     ptr = arena_alloc_table(size);
+    size /= sizeof(table);
+
+    size_t new_size = (size <= (t - 1)->size) ? size : (t - 1)->size;
 
     for (size_t i = 0; i < new_size; i++)
         ptr[i] = new_entry(t[i]);
@@ -81,6 +83,7 @@ void insert_entry(Table *t, table entry)
     Table tmp = *t;
     table e = tmp[entry.key.hash];
     arena f;
+    Table ptr = e.next;
     char *c = e.key.as.String;
 
     if (e.key.type == ARENA_NULL)
@@ -95,7 +98,48 @@ void insert_entry(Table *t, table entry)
         return;
     }
 
-    alloc_entry(&tmp[entry.key.hash].next, entry);
+    f = find_entry(t, &entry.key);
+
+    if (f.type == ARENA_NULL)
+    {
+        alloc_entry(&tmp[entry.key.hash].next, entry);
+        return;
+    }
+    for (; ptr; ptr = ptr->next)
+    {
+        switch (ptr->key.type)
+        {
+        case ARENA_VAR:
+        case ARENA_STR:
+            if (strcmp(ptr->key.as.String, entry.key.as.String) == 0)
+            {
+                ptr->val = entry.val;
+                return;
+            }
+            return;
+        case ARENA_INT:
+            if (ptr->key.as.Int == entry.key.as.Int)
+            {
+                ptr->val = entry.val;
+                return;
+            }
+            break;
+        case ARENA_DOUBLE:
+            if (ptr->key.as.Double == entry.key.as.Double)
+            {
+                ptr->val = entry.val;
+                return;
+            }
+            break;
+        case ARENA_CHAR:
+            if (ptr->key.as.Char == entry.key.as.Char)
+            {
+                ptr->val = entry.val;
+                return;
+            }
+            break;
+        }
+    }
 }
 void delete_entry(Table *t, arena key)
 {
@@ -104,15 +148,23 @@ void delete_entry(Table *t, arena key)
     table e = a[index];
 
     if (key.type == ARENA_NULL)
+        return;
+
+    if (e.next && (strcmp(e.key.as.String, key.as.String) == 0))
     {
-        log_err("Unable to delete element");
+        Table t = a[index].next;
+        arena_free_entry(&a[index]);
+        a[index] = entry(Null(), Null());
+        t->prev = NULL;
+        a[index] = new_entry(*t);
+
         return;
     }
-
     if (!e.next && (strcmp(e.key.as.String, key.as.String) == 0))
     {
         arena_free_entry(&a[index]);
         a[index] = entry(Null(), Null());
+
         return;
     }
 
@@ -165,8 +217,6 @@ void delete_entry(Table *t, arena key)
             goto DEL_LAST;
         break;
     }
-
-    log_err("Unable to find element");
     return;
 DEL:
     del = tmp->prev;
