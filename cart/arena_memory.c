@@ -124,8 +124,10 @@ Arena arena_realloc_arena(Arena ar, size_t size)
         return NULL;
     }
 
-    size_t new_size = (size <= (ar - 1)->size) ? size / sizeof(arena) : (ar - 1)->size / sizeof(arena);
     ptr = arena_alloc_arena(size);
+    size /= sizeof(arena);
+
+    size_t new_size = (size <= (ar - 1)->size) ? size : (ar - 1)->size;
 
     for (size_t i = 0; i < new_size; i++)
         ptr[i] = ar[i];
@@ -284,22 +286,26 @@ void print_arena(arena ar)
     case ARENA_BYTE_PTR:
         printf("Byte ptr length: %d\n", ar.length);
         for (int i = 0; i < ar.length; i++)
-            printf("%d\n", ar.as.Bytes[i]);
+            printf("%d ", ar.as.Bytes[i]);
+        printf("\n");
         break;
     case ARENA_INT_PTR:
         printf("Int ptr length: %d\n", ar.length);
         for (int i = 0; i < ar.length; i++)
-            printf("%d\n", ar.as.Ints[i]);
+            printf("%d ", ar.as.Ints[i]);
+        printf("\n");
         break;
     case ARENA_DOUBLE_PTR:
         printf("Double ptr length: %d\n", ar.length);
         for (int i = 0; i < ar.length; i++)
-            printf("%f\n", ar.as.Doubles[i]);
+            printf("%f ", ar.as.Doubles[i]);
+        printf("\n");
         break;
     case ARENA_LONG_PTR:
         printf("Llint ptr length: %d\n", ar.length);
         for (int i = 0; i < ar.length; i++)
-            printf("%lld\n", ar.as.Longs[i]);
+            printf("%lld ", ar.as.Longs[i]);
+        printf("\n");
         break;
     case ARENA_STR:
         printf("%s\n", ar.as.String);
