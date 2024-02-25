@@ -9,23 +9,19 @@ typedef enum
     ARENA_BYTE_PTR,
     ARENA_INT_PTR,
     ARENA_DOUBLE_PTR,
-    ARENA_LLINT_PTR,
+    ARENA_LONG_PTR,
     ARENA_BOOL_PTR,
     ARENA_STR,
     ARENA_VAR,
 
-    ARENA_BYTE_CONST,
-    ARENA_INT_CONST,
-    ARENA_DOUBLE_CONST,
-    ARENA_LLINT_CONST,
-    ARENA_CHAR_CONST,
+    ARENA_BYTE,
+    ARENA_INT,
+    ARENA_DOUBLE,
+    ARENA_LONG,
+    ARENA_CHAR,
     ARENA_BOOL,
     ARENA_NULL,
-    ARENA_FREE,
 
-    ARENA,
-    KHASH,
-    TABLE
 } T;
 
 struct arena_struct
@@ -37,21 +33,22 @@ struct arena_struct
 
     union
     {
-        uint8_t *bytes;
-        char *string;
-        int *ints;
-        double *doubles;
-        long long int *llints;
-        bool *bools;
 
+        uint8_t *Bytes;
+        int *Ints;
+        double *Doubles;
+        long long int *Longs;
+        bool *Bools;
+
+        char *String;
         void *null;
 
-        uint8_t byte;
-        int ival;
-        double dval;
-        long long int llint;
-        char ch;
-        bool boolean;
+        uint8_t Byte;
+        int Int;
+        double Double;
+        long long int Long;
+        char Char;
+        bool Bool;
     } as;
 };
 

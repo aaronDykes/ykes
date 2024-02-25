@@ -1,4 +1,3 @@
-#include "stdlib.h"
 #include "chunk.h"
 
 void init_chunk(Chunk c)
@@ -19,7 +18,7 @@ void write_chunk(Chunk c, uint8_t byte)
         c->op_codes = GROW_ARRAY(&c->op_codes, c->capacity * sizeof(uint8_t));
     }
 
-    c->op_codes.as.bytes[c->count++] = byte;
+    c->op_codes.as.Bytes[c->count++] = byte;
 }
 
 int add_constant(Chunk c, arena ar)

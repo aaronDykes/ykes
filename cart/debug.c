@@ -9,7 +9,7 @@ static int simple_instruction(const char *name, int offset)
 
 static int constant_instruction(const char *name, Chunk c, int offset)
 {
-    uint8_t constant = c->op_codes.as.bytes[offset + 1];
+    uint8_t constant = c->op_codes.as.Bytes[offset + 1];
 
     printf("%-16s %4d '", name, constant);
     print(c->constants.vals[constant]);
@@ -32,7 +32,7 @@ int disassemble_instruction(Chunk c, int offset)
 
     printf("%d: %04d ", c->line++, offset);
 
-    switch (c->op_codes.as.bytes[offset])
+    switch (c->op_codes.as.Bytes[offset])
     {
     case OP_CONSTANT:
         return constant_instruction("OP_CONSTANT", c, offset);

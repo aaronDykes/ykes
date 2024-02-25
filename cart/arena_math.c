@@ -10,14 +10,14 @@ static void log_err(const char *format, ...)
     va_end(args);
     fputs("\n", stderr);
 }
-static arena arena_num(long long int range)
+static arena Num(long long int range)
 {
     if (range < INT32_MAX && range > INT32_MIN)
-        return arena_int((int)range);
+        return Int((int)range);
     if (range < INT64_MAX && range > INT64_MIN)
-        return arena_llint(range);
+        return Long(range);
     log_err("ERROR: numeric value out of range");
-    return arena_null();
+    return Null();
 }
 
 arena add_arena_char(char ch, arena ar)
@@ -25,18 +25,18 @@ arena add_arena_char(char ch, arena ar)
     long long int test = 0;
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        test = (long long int)(ch + ar.as.ival);
-        return (test < 255 && test > 0) ? arena_char((char)test) : arena_num(test);
-    case ARENA_CHAR_CONST:
-        test = (long long int)(ch + ar.as.ch);
-        return (test < 255 && test > 0) ? arena_char((char)test) : arena_int((int)test);
-    case ARENA_DOUBLE_CONST:
-        return arena_double((double)ch + ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_num(ch + ar.as.llint);
+    case ARENA_INT:
+        test = (long long int)(ch + ar.as.Int);
+        return (test < 255 && test > 0) ? Char((char)test) : Num(test);
+    case ARENA_CHAR:
+        test = (long long int)(ch + ar.as.Char);
+        return (test < 255 && test > 0) ? Char((char)test) : Int((int)test);
+    case ARENA_DOUBLE:
+        return Double((double)ch + ar.as.Double);
+    case ARENA_LONG:
+        return Num(ch + ar.as.Long);
     case ARENA_STR:
-        return prepend_char_to_str(arena_char(ch), ar);
+        return prepend_char_to_str(Char(ch), ar);
     }
     return ar;
 }
@@ -45,17 +45,17 @@ arena sub_arena_char(char ch, arena ar)
     long long int test = 0;
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        test = (ch - ar.as.ival);
-        return (test > 0) ? arena_char((char)test) : arena_int((int)test);
-    case ARENA_CHAR_CONST:
-        test = (ch - ar.as.ch);
-        return (test > 0) ? arena_char((char)test) : arena_int((int)test);
-    case ARENA_DOUBLE_CONST:
-        return arena_double((double)ch - ar.as.dval);
-    case ARENA_LLINT_CONST:
-        test = (ch - ar.as.llint);
-        return (test > 0) ? arena_char((char)test) : arena_num(test);
+    case ARENA_INT:
+        test = (ch - ar.as.Int);
+        return (test > 0) ? Char((char)test) : Int((int)test);
+    case ARENA_CHAR:
+        test = (ch - ar.as.Char);
+        return (test > 0) ? Char((char)test) : Int((int)test);
+    case ARENA_DOUBLE:
+        return Double((double)ch - ar.as.Double);
+    case ARENA_LONG:
+        test = (ch - ar.as.Long);
+        return (test > 0) ? Char((char)test) : Num(test);
     default:
         log_err("ERROR: subtraction type mismatch\n");
     }
@@ -66,16 +66,16 @@ arena mul_arena_char(char ch, arena ar)
     long long int test = 0;
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        test = (ch * ar.as.ival);
-        return (test < 255 && test > 0) ? arena_char((char)test) : arena_num(test);
-    case ARENA_CHAR_CONST:
-        test = (ch * ar.as.ch);
-        return (test < 255 && test > 0) ? arena_char((char)test) : arena_int((int)test);
-    case ARENA_DOUBLE_CONST:
-        return arena_double((double)ch * ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_num(ch * ar.as.llint);
+    case ARENA_INT:
+        test = (ch * ar.as.Int);
+        return (test < 255 && test > 0) ? Char((char)test) : Num(test);
+    case ARENA_CHAR:
+        test = (ch * ar.as.Char);
+        return (test < 255 && test > 0) ? Char((char)test) : Int((int)test);
+    case ARENA_DOUBLE:
+        return Double((double)ch * ar.as.Double);
+    case ARENA_LONG:
+        return Num(ch * ar.as.Long);
     default:
         log_err("ERROR: multiplication type mismatch\n");
     }
@@ -85,22 +85,22 @@ arena div_arena_char(char ch, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        if (ar.as.ival == 0)
+    case ARENA_INT:
+        if (ar.as.Int == 0)
             goto ERR;
-        return arena_double((double)ch / ar.as.ival);
-    case ARENA_CHAR_CONST:
-        if (ar.as.ch == 0)
+        return Double((double)ch / ar.as.Int);
+    case ARENA_CHAR:
+        if (ar.as.Char == 0)
             goto ERR;
-        return arena_double((double)ch / ar.as.ch);
-    case ARENA_DOUBLE_CONST:
-        if (ar.as.dval == 0)
+        return Double((double)ch / ar.as.Char);
+    case ARENA_DOUBLE:
+        if (ar.as.Double == 0)
             goto ERR;
-        return arena_double((double)ch / ar.as.dval);
-    case ARENA_LLINT_CONST:
-        if (ar.as.llint == 0)
+        return Double((double)ch / ar.as.Double);
+    case ARENA_LONG:
+        if (ar.as.Long == 0)
             goto ERR;
-        return arena_double((double)ch / ar.as.llint);
+        return Double((double)ch / ar.as.Long);
     default:
         log_err("ERROR: division type mismatch\n");
     }
@@ -113,12 +113,12 @@ arena mod_arena_char(char ch, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_int(ch % ar.as.ch);
-    case ARENA_CHAR_CONST:
-        return arena_char(ch % ar.as.ch);
-    case ARENA_LLINT_CONST:
-        return arena_num((long long int)ch % ar.as.llint);
+    case ARENA_INT:
+        return Int(ch % ar.as.Char);
+    case ARENA_CHAR:
+        return Char(ch % ar.as.Char);
+    case ARENA_LONG:
+        return Num((long long int)ch % ar.as.Long);
     default:
         log_err("ERROR: modulo type mismatch\n");
     }
@@ -130,15 +130,15 @@ arena add_arena_int(int ival, arena ar)
     switch (ar.type)
     {
     case ARENA_STR:
-        return prepend_int_to_str(arena_int(ival), ar);
-    case ARENA_INT_CONST:
-        return arena_num(ival + ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_double((double)ival + ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_num(ival + ar.as.llint);
-    case ARENA_CHAR_CONST:
-        return arena_num(ival + ar.as.ch);
+        return prepend_int_to_str(Int(ival), ar);
+    case ARENA_INT:
+        return Num(ival + ar.as.Int);
+    case ARENA_DOUBLE:
+        return Double((double)ival + ar.as.Double);
+    case ARENA_LONG:
+        return Num(ival + ar.as.Long);
+    case ARENA_CHAR:
+        return Num(ival + ar.as.Char);
     default:
         log_err("ERROR: addition type mismatch\n");
     }
@@ -148,14 +148,14 @@ arena sub_arena_int(int ival, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_num(ival - ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_double((double)ival - ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_num(ival - ar.as.llint);
-    case ARENA_CHAR_CONST:
-        return arena_num(ival - ar.as.ch);
+    case ARENA_INT:
+        return Num(ival - ar.as.Int);
+    case ARENA_DOUBLE:
+        return Double((double)ival - ar.as.Double);
+    case ARENA_LONG:
+        return Num(ival - ar.as.Long);
+    case ARENA_CHAR:
+        return Num(ival - ar.as.Char);
     default:
         log_err("ERROR: subtraction type mismatch\n");
     }
@@ -165,14 +165,14 @@ arena mul_arena_int(int ival, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_num(ival * ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_double((double)ival * ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_num(ival * ar.as.llint);
-    case ARENA_CHAR_CONST:
-        return arena_num(ival * ar.as.ch);
+    case ARENA_INT:
+        return Num(ival * ar.as.Int);
+    case ARENA_DOUBLE:
+        return Double((double)ival * ar.as.Double);
+    case ARENA_LONG:
+        return Num(ival * ar.as.Long);
+    case ARENA_CHAR:
+        return Num(ival * ar.as.Char);
     default:
         log_err("ERROR: multiplication type mismatch\n");
     }
@@ -182,22 +182,22 @@ arena div_arena_int(int ival, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        if (ar.as.ival == 0)
+    case ARENA_INT:
+        if (ar.as.Int == 0)
             goto ERR;
-        return arena_double((double)ival / ar.as.ival);
-    case ARENA_CHAR_CONST:
-        if (ar.as.ch == 0)
+        return Double((double)ival / ar.as.Int);
+    case ARENA_CHAR:
+        if (ar.as.Char == 0)
             goto ERR;
-        return arena_double((double)ival / ar.as.ch);
-    case ARENA_DOUBLE_CONST:
-        if (ar.as.dval == 0)
+        return Double((double)ival / ar.as.Char);
+    case ARENA_DOUBLE:
+        if (ar.as.Double == 0)
             goto ERR;
-        return arena_double((double)ival / ar.as.dval);
-    case ARENA_LLINT_CONST:
-        if (ar.as.llint == 0)
+        return Double((double)ival / ar.as.Double);
+    case ARENA_LONG:
+        if (ar.as.Long == 0)
             goto ERR;
-        return arena_double((double)ival / ar.as.llint);
+        return Double((double)ival / ar.as.Long);
     default:
         log_err("ERROR: division type mismatch\n");
     }
@@ -210,92 +210,92 @@ arena mod_arena_int(int ival, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_int(ival % ar.as.ival);
-    case ARENA_CHAR_CONST:
-        return arena_char(ival % ar.as.ch);
-    case ARENA_LLINT_CONST:
-        return arena_llint((long long int)ival % ar.as.llint);
+    case ARENA_INT:
+        return Int(ival % ar.as.Int);
+    case ARENA_CHAR:
+        return Char(ival % ar.as.Char);
+    case ARENA_LONG:
+        return Long((long long int)ival % ar.as.Long);
     default:
         log_err("ERROR: modulo type mismatch\n");
     }
     return ar;
 }
 
-arena add_arena_llint(long long int llint, arena ar)
+arena add_arena_long(long long int llint, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_CHAR_CONST:
-        return arena_num(llint + ar.as.ch);
-    case ARENA_INT_CONST:
-        return arena_num(llint + ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_double((double)llint + ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_num(llint + ar.as.llint);
+    case ARENA_CHAR:
+        return Num(llint + ar.as.Char);
+    case ARENA_INT:
+        return Num(llint + ar.as.Int);
+    case ARENA_DOUBLE:
+        return Double((double)llint + ar.as.Double);
+    case ARENA_LONG:
+        return Num(llint + ar.as.Long);
     case ARENA_STR:
-        return prepend_llint_to_str(arena_llint(llint), ar);
+        return prepend_long_to_str(Long(llint), ar);
     default:
         log_err("ERROR: subtraction type mismatch\n");
     }
     return ar;
 }
-arena sub_arena_llint(long long int llint, arena ar)
+arena sub_arena_long(long long int llint, arena ar)
 {
 
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_llint(llint - ar.as.ival);
-    case ARENA_CHAR_CONST:
-        return arena_llint(llint - ar.as.ch);
-    case ARENA_DOUBLE_CONST:
-        return arena_double((double)llint - ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_llint(llint - ar.as.llint);
+    case ARENA_INT:
+        return Long(llint - ar.as.Int);
+    case ARENA_CHAR:
+        return Long(llint - ar.as.Char);
+    case ARENA_DOUBLE:
+        return Double((double)llint - ar.as.Double);
+    case ARENA_LONG:
+        return Long(llint - ar.as.Long);
     default:
         log_err("ERROR: subtraction type mismatch\n");
     }
     return ar;
 }
-arena mul_arena_llint(long long int llint, arena ar)
+arena mul_arena_long(long long int llint, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_CHAR_CONST:
-        return arena_num(llint * ar.as.ch);
-    case ARENA_INT_CONST:
-        return arena_num(llint * ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_double((double)llint * ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_num(llint * ar.as.llint);
+    case ARENA_CHAR:
+        return Num(llint * ar.as.Char);
+    case ARENA_INT:
+        return Num(llint * ar.as.Int);
+    case ARENA_DOUBLE:
+        return Double((double)llint * ar.as.Double);
+    case ARENA_LONG:
+        return Num(llint * ar.as.Long);
     default:
         log_err("ERROR: multiplication type mismatch\n");
     }
     return ar;
 }
-arena div_arena_llint(long long int llint, arena ar)
+arena div_arena_long(long long int llint, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        if (ar.as.ival == 0)
+    case ARENA_INT:
+        if (ar.as.Int == 0)
             goto ERR;
-        return arena_double((double)llint / ar.as.ival);
-    case ARENA_CHAR_CONST:
-        if (ar.as.ch == 0)
+        return Double((double)llint / ar.as.Int);
+    case ARENA_CHAR:
+        if (ar.as.Char == 0)
             goto ERR;
-        return arena_double((double)llint / ar.as.ch);
-    case ARENA_DOUBLE_CONST:
-        if (ar.as.dval == 0)
+        return Double((double)llint / ar.as.Char);
+    case ARENA_DOUBLE:
+        if (ar.as.Double == 0)
             goto ERR;
-        return arena_double((double)llint / ar.as.dval);
-    case ARENA_LLINT_CONST:
-        if (ar.as.llint == 0)
+        return Double((double)llint / ar.as.Double);
+    case ARENA_LONG:
+        if (ar.as.Long == 0)
             goto ERR;
-        return arena_double((double)llint / ar.as.llint);
+        return Double((double)llint / ar.as.Long);
     default:
         log_err("ERROR: division type mismatch\n");
     }
@@ -304,16 +304,16 @@ ERR:
 
     return ar;
 }
-arena mod_arena_llint(long long int llint, arena ar)
+arena mod_arena_long(long long int llint, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_int(llint % ar.as.ival);
-    case ARENA_CHAR_CONST:
-        return arena_char(llint % ar.as.ch);
-    case ARENA_LLINT_CONST:
-        return arena_llint(llint % ar.as.llint);
+    case ARENA_INT:
+        return Int(llint % ar.as.Int);
+    case ARENA_CHAR:
+        return Char(llint % ar.as.Char);
+    case ARENA_LONG:
+        return Long(llint % ar.as.Long);
     default:
         log_err("ERROR: modulo type mismatch\n");
     }
@@ -324,14 +324,14 @@ arena add_arena_double(double dval, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_CHAR_CONST:
-        return arena_double(dval + ar.as.ch);
-    case ARENA_INT_CONST:
-        return arena_double(dval + ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_double(dval + ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_double(dval + ar.as.llint);
+    case ARENA_CHAR:
+        return Double(dval + ar.as.Char);
+    case ARENA_INT:
+        return Double(dval + ar.as.Int);
+    case ARENA_DOUBLE:
+        return Double(dval + ar.as.Double);
+    case ARENA_LONG:
+        return Double(dval + ar.as.Long);
     default:
         log_err("ERROR: addition type mismatch\n");
     }
@@ -341,14 +341,14 @@ arena sub_arena_double(double dval, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_CHAR_CONST:
-        return arena_double(dval - ar.as.ch);
-    case ARENA_INT_CONST:
-        return arena_double(dval - ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_double(dval - ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_double(dval - ar.as.llint);
+    case ARENA_CHAR:
+        return Double(dval - ar.as.Char);
+    case ARENA_INT:
+        return Double(dval - ar.as.Int);
+    case ARENA_DOUBLE:
+        return Double(dval - ar.as.Double);
+    case ARENA_LONG:
+        return Double(dval - ar.as.Long);
     default:
         log_err("ERROR: subtraction type mismatch\n");
     }
@@ -358,14 +358,14 @@ arena mul_arena_double(double dval, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_CHAR_CONST:
-        return arena_double(dval * ar.as.ch);
-    case ARENA_INT_CONST:
-        return arena_double(dval * ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_double(dval * ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_double(dval * ar.as.llint);
+    case ARENA_CHAR:
+        return Double(dval * ar.as.Char);
+    case ARENA_INT:
+        return Double(dval * ar.as.Int);
+    case ARENA_DOUBLE:
+        return Double(dval * ar.as.Double);
+    case ARENA_LONG:
+        return Double(dval * ar.as.Long);
     default:
         log_err("ERROR: multiplication type mismatch\n");
     }
@@ -375,22 +375,22 @@ arena div_arena_double(double dval, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        if (ar.as.ival == 0)
+    case ARENA_INT:
+        if (ar.as.Int == 0)
             goto ERR;
-        return arena_double(dval / ar.as.ival);
-    case ARENA_CHAR_CONST:
-        if (ar.as.ch == 0)
+        return Double(dval / ar.as.Int);
+    case ARENA_CHAR:
+        if (ar.as.Char == 0)
             goto ERR;
-        return arena_double(dval / ar.as.ch);
-    case ARENA_DOUBLE_CONST:
-        if (ar.as.dval == 0)
+        return Double(dval / ar.as.Char);
+    case ARENA_DOUBLE:
+        if (ar.as.Double == 0)
             goto ERR;
-        return arena_double(dval / ar.as.dval);
-    case ARENA_LLINT_CONST:
-        if (ar.as.llint == 0)
+        return Double(dval / ar.as.Double);
+    case ARENA_LONG:
+        if (ar.as.Long == 0)
             goto ERR;
-        return arena_double(dval / ar.as.llint);
+        return Double(dval / ar.as.Long);
     default:
         log_err("ERROR: division type mismatch\n");
     }
@@ -404,416 +404,416 @@ arena char_eq(char ch, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(ch == ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(ch == ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_bool(ch == ar.as.llint);
-    case ARENA_CHAR_CONST:
-        return arena_bool(ch == ar.as.ch);
+    case ARENA_INT:
+        return Bool(ch == ar.as.Int);
+    case ARENA_DOUBLE:
+        return Bool(ch == ar.as.Double);
+    case ARENA_LONG:
+        return Bool(ch == ar.as.Long);
+    case ARENA_CHAR:
+        return Bool(ch == ar.as.Char);
     case ARENA_NULL:
-        return arena_bool(ch == '\0');
+        return Bool(ch == '\0');
     default:
         log_err("ERROR: comparison type mismatch\n");
     }
-    return arena_bool(false);
+    return Bool(false);
 }
 arena char_ne(char ch, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(ch != ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(ch != ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_bool(ch != ar.as.llint);
-    case ARENA_CHAR_CONST:
-        return arena_bool(ch != ar.as.ch);
+    case ARENA_INT:
+        return Bool(ch != ar.as.Int);
+    case ARENA_DOUBLE:
+        return Bool(ch != ar.as.Double);
+    case ARENA_LONG:
+        return Bool(ch != ar.as.Long);
+    case ARENA_CHAR:
+        return Bool(ch != ar.as.Char);
     case ARENA_NULL:
-        return arena_bool(ch != '\0');
+        return Bool(ch != '\0');
     default:
         log_err("ERROR: comparison type mismatch\n");
     }
-    return arena_bool(false);
+    return Bool(false);
 }
 arena char_lt(char ch, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(ch < ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(ch < ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_bool(ch < ar.as.llint);
-    case ARENA_CHAR_CONST:
-        return arena_bool(ch < ar.as.ch);
+    case ARENA_INT:
+        return Bool(ch < ar.as.Int);
+    case ARENA_DOUBLE:
+        return Bool(ch < ar.as.Double);
+    case ARENA_LONG:
+        return Bool(ch < ar.as.Long);
+    case ARENA_CHAR:
+        return Bool(ch < ar.as.Char);
     default:
         log_err("ERROR: comparison type mismatch");
     }
-    return arena_bool(false);
+    return Bool(false);
 }
 arena char_le(char ch, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(ch <= ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(ch <= ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_bool(ch <= ar.as.llint);
-    case ARENA_CHAR_CONST:
-        return arena_bool(ch <= ar.as.ch);
+    case ARENA_INT:
+        return Bool(ch <= ar.as.Int);
+    case ARENA_DOUBLE:
+        return Bool(ch <= ar.as.Double);
+    case ARENA_LONG:
+        return Bool(ch <= ar.as.Long);
+    case ARENA_CHAR:
+        return Bool(ch <= ar.as.Char);
     default:
         log_err("ERROR: comparison type mismatch");
     }
 
-    return arena_bool(false);
+    return Bool(false);
 }
 arena char_gt(char ch, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(ch > ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(ch > ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_bool(ch > ar.as.llint);
-    case ARENA_CHAR_CONST:
-        return arena_bool(ch > ar.as.ch);
+    case ARENA_INT:
+        return Bool(ch > ar.as.Int);
+    case ARENA_DOUBLE:
+        return Bool(ch > ar.as.Double);
+    case ARENA_LONG:
+        return Bool(ch > ar.as.Long);
+    case ARENA_CHAR:
+        return Bool(ch > ar.as.Char);
     default:
         log_err("ERROR: comparison type mismatch");
     }
 
-    return arena_bool(false);
+    return Bool(false);
 }
 arena char_ge(char ch, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(ch >= ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(ch >= ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_bool(ch >= ar.as.llint);
-    case ARENA_CHAR_CONST:
-        return arena_bool(ch >= ar.as.ch);
+    case ARENA_INT:
+        return Bool(ch >= ar.as.Int);
+    case ARENA_DOUBLE:
+        return Bool(ch >= ar.as.Double);
+    case ARENA_LONG:
+        return Bool(ch >= ar.as.Long);
+    case ARENA_CHAR:
+        return Bool(ch >= ar.as.Char);
     default:
         log_err("ERROR: comparison type mismatch");
     }
-    return arena_bool(false);
+    return Bool(false);
 }
 
 arena int_eq(int ival, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(ival == ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(ival == ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_bool(ival == ar.as.llint);
-    case ARENA_CHAR_CONST:
-        return arena_bool(ival == ar.as.ch);
+    case ARENA_INT:
+        return Bool(ival == ar.as.Int);
+    case ARENA_DOUBLE:
+        return Bool(ival == ar.as.Double);
+    case ARENA_LONG:
+        return Bool(ival == ar.as.Long);
+    case ARENA_CHAR:
+        return Bool(ival == ar.as.Char);
     default:
         log_err("ERROR: comparison type mismatch");
     }
-    return arena_bool(false);
+    return Bool(false);
 }
 arena int_ne(int ival, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(ival != ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(ival != ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_bool(ival != ar.as.llint);
-    case ARENA_CHAR_CONST:
-        return arena_bool(ival != ar.as.ch);
+    case ARENA_INT:
+        return Bool(ival != ar.as.Int);
+    case ARENA_DOUBLE:
+        return Bool(ival != ar.as.Double);
+    case ARENA_LONG:
+        return Bool(ival != ar.as.Long);
+    case ARENA_CHAR:
+        return Bool(ival != ar.as.Char);
     default:
         log_err("ERROR: comparison type mismatch");
     }
-    return arena_bool(false);
+    return Bool(false);
 }
 arena int_lt(int ival, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(ival < ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(ival < ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_bool(ival < ar.as.llint);
-    case ARENA_CHAR_CONST:
-        return arena_bool(ival < ar.as.ch);
+    case ARENA_INT:
+        return Bool(ival < ar.as.Int);
+    case ARENA_DOUBLE:
+        return Bool(ival < ar.as.Double);
+    case ARENA_LONG:
+        return Bool(ival < ar.as.Long);
+    case ARENA_CHAR:
+        return Bool(ival < ar.as.Char);
     default:
         log_err("ERROR: comparison type mismatch");
     }
-    return arena_bool(false);
+    return Bool(false);
 }
 arena int_le(int ival, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(ival <= ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(ival <= ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_bool(ival <= ar.as.llint);
-    case ARENA_CHAR_CONST:
-        return arena_bool(ival <= ar.as.ch);
+    case ARENA_INT:
+        return Bool(ival <= ar.as.Int);
+    case ARENA_DOUBLE:
+        return Bool(ival <= ar.as.Double);
+    case ARENA_LONG:
+        return Bool(ival <= ar.as.Long);
+    case ARENA_CHAR:
+        return Bool(ival <= ar.as.Char);
     default:
         log_err("ERROR: comparison type mismatch");
     }
-    return arena_bool(false);
+    return Bool(false);
 }
 arena int_gt(int ival, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(ival > ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(ival > ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_bool(ival > ar.as.llint);
-    case ARENA_CHAR_CONST:
-        return arena_bool(ival > ar.as.ch);
+    case ARENA_INT:
+        return Bool(ival > ar.as.Int);
+    case ARENA_DOUBLE:
+        return Bool(ival > ar.as.Double);
+    case ARENA_LONG:
+        return Bool(ival > ar.as.Long);
+    case ARENA_CHAR:
+        return Bool(ival > ar.as.Char);
     default:
         log_err("ERROR: comparison type mismatch");
     }
-    return arena_bool(false);
+    return Bool(false);
 }
 arena int_ge(int ival, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(ival >= ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(ival >= ar.as.dval);
-    case ARENA_LLINT_CONST:
-        return arena_bool(ival >= ar.as.llint);
-    case ARENA_CHAR_CONST:
-        return arena_bool(ival >= ar.as.ch);
+    case ARENA_INT:
+        return Bool(ival >= ar.as.Int);
+    case ARENA_DOUBLE:
+        return Bool(ival >= ar.as.Double);
+    case ARENA_LONG:
+        return Bool(ival >= ar.as.Long);
+    case ARENA_CHAR:
+        return Bool(ival >= ar.as.Char);
     default:
         log_err("ERROR: comparison type mismatch");
     }
-    return arena_bool(false);
+    return Bool(false);
 }
 
-arena llint_eq(long long int llint, arena ar)
+arena long_eq(long long int llint, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(llint == ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(llint == ar.as.dval);
-    case ARENA_CHAR_CONST:
-        return arena_bool(llint == ar.as.ch);
-    case ARENA_LLINT_CONST:
-        return arena_bool(llint == ar.as.llint);
+    case ARENA_INT:
+        return Bool(llint == ar.as.Int);
+    case ARENA_DOUBLE:
+        return Bool(llint == ar.as.Double);
+    case ARENA_CHAR:
+        return Bool(llint == ar.as.Char);
+    case ARENA_LONG:
+        return Bool(llint == ar.as.Long);
     default:
         log_err("ERROR: comparison type mismatch");
     }
-    return arena_bool(false);
+    return Bool(false);
 }
-arena llint_ne(long long int llint, arena ar)
+arena long_ne(long long int llint, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(llint != ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(llint != ar.as.dval);
-    case ARENA_CHAR_CONST:
-        return arena_bool(llint != ar.as.ch);
-    case ARENA_LLINT_CONST:
-        return arena_bool(llint != ar.as.llint);
+    case ARENA_INT:
+        return Bool(llint != ar.as.Int);
+    case ARENA_DOUBLE:
+        return Bool(llint != ar.as.Double);
+    case ARENA_CHAR:
+        return Bool(llint != ar.as.Char);
+    case ARENA_LONG:
+        return Bool(llint != ar.as.Long);
     default:
         log_err("ERROR: comparison type mismatch");
     }
-    return arena_bool(false);
+    return Bool(false);
 }
-arena llint_lt(long long int llint, arena ar)
+arena long_lt(long long int llint, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(llint < ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(llint < ar.as.dval);
-    case ARENA_CHAR_CONST:
-        return arena_bool(llint < ar.as.ch);
-    case ARENA_LLINT_CONST:
-        return arena_bool(llint < ar.as.llint);
+    case ARENA_INT:
+        return Bool(llint < ar.as.Int);
+    case ARENA_DOUBLE:
+        return Bool(llint < ar.as.Double);
+    case ARENA_CHAR:
+        return Bool(llint < ar.as.Char);
+    case ARENA_LONG:
+        return Bool(llint < ar.as.Long);
     default:
         log_err("ERROR: comparison type mismatch");
     }
-    return arena_bool(false);
+    return Bool(false);
 }
-arena llint_le(long long int llint, arena ar)
+arena long_le(long long int llint, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(llint <= ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(llint <= ar.as.dval);
-    case ARENA_CHAR_CONST:
-        return arena_bool(llint <= ar.as.ch);
-    case ARENA_LLINT_CONST:
-        return arena_bool(llint <= ar.as.llint);
+    case ARENA_INT:
+        return Bool(llint <= ar.as.Int);
+    case ARENA_DOUBLE:
+        return Bool(llint <= ar.as.Double);
+    case ARENA_CHAR:
+        return Bool(llint <= ar.as.Char);
+    case ARENA_LONG:
+        return Bool(llint <= ar.as.Long);
     default:
         log_err("ERROR: comparison type mismatch");
     }
-    return arena_bool(false);
+    return Bool(false);
 }
-arena llint_gt(long long int llint, arena ar)
+arena long_gt(long long int llint, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(llint > ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(llint > ar.as.dval);
-    case ARENA_CHAR_CONST:
-        return arena_bool(llint > ar.as.ch);
-    case ARENA_LLINT_CONST:
-        return arena_bool(llint > ar.as.llint);
+    case ARENA_INT:
+        return Bool(llint > ar.as.Int);
+    case ARENA_DOUBLE:
+        return Bool(llint > ar.as.Double);
+    case ARENA_CHAR:
+        return Bool(llint > ar.as.Char);
+    case ARENA_LONG:
+        return Bool(llint > ar.as.Long);
     default:
         log_err("ERROR: comparison type mismatch");
     }
-    return arena_bool(false);
+    return Bool(false);
 }
-arena llint_ge(long long int llint, arena ar)
+arena long_ge(long long int llint, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(llint >= ar.as.ival);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(llint >= ar.as.dval);
-    case ARENA_CHAR_CONST:
-        return arena_bool(llint >= ar.as.ch);
-    case ARENA_LLINT_CONST:
-        return arena_bool(llint >= ar.as.llint);
+    case ARENA_INT:
+        return Bool(llint >= ar.as.Int);
+    case ARENA_DOUBLE:
+        return Bool(llint >= ar.as.Double);
+    case ARENA_CHAR:
+        return Bool(llint >= ar.as.Char);
+    case ARENA_LONG:
+        return Bool(llint >= ar.as.Long);
     default:
         log_err("ERROR: comparison type mismatch");
     }
-    return arena_bool(false);
+    return Bool(false);
 }
 
 arena double_eq(double dval, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(dval == ar.as.ival);
-    case ARENA_CHAR_CONST:
-        return arena_bool(dval == ar.as.ch);
-    case ARENA_LLINT_CONST:
-        return arena_bool(dval == ar.as.llint);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(dval == ar.as.dval);
+    case ARENA_INT:
+        return Bool(dval == ar.as.Int);
+    case ARENA_CHAR:
+        return Bool(dval == ar.as.Char);
+    case ARENA_LONG:
+        return Bool(dval == ar.as.Long);
+    case ARENA_DOUBLE:
+        return Bool(dval == ar.as.Double);
     default:
         log_err("ERROR: comparison type mismatch");
     }
-    return arena_bool(false);
+    return Bool(false);
 }
 arena double_ne(double dval, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(dval != ar.as.ival);
-    case ARENA_CHAR_CONST:
-        return arena_bool(dval != ar.as.ch);
-    case ARENA_LLINT_CONST:
-        return arena_bool(dval != ar.as.llint);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(dval != ar.as.dval);
+    case ARENA_INT:
+        return Bool(dval != ar.as.Int);
+    case ARENA_CHAR:
+        return Bool(dval != ar.as.Char);
+    case ARENA_LONG:
+        return Bool(dval != ar.as.Long);
+    case ARENA_DOUBLE:
+        return Bool(dval != ar.as.Double);
     default:
         log_err("ERROR: comparison type mismatch");
     }
-    return arena_bool(false);
+    return Bool(false);
 }
 arena double_lt(double dval, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(dval < ar.as.ival);
-    case ARENA_CHAR_CONST:
-        return arena_bool(dval < ar.as.ch);
-    case ARENA_LLINT_CONST:
-        return arena_bool(dval < ar.as.llint);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(dval < ar.as.dval);
+    case ARENA_INT:
+        return Bool(dval < ar.as.Int);
+    case ARENA_CHAR:
+        return Bool(dval < ar.as.Char);
+    case ARENA_LONG:
+        return Bool(dval < ar.as.Long);
+    case ARENA_DOUBLE:
+        return Bool(dval < ar.as.Double);
     default:
         log_err("ERROR: comparison type mismatch");
     }
-    return arena_bool(false);
+    return Bool(false);
 }
 arena double_le(double dval, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(dval <= ar.as.ival);
-    case ARENA_CHAR_CONST:
-        return arena_bool(dval <= ar.as.ch);
-    case ARENA_LLINT_CONST:
-        return arena_bool(dval <= ar.as.llint);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(dval <= ar.as.dval);
+    case ARENA_INT:
+        return Bool(dval <= ar.as.Int);
+    case ARENA_CHAR:
+        return Bool(dval <= ar.as.Char);
+    case ARENA_LONG:
+        return Bool(dval <= ar.as.Long);
+    case ARENA_DOUBLE:
+        return Bool(dval <= ar.as.Double);
     default:
         log_err("ERROR: comparison type mismatch");
     }
-    return arena_bool(false);
+    return Bool(false);
 }
 arena double_gt(double dval, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(dval > ar.as.ival);
-    case ARENA_CHAR_CONST:
-        return arena_bool(dval > ar.as.ch);
-    case ARENA_LLINT_CONST:
-        return arena_bool(dval > ar.as.llint);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(dval > ar.as.dval);
+    case ARENA_INT:
+        return Bool(dval > ar.as.Int);
+    case ARENA_CHAR:
+        return Bool(dval > ar.as.Char);
+    case ARENA_LONG:
+        return Bool(dval > ar.as.Long);
+    case ARENA_DOUBLE:
+        return Bool(dval > ar.as.Double);
     default:
         log_err("ERROR: comparison type mismatch");
     }
-    return arena_bool(false);
+    return Bool(false);
 }
 arena double_ge(double dval, arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_INT_CONST:
-        return arena_bool(dval >= ar.as.ival);
-    case ARENA_CHAR_CONST:
-        return arena_bool(dval >= ar.as.ch);
-    case ARENA_LLINT_CONST:
-        return arena_bool(dval >= ar.as.llint);
-    case ARENA_DOUBLE_CONST:
-        return arena_bool(dval >= ar.as.dval);
+    case ARENA_INT:
+        return Bool(dval >= ar.as.Int);
+    case ARENA_CHAR:
+        return Bool(dval >= ar.as.Char);
+    case ARENA_LONG:
+        return Bool(dval >= ar.as.Long);
+    case ARENA_DOUBLE:
+        return Bool(dval >= ar.as.Double);
     default:
         log_err("ERROR: comparison type mismatch");
     }
-    return arena_bool(false);
+    return Bool(false);
 }

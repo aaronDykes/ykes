@@ -34,15 +34,15 @@ static void repl()
     {
         printf("$ ");
 
-        if (!fgets(ar.as.string, ar.size, stdin))
+        if (!fgets(ar.as.String, ar.size, stdin))
         {
             printf("\n");
             break;
         }
-        if (strcmp(ar.as.string, "end\n") == 0)
+        if (strcmp(ar.as.String, "end\n") == 0)
             break;
 
-        interpret(ar.as.string);
+        interpret(ar.as.String);
     }
     arena_free(&ar);
     freeVM();

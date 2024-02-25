@@ -14,11 +14,11 @@ arena mul_arena_int(int ival, arena ar);
 arena div_arena_int(int ival, arena ar);
 arena mod_arena_int(int ival, arena ar);
 
-arena add_arena_llint(long long int llint, arena ar);
-arena sub_arena_llint(long long int llint, arena ar);
-arena mul_arena_llint(long long int llint, arena ar);
-arena div_arena_llint(long long int llint, arena ar);
-arena mod_arena_llint(long long int llint, arena ar);
+arena add_arena_long(long long int llint, arena ar);
+arena sub_arena_long(long long int llint, arena ar);
+arena mul_arena_long(long long int llint, arena ar);
+arena div_arena_long(long long int llint, arena ar);
+arena mod_arena_long(long long int llint, arena ar);
 
 arena add_arena_double(double dval, arena ar);
 arena sub_arena_double(double dval, arena ar);
@@ -39,12 +39,12 @@ arena int_le(int ival, arena ar);
 arena int_gt(int ival, arena ar);
 arena int_ge(int ival, arena ar);
 
-arena llint_eq(long long int llint, arena ar);
-arena llint_ne(long long int llint, arena ar);
-arena llint_lt(long long int llint, arena ar);
-arena llint_le(long long int llint, arena ar);
-arena llint_gt(long long int llint, arena ar);
-arena llint_ge(long long int llint, arena ar);
+arena long_eq(long long int llint, arena ar);
+arena long_ne(long long int llint, arena ar);
+arena long_lt(long long int llint, arena ar);
+arena long_le(long long int llint, arena ar);
+arena long_gt(long long int llint, arena ar);
+arena long_ge(long long int llint, arena ar);
 
 arena double_eq(double dval, arena ar);
 arena double_ne(double dval, arena ar);

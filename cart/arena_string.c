@@ -35,7 +35,7 @@ static int intlen(int n)
     } while (n /= 10);
     return count;
 }
-static int llintlen(long long int n)
+static int long_len(long long int n)
 {
     int count = 0;
     do
@@ -84,51 +84,51 @@ static char *lltoa(char *c, long long int n)
 
 arena prepend_int_to_str(arena s, arena a)
 {
-    int len = intlen(s.as.ival);
-    int ival = s.as.ival;
+    int len = intlen(s.as.Int);
+    int ival = s.as.Int;
     arena_free(&s);
     s = arena_alloc(sizeof(char) * (len + 1 + a.length), ARENA_STR);
-    s.as.string = itoa(s.as.string, ival);
-    strcat(s.as.string, a.as.string);
+    s.as.String = itoa(s.as.String, ival);
+    strcat(s.as.String, a.as.String);
     arena_free(&a);
     return s;
 }
 arena prepend_char_to_str(arena s, arena a)
 {
-    char c = s.as.ch;
+    char c = s.as.Char;
     arena_free(&s);
     s = arena_alloc(sizeof(char) * (a.length + 1), ARENA_STR);
-    s.as.string[0] = c;
-    strcat(s.as.string, a.as.string);
+    s.as.String[0] = c;
+    strcat(s.as.String, a.as.String);
     arena_free(&a);
     return s;
 }
-arena prepend_llint_to_str(arena s, arena a)
+arena prepend_long_to_str(arena s, arena a)
 {
-    int len = llintlen(s.as.llint);
-    long long int llint = s.as.llint;
+    int len = long_len(s.as.Long);
+    long long int llint = s.as.Long;
     if (llint < 0)
         len++;
     arena_free(&s);
     s = arena_alloc(sizeof(char) * (len + 1 + a.length), ARENA_STR);
-    s.as.string = lltoa(s.as.string, llint);
-    strcat(s.as.string, a.as.string);
+    s.as.String = lltoa(s.as.String, llint);
+    strcat(s.as.String, a.as.String);
     arena_free(&a);
     return s;
 }
 
 static arena append_int_to_str(arena s, arena i)
 {
-    int len = intlen(i.as.ival);
-    int ival = i.as.ival;
+    int len = intlen(i.as.Int);
+    int ival = i.as.Int;
     int new = len + 1 + s.length;
     if (ival < 0)
         ++len;
     arena_free(&i);
     i = arena_alloc(sizeof(char) * (len + 1), ARENA_STR);
-    i.as.string = itoa(i.as.string, ival);
+    i.as.String = itoa(i.as.String, ival);
     s = arena_realloc(&s, new * sizeof(char));
-    strcat(s.as.string, i.as.string);
+    strcat(s.as.String, i.as.String);
     arena_free(&i);
     return s;
 }
@@ -136,27 +136,27 @@ static arena append_str_to_str(arena s, arena str)
 {
     int new = s.length + str.length + 1;
     s = arena_realloc(&s, new * sizeof(char));
-    strcat(s.as.string, str.as.string);
-    s.as.string[new] = '\0';
+    strcat(s.as.String, str.as.String);
+    s.as.String[new] = '\0';
     arena_free(&str);
     return s;
 }
 static arena append_char_to_str(arena s, arena c)
 {
-    char ch = c.as.ch;
+    char ch = c.as.Char;
     arena_free(&c);
     c = arena_alloc(sizeof(char) * 2, ARENA_STR);
-    c.as.string[0] = ch;
-    c.as.string[1] = '\0';
+    c.as.String[0] = ch;
+    c.as.String[1] = '\0';
     s = arena_realloc(&s, sizeof(char) * (s.length + 2));
-    strcat(s.as.string, c.as.string);
+    strcat(s.as.String, c.as.String);
     arena_free(&c);
     return s;
 }
-static arena append_llint_to_str(arena s, arena i)
+static arena append_long_to_str(arena s, arena i)
 {
-    int len = llintlen(i.as.llint);
-    long long int llint = i.as.llint;
+    int len = long_len(i.as.Long);
+    long long int llint = i.as.Long;
     int new = len + 1 + s.length;
 
     if (llint < 0)
@@ -164,9 +164,9 @@ static arena append_llint_to_str(arena s, arena i)
 
     arena_free(&i);
     i = arena_alloc(sizeof(char) * (len + 1), ARENA_STR);
-    i.as.string = lltoa(i.as.string, llint);
+    i.as.String = lltoa(i.as.String, llint);
     s = arena_realloc(&s, new * sizeof(char));
-    strcat(s.as.string, i.as.string);
+    strcat(s.as.String, i.as.String);
     arena_free(&i);
     return s;
 }
@@ -176,12 +176,12 @@ arena append(arena s, arena ar)
     {
     case ARENA_STR:
         return append_str_to_str(s, ar);
-    case ARENA_CHAR_CONST:
+    case ARENA_CHAR:
         return append_char_to_str(s, ar);
-    case ARENA_INT_CONST:
+    case ARENA_INT:
         return append_int_to_str(s, ar);
-    case ARENA_LLINT_CONST:
-        return append_llint_to_str(s, ar);
+    case ARENA_LONG:
+        return append_long_to_str(s, ar);
         break;
     }
     return ar;
@@ -192,56 +192,56 @@ arena string_eq(arena s, arena c)
     switch (c.type)
     {
     case ARENA_NULL:
-        return arena_bool(*s.as.string == '\0');
+        return Bool(*s.as.String == '\0');
     case ARENA_STR:
-        return arena_bool(strcmp(s.as.string, c.as.string) == 0);
+        return Bool(strcmp(s.as.String, c.as.String) == 0);
     }
-    return arena_bool(false);
+    return Bool(false);
 }
 arena string_ne(arena s, arena c)
 {
     switch (c.type)
     {
     case ARENA_NULL:
-        return arena_bool(*s.as.string != '\0');
+        return Bool(*s.as.String != '\0');
     case ARENA_STR:
-        return arena_bool(strcmp(s.as.string, c.as.string) != 0);
+        return Bool(strcmp(s.as.String, c.as.String) != 0);
     }
-    return arena_bool(true);
+    return Bool(true);
 }
 arena string_gt(arena s, arena c)
 {
     if (c.type != ARENA_STR)
     {
         log_err("ERROR: string comparison type mismatch\n");
-        return arena_bool(false);
+        return Bool(false);
     }
-    return arena_bool(strcmp(s.as.string, c.as.string) > 0);
+    return Bool(strcmp(s.as.String, c.as.String) > 0);
 }
 arena string_ge(arena s, arena c)
 {
     if (c.type != ARENA_STR)
     {
         log_err("ERROR: string comparison type mismatch\n");
-        return arena_bool(false);
+        return Bool(false);
     }
-    return arena_bool(strcmp(s.as.string, c.as.string) >= 0);
+    return Bool(strcmp(s.as.String, c.as.String) >= 0);
 }
 arena string_lt(arena s, arena c)
 {
     if (c.type != ARENA_STR)
     {
         log_err("ERROR: string comparison type mismatch\n");
-        return arena_bool(false);
+        return Bool(false);
     }
-    return arena_bool(strcmp(s.as.string, c.as.string) < 0);
+    return Bool(strcmp(s.as.String, c.as.String) < 0);
 }
 arena string_le(arena s, arena c)
 {
     if (c.type != ARENA_STR)
     {
         log_err("ERROR: string comparison type mismatch\n");
-        return arena_bool(false);
+        return Bool(false);
     }
-    return arena_bool(strcmp(s.as.string, c.as.string) <= 0);
+    return Bool(strcmp(s.as.String, c.as.String) <= 0);
 }

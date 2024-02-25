@@ -49,14 +49,14 @@ arena arena_init(void *data, size_t size, T type);
 arena arena_alloc(size_t size, T type);
 arena arena_realloc(Arena ar, size_t size);
 
-arena arena_char(char ch);
-arena arena_int(int ival);
-arena arena_byte(uint8_t byte);
-arena arena_llint(long long int llint);
-arena arena_double(double dval);
-arena string(const char *str);
-arena arena_bool(bool boolean);
-arena arena_null();
+arena Char(char ch);
+arena Int(int ival);
+arena Byte(uint8_t byte);
+arena Long(long long int llint);
+arena Double(double dval);
+arena String(const char *str);
+arena Bool(bool boolean);
+arena Null();
 
 void arena_free(Arena ar);
 void destroy_global_memory();

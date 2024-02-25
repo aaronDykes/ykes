@@ -33,35 +33,34 @@ void print(arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_BYTE_CONST:
-        printf("[ %d ]\n", ar.as.byte);
+    case ARENA_BYTE:
+        printf("[ %d ]\n", ar.as.Byte);
         break;
-    case ARENA_CHAR_CONST:
-        printf("[ %c ]\n", ar.as.ch);
+    case ARENA_CHAR:
+        printf("[ %c ]\n", ar.as.Char);
         break;
-    case ARENA_DOUBLE_CONST:
-        printf("[ %f ]\n", ar.as.dval);
+    case ARENA_DOUBLE:
+        printf("[ %f ]\n", ar.as.Double);
         break;
-    case ARENA_INT_CONST:
-        printf("[ %d ]\n", ar.as.ival);
+    case ARENA_INT:
+        printf("[ %d ]\n", ar.as.Int);
         break;
-    case ARENA_LLINT_CONST:
-        printf("[ %lld ]\n", ar.as.llint);
+    case ARENA_LONG:
+        printf("[ %lld ]\n", ar.as.Long);
         break;
     case ARENA_BOOL:
-        printf("[ %s ]\n", (ar.as.boolean == true) ? "true" : "false");
+        printf("[ %s ]\n", (ar.as.Bool == true) ? "true" : "false");
         break;
-    // case ARENA_VAR:
     case ARENA_STR:
-        printf("[ %s ]\n", ar.as.string);
+        printf("[ %s ]\n", ar.as.String);
         break;
     case ARENA_INT_PTR:
         printf("[ ");
         for (int i = 0; i < ar.length; i++)
             if (i == ar.length - 1)
-                printf("%d ]\n", ar.as.ints[i]);
+                printf("%d ]\n", ar.as.Ints[i]);
             else
-                printf("%d, ", ar.as.ints[i]);
+                printf("%d, ", ar.as.Ints[i]);
         break;
     case ARENA_NULL:
         printf("[ null ]\n");

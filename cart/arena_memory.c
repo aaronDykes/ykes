@@ -27,24 +27,24 @@ arena arena_init(void *data, size_t size, T type)
     switch (type)
     {
     case ARENA_BYTE_PTR:
-        ar.as.bytes = data;
+        ar.as.Bytes = data;
         ar.length = (int)size;
         break;
     case ARENA_VAR:
     case ARENA_STR:
-        ar.as.string = data;
+        ar.as.String = data;
         ar.length = (int)size;
         break;
     case ARENA_INT_PTR:
-        ar.as.ints = data;
+        ar.as.Ints = data;
         ar.length = (int)(size / sizeof(int));
         break;
     case ARENA_DOUBLE_PTR:
-        ar.as.doubles = data;
+        ar.as.Doubles = data;
         ar.length = ((int)(size / sizeof(double)));
         break;
-    case ARENA_LLINT_PTR:
-        ar.as.ints = data;
+    case ARENA_LONG_PTR:
+        ar.as.Longs = data;
         ar.length = ((int)(size / sizeof(long long int)));
         break;
     }
@@ -55,7 +55,7 @@ arena arena_init(void *data, size_t size, T type)
 
 /**
     TODO:
-        free off each string in string arena
+        free off each String in String arena
 */
 
 void arena_free(Arena ar)
@@ -63,23 +63,23 @@ void arena_free(Arena ar)
     switch (ar->type)
     {
     case ARENA_BYTE_PTR:
-        ar->as.bytes = NULL;
+        ar->as.Bytes = NULL;
         break;
     case ARENA_STR:
-        ar->as.string = NULL;
+        ar->as.String = NULL;
         break;
     case ARENA_INT_PTR:
-        ar->as.ints = NULL;
+        ar->as.Ints = NULL;
         break;
     case ARENA_DOUBLE_PTR:
-        ar->as.doubles = NULL;
+        ar->as.Doubles = NULL;
         break;
-    case ARENA_LLINT_PTR:
-        ar->as.llints = NULL;
+    case ARENA_LONG_PTR:
+        ar->as.Longs = NULL;
         break;
     }
 
-    *ar = arena_null();
+    *ar = Null();
 }
 
 void destroy_global_memory()
@@ -98,10 +98,9 @@ void *alloc_ptr(size_t size)
 }
 Arena arena_alloc_arena(size_t size)
 {
-    Arena p = alloc_ptr(size);
+    Arena p = alloc_ptr(size + sizeof(arena));
 
-    p->type = ARENA;
-    p->size = size;
+    p->size = (size + sizeof(arena)) / sizeof(arena);
     p->length = (int)(size / sizeof(arena));
 
     return p + 1;
@@ -125,7 +124,7 @@ Arena arena_realloc_arena(Arena ar, size_t size)
         return NULL;
     }
 
-    size_t new_size = (size <= (ar - 1)->size) ? size : (ar - 1)->size;
+    size_t new_size = (size <= (ar - 1)->size) ? size / sizeof(arena) : (ar - 1)->size / sizeof(arena);
     ptr = arena_alloc_arena(size);
 
     for (size_t i = 0; i < new_size; i++)
@@ -146,7 +145,7 @@ void arena_free_arena(Arena ar)
         case ARENA_BYTE_PTR:
         case ARENA_INT_PTR:
         case ARENA_DOUBLE_PTR:
-        case ARENA_LLINT_PTR:
+        case ARENA_LONG_PTR:
         case ARENA_STR:
             arena_free(&ar[i]);
             break;
@@ -181,89 +180,97 @@ arena arena_realloc(Arena ar, size_t size)
     switch (ar->type)
     {
     case ARENA_BYTE_PTR:
-        if (!ar->as.bytes)
+        if (!ar->as.Bytes)
             return arena_init(ptr, size, type);
-        memcpy(ptr, ar->as.bytes, size);
+        memcpy(ptr, ar->as.Bytes, size);
         break;
     case ARENA_STR:
-        if (!ar->as.string)
+        if (!ar->as.String)
             return arena_init(ptr, size, type);
-        memcpy(ptr, ar->as.string, size);
+        memcpy(ptr, ar->as.String, size);
         break;
     case ARENA_INT_PTR:
-        if (!ar->as.ints)
+        if (!ar->as.Ints)
             return arena_init(ptr, size, type);
-        memcpy(ptr, ar->as.ints, size);
+        memcpy(ptr, ar->as.Ints, size);
         break;
     }
     arena_free(ar);
     return arena_init(ptr, size, type);
 }
-arena arena_char(char ch)
+arena Char(char Char)
 {
     arena ar;
-    ar.type = ARENA_CHAR_CONST;
-    ar.as.ch = ch;
+    ar.type = ARENA_CHAR;
+    ar.as.Char = Char;
     ar.length = 1;
+    ar.size = sizeof(char);
     return ar;
 }
-arena arena_int(int ival)
+arena Int(int Int)
 {
     arena ar;
-    ar.type = ARENA_INT_CONST;
-    ar.as.ival = ival;
+    ar.type = ARENA_INT;
+    ar.as.Int = Int;
     ar.length = 1;
+    ar.size = sizeof(int);
     return ar;
 }
-arena arena_byte(uint8_t byte)
+arena Byte(uint8_t Byte)
 {
     arena ar;
-    ar.type = ARENA_BYTE_CONST;
-    ar.as.byte = byte;
+    ar.type = ARENA_BYTE;
+    ar.as.Byte = Byte;
     ar.length = 1;
+    ar.size = sizeof(uint8_t);
     return ar;
 }
-arena arena_llint(long long int llint)
+arena Long(long long int Long)
 {
     arena ar;
-    ar.type = ARENA_LLINT_CONST;
-    ar.as.llint = llint;
+    ar.type = ARENA_LONG;
+    ar.as.Long = Long;
     ar.length = 1;
+    ar.size = sizeof(long long int);
     return ar;
 }
-arena arena_double(double dval)
+arena Double(double Double)
 {
     arena ar;
-    ar.type = ARENA_DOUBLE_CONST;
-    ar.as.dval = dval;
+    ar.type = ARENA_DOUBLE;
+    ar.as.Double = Double;
     ar.length = 1;
+    ar.size = sizeof(double);
     return ar;
 }
-arena string(const char *str)
+arena String(const char *str)
 {
     size_t size = strlen(str);
-    arena ar = arena_alloc(sizeof(char) * (size), ARENA_STR);
-    memcpy(ar.as.string, str, size);
-    ar.as.string[size] = '\0';
+    arena ar = arena_alloc(size, ARENA_STR);
+    memcpy(ar.as.String, str, size);
+    ar.as.String[size] = '\0';
     ar.length = (int)size;
+    ar.size = size;
     return ar;
 }
 
-arena arena_bool(bool boolean)
+arena Bool(bool Bool)
 {
     arena ar;
     ar.type = ARENA_BOOL;
-    ar.as.boolean = boolean;
+    ar.as.Bool = Bool;
     ar.length = 1;
+    ar.size = sizeof(bool);
     return ar;
 }
 
-arena arena_null()
+arena Null()
 {
     arena ar;
     ar.type = ARENA_NULL;
     ar.as.null = NULL;
     ar.length = 0;
+    ar.size = sizeof(void *);
     return ar;
 }
 
@@ -271,43 +278,43 @@ void print_arena(arena ar)
 {
     switch (ar.type)
     {
-    case ARENA_CHAR_CONST:
-        printf("%c\n", ar.as.ch);
+    case ARENA_CHAR:
+        printf("%c\n", ar.as.Char);
         break;
     case ARENA_BYTE_PTR:
         printf("Byte ptr length: %d\n", ar.length);
         for (int i = 0; i < ar.length; i++)
-            printf("%d\n", ar.as.bytes[i]);
+            printf("%d\n", ar.as.Bytes[i]);
         break;
     case ARENA_INT_PTR:
         printf("Int ptr length: %d\n", ar.length);
         for (int i = 0; i < ar.length; i++)
-            printf("%d\n", ar.as.ints[i]);
+            printf("%d\n", ar.as.Ints[i]);
         break;
     case ARENA_DOUBLE_PTR:
         printf("Double ptr length: %d\n", ar.length);
         for (int i = 0; i < ar.length; i++)
-            printf("%f\n", ar.as.doubles[i]);
+            printf("%f\n", ar.as.Doubles[i]);
         break;
-    case ARENA_LLINT_PTR:
+    case ARENA_LONG_PTR:
         printf("Llint ptr length: %d\n", ar.length);
         for (int i = 0; i < ar.length; i++)
-            printf("%lld\n", ar.as.llints[i]);
+            printf("%lld\n", ar.as.Longs[i]);
         break;
     case ARENA_STR:
-        printf("%s\n", ar.as.string);
+        printf("%s\n", ar.as.String);
         break;
-    case ARENA_BYTE_CONST:
-        printf("%d\n", ar.as.byte);
+    case ARENA_BYTE:
+        printf("%d\n", ar.as.Byte);
         break;
-    case ARENA_INT_CONST:
-        printf("%d\n", ar.as.ival);
+    case ARENA_INT:
+        printf("%d\n", ar.as.Int);
         break;
-    case ARENA_DOUBLE_CONST:
-        printf("%f\n", ar.as.dval);
+    case ARENA_DOUBLE:
+        printf("%f\n", ar.as.Double);
         break;
-    case ARENA_LLINT_CONST:
-        printf("%lld\n", ar.as.llint);
+    case ARENA_LONG:
+        printf("%lld\n", ar.as.Long);
         break;
     }
 }

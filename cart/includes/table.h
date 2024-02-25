@@ -2,6 +2,8 @@
 #define _TABLE_H
 #include "arena_table.h"
 
+#define LOAD_FACTOR 0.75
+
 struct machine_table
 {
     int capacity;

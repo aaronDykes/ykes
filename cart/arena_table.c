@@ -13,19 +13,22 @@ static void log_err(const char *format, ...)
 
 Table arena_alloc_table(size_t size)
 {
-    Table t = t = alloc_ptr(size);
+    Table t = alloc_ptr(size + sizeof(table));
 
-    t->size = size;
+    size_t n = ((size + sizeof(table)) / sizeof(table));
 
-    for (size_t i = 1; i < size; i++)
-        t[i].entry = eentry(arena_null(), arena_null());
+    for (size_t i = 1; i < n; i++)
+        t[i] = entry(Null(), Null());
 
+    t->size = n;
     return t + 1;
 }
 
 Table arena_realloc_table(Table t, size_t size)
 {
+
     Table ptr = NULL;
+
     if (!t && size != 0)
     {
         ptr = arena_alloc_table(size);
@@ -37,12 +40,13 @@ Table arena_realloc_table(Table t, size_t size)
         return NULL;
     }
 
-    size_t new_size = (size <= (t - 1)->size) ? size : (t - 1)->size;
+    size_t new_size = (size <= (t - 1)->size) ? size / sizeof(table) : (t - 1)->size;
     ptr = arena_alloc_table(size);
 
     for (size_t i = 0; i < new_size; i++)
-        ptr[i].entry = t[i].entry;
+        ptr[i] = new_entry(t[i]);
 
+    arena_free_table(t);
     return ptr;
 }
 void arena_free_table(Table t)
@@ -54,7 +58,7 @@ void arena_free_table(Table t)
 
     for (size_t i = 0; i < size; i++)
     {
-        arena_free_entry(&t[i].entry);
+        arena_free_entry(&t[i]);
         t[i].size = 0;
     }
 
@@ -63,40 +67,41 @@ void arena_free_table(Table t)
     t = NULL;
 }
 
-void arena_free_entry(element *entry)
+void arena_free_entry(Table entry)
 {
     arena_free(&entry->key);
     arena_free(&entry->val);
     entry->next = NULL;
+    entry->prev = NULL;
     entry = NULL;
 }
 
-void insert_entry(Table *t, element entry)
+void insert_entry(Table *t, table entry)
 {
     Table tmp = *t;
-    element e = tmp[entry.key.hash].entry;
+    table e = tmp[entry.key.hash];
     arena f;
+    char *c = e.key.as.String;
 
     if (e.key.type == ARENA_NULL)
     {
-        tmp[entry.key.hash].entry = entry;
-        return;
-    }
-    if (strcmp(e.key.as.string, entry.key.as.string) == 0)
-    {
-        tmp[entry.key.hash].entry = entry;
+        tmp[entry.key.hash] = entry;
         return;
     }
 
-    f = find_entry(t, &entry.key);
-    if (f.type != ARENA_NULL)
-        alloc_entry(&tmp[entry.key.hash].entry.next, entry);
+    if (strcmp(e.key.as.String, entry.key.as.String) == 0)
+    {
+        tmp[entry.key.hash] = entry;
+        return;
+    }
+
+    alloc_entry(&tmp[entry.key.hash].next, entry);
 }
 void delete_entry(Table *t, arena key)
 {
     Table a = *t;
     size_t index = key.hash;
-    element e = a[index].entry;
+    table e = a[index];
 
     if (key.type == ARENA_NULL)
     {
@@ -104,15 +109,15 @@ void delete_entry(Table *t, arena key)
         return;
     }
 
-    if (!e.next && (strcmp(e.key.as.string, key.as.string) == 0))
+    if (!e.next && (strcmp(e.key.as.String, key.as.String) == 0))
     {
-        arena_free_entry(&a[index].entry);
-        a[index].entry = eentry(arena_null(), arena_null());
+        arena_free_entry(&a[index]);
+        a[index] = entry(Null(), Null());
         return;
     }
 
-    element *tmp = &e;
-    element *del = NULL;
+    Table tmp = e.next;
+    Table del = NULL;
 
     if (!tmp->next)
     {
@@ -124,19 +129,19 @@ void delete_entry(Table *t, arena key)
         switch (tmp->key.type)
         {
         case ARENA_STR:
-            if (strcmp(tmp->key.as.string, key.as.string) == 0)
+            if (strcmp(tmp->key.as.String, key.as.String) == 0)
                 goto DEL;
             break;
-        case ARENA_INT_CONST:
-            if (tmp->key.as.ival == key.as.ival)
+        case ARENA_INT:
+            if (tmp->key.as.Int == key.as.Int)
                 goto DEL;
             break;
-        case ARENA_DOUBLE_CONST:
-            if (tmp->key.as.dval == key.as.dval)
+        case ARENA_DOUBLE:
+            if (tmp->key.as.Double == key.as.Double)
                 goto DEL;
             break;
-        case ARENA_CHAR_CONST:
-            if (tmp->key.as.ch == key.as.ch)
+        case ARENA_CHAR:
+            if (tmp->key.as.Char == key.as.Char)
                 goto DEL;
             break;
         }
@@ -144,19 +149,19 @@ void delete_entry(Table *t, arena key)
     switch (tmp->key.type)
     {
     case ARENA_STR:
-        if (strcmp(tmp->key.as.string, key.as.string) == 0)
+        if (strcmp(tmp->key.as.String, key.as.String) == 0)
             goto DEL_LAST;
         break;
-    case ARENA_INT_CONST:
-        if (tmp->key.as.ival == key.as.ival)
+    case ARENA_INT:
+        if (tmp->key.as.Int == key.as.Int)
             goto DEL_LAST;
         break;
-    case ARENA_DOUBLE_CONST:
-        if (tmp->key.as.dval == key.as.dval)
+    case ARENA_DOUBLE:
+        if (tmp->key.as.Double == key.as.Double)
             goto DEL_LAST;
         break;
-    case ARENA_CHAR_CONST:
-        if (tmp->key.as.ch == key.as.ch)
+    case ARENA_CHAR:
+        if (tmp->key.as.Char == key.as.Char)
             goto DEL_LAST;
         break;
     }
@@ -180,116 +185,87 @@ arena find_entry(Table *t, arena *hash)
 {
     Table a = *t;
     size_t index = hash->hash;
-    element entry = a[index].entry;
+    table entry = a[index];
 
     if (entry.key.type == ARENA_NULL)
-        return arena_null();
+        return Null();
 
-    if (!entry.next && (strcmp(entry.key.as.string, hash->as.string) == 0))
+    if (strcmp(entry.key.as.String, hash->as.String) == 0)
         return entry.val;
 
-    element *tmp = &entry;
+    Table tmp = entry.next;
 
     for (; tmp; tmp = tmp->next)
         switch (tmp->key.type)
         {
+        case ARENA_VAR:
         case ARENA_STR:
-            if (strcmp(tmp->key.as.string, hash->as.string) == 0)
+            if (strcmp(tmp->key.as.String, hash->as.String) == 0)
                 return tmp->val;
             break;
-        case ARENA_INT_CONST:
-            if (tmp->key.as.ival == hash->as.ival)
+        case ARENA_INT:
+            if (tmp->key.as.Int == hash->as.Int)
                 return tmp->val;
             break;
-        case ARENA_DOUBLE_CONST:
-            if (tmp->key.as.dval == hash->as.dval)
+        case ARENA_DOUBLE:
+            if (tmp->key.as.Double == hash->as.Double)
                 return tmp->val;
             break;
-        case ARENA_CHAR_CONST:
-            if (tmp->key.as.ch == hash->as.ch)
+        case ARENA_CHAR:
+            if (tmp->key.as.Char == hash->as.Char)
                 return tmp->val;
             break;
         }
 
-    return arena_null();
+    return Null();
 }
 
-void alloc_entry(element **e, element el)
+void alloc_entry(Table *e, table el)
 {
-    element *tmp = *e;
+    Table tmp = *e;
 
     if (!tmp)
     {
-        *e = alloc_ptr(sizeof(element));
+        *e = alloc_ptr(sizeof(table));
         **e = el;
         return;
     }
     for (; tmp->next; tmp = tmp->next)
         ;
-    tmp->next = alloc_ptr(sizeof(element));
+    tmp->next = alloc_ptr(sizeof(table));
     *tmp->next = el;
     tmp->next->prev = tmp;
 }
 
-element *alloc_entry_ptr(size_t size)
+table new_entry(table t)
 {
-    element *el = alloc_ptr(size);
-    el->next = NULL;
-    el->prev = NULL;
-    el->size = size;
-    return el + 1;
+    table el;
+    el.key = t.key;
+    el.val = t.val;
+    el.next = t.next;
+    el.prev = t.prev;
+    el.size = t.key.size + t.val.size;
+    return el;
 }
 
-void free_entry_ptr(element *e)
+table entry(arena key, arena val)
 {
-    if (!(e - 1))
-        return;
-
-    size_t size = (e - 1)->size;
-
-    for (size_t i = 0; i < size; i++)
-    {
-        arena_free(&e->key);
-        arena_free(&e->val);
-    }
-
-    (e - 1)->size = 0;
-    --e;
-    e = NULL;
-}
-
-element eentry(arena key, arena val)
-{
-    element el;
+    table el;
     el.key = key;
     el.val = val;
     el.next = NULL;
     el.prev = NULL;
-    el.size = 0;
+    el.size = key.size + val.size;
     return el;
 }
 
-element new_entry(arena *key, arena *val, size_t size)
-{
-    element el;
-    el.key = *key;
-    size_t h = hash(*key, size);
-    el.key.hash = h;
-    key->hash = h;
-    el.val = *val;
-    el.next = NULL;
-    el.prev = NULL;
-    el.size = size;
-    return el;
-}
-
-arena arena_var(const char *str)
+arena Var(const char *str, size_t table_size)
 {
     size_t size = strlen(str);
-    arena ar = arena_alloc(sizeof(char) * (size), ARENA_VAR);
-    memcpy(ar.as.string, str, size);
-    ar.as.string[size] = '\0';
-    size_t h = hash(ar, TABLE_SIZE * sizeof(table));
+    arena ar = arena_alloc(size, ARENA_VAR);
+    memcpy(ar.as.String, str, size);
+    ar.as.String[size] = '\0';
+    size_t h = hash(ar, table_size - 1);
     ar.hash = h;
     ar.type = ARENA_VAR;
     return ar;
@@ -302,26 +278,26 @@ size_t hash(arena key, size_t size)
     switch (key.type)
     {
     case ARENA_VAR:
-        for (char *s = key.as.string; *s; s++)
+        for (char *s = key.as.String; *s; s++)
         {
             index ^= (int)*s;
             index *= 16777619;
         }
         break;
-    case ARENA_INT_CONST:
-        index ^= key.as.ival;
+    case ARENA_INT:
+        index ^= key.as.Int;
         index = (index * 16777669);
         break;
-    case ARENA_DOUBLE_CONST:
-        index ^= ((int)key.as.dval);
+    case ARENA_DOUBLE:
+        index ^= ((int)key.as.Double);
         index = (index * 16777420);
         break;
-    case ARENA_LLINT_CONST:
-        index ^= key.as.llint;
+    case ARENA_LONG:
+        index ^= key.as.Long;
         index = (index * 16776969);
         break;
-    case ARENA_CHAR_CONST:
-        index ^= key.as.ch;
+    case ARENA_CHAR:
+        index ^= key.as.Char;
         index = (index * 16742069);
         break;
     }

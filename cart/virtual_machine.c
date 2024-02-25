@@ -1,11 +1,9 @@
 #include "compiler.h"
 #include "arena_math.h"
-#include "virtual_machine.h"
 #include <stdarg.h>
 
 static void check_stack_size();
 static void reset_stack();
-static vm machine;
 
 void initVM()
 {
@@ -84,20 +82,20 @@ static arena _neg(arena n)
         ar = find_entry(&machine.d.map, &n);
     switch (ar.type)
     {
-    case ARENA_DOUBLE_CONST:
-        ar.as.dval = -ar.as.dval;
+    case ARENA_DOUBLE:
+        ar.as.Double = -ar.as.Double;
         break;
-    case ARENA_INT_CONST:
-        ar.as.ival = -ar.as.ival;
+    case ARENA_INT:
+        ar.as.Int = -ar.as.Int;
         break;
-    case ARENA_LLINT_CONST:
-        ar.as.llint = -ar.as.llint;
+    case ARENA_LONG:
+        ar.as.Long = -ar.as.Long;
         break;
     case ARENA_BOOL:
-        ar.as.boolean = !ar.as.boolean;
+        ar.as.Bool = !ar.as.Bool;
         break;
     case ARENA_NULL:
-        return arena_bool(true);
+        return Bool(true);
     default:
         runtime_error("ERROR: negation type mismatch");
     }
@@ -114,14 +112,14 @@ static arena _add(arena a, arena b)
 
     switch (ar2.type)
     {
-    case ARENA_CHAR_CONST:
-        return add_arena_char(ar2.as.ch, ar1);
-    case ARENA_DOUBLE_CONST:
-        return add_arena_double(ar2.as.dval, ar1);
-    case ARENA_INT_CONST:
-        return add_arena_int(ar2.as.ival, ar1);
-    case ARENA_LLINT_CONST:
-        return add_arena_llint(ar2.as.llint, ar1);
+    case ARENA_CHAR:
+        return add_arena_char(ar2.as.Char, ar1);
+    case ARENA_DOUBLE:
+        return add_arena_double(ar2.as.Double, ar1);
+    case ARENA_INT:
+        return add_arena_int(ar2.as.Int, ar1);
+    case ARENA_LONG:
+        return add_arena_long(ar2.as.Long, ar1);
     case ARENA_STR:
         return append(ar2, ar1);
     }
@@ -138,14 +136,14 @@ static arena _sub(arena a, arena b)
 
     switch (ar2.type)
     {
-    case ARENA_DOUBLE_CONST:
-        return sub_arena_double(ar2.as.dval, ar1);
-    case ARENA_INT_CONST:
-        return sub_arena_int(ar2.as.ival, ar1);
-    case ARENA_CHAR_CONST:
-        return sub_arena_char(ar2.as.ch, ar1);
-    case ARENA_LLINT_CONST:
-        return sub_arena_llint(ar2.as.llint, ar1);
+    case ARENA_DOUBLE:
+        return sub_arena_double(ar2.as.Double, ar1);
+    case ARENA_INT:
+        return sub_arena_int(ar2.as.Int, ar1);
+    case ARENA_CHAR:
+        return sub_arena_char(ar2.as.Char, ar1);
+    case ARENA_LONG:
+        return sub_arena_long(ar2.as.Long, ar1);
     }
     return ar2;
 }
@@ -160,14 +158,14 @@ static arena _mul(arena a, arena b)
 
     switch (ar1.type)
     {
-    case ARENA_DOUBLE_CONST:
-        return mul_arena_double(ar1.as.dval, ar2);
-    case ARENA_CHAR_CONST:
-        return mul_arena_char(ar1.as.ch, ar2);
-    case ARENA_INT_CONST:
-        return mul_arena_int(ar1.as.ival, ar2);
-    case ARENA_LLINT_CONST:
-        return mul_arena_llint(ar1.as.llint, ar2);
+    case ARENA_DOUBLE:
+        return mul_arena_double(ar1.as.Double, ar2);
+    case ARENA_CHAR:
+        return mul_arena_char(ar1.as.Char, ar2);
+    case ARENA_INT:
+        return mul_arena_int(ar1.as.Int, ar2);
+    case ARENA_LONG:
+        return add_arena_long(ar1.as.Long, ar2);
     }
     return ar1;
 }
@@ -182,14 +180,14 @@ static arena _div(arena a, arena b)
 
     switch (ar2.type)
     {
-    case ARENA_CHAR_CONST:
-        return div_arena_char(ar2.as.ch, ar1);
-    case ARENA_DOUBLE_CONST:
-        return div_arena_double(ar2.as.dval, ar1);
-    case ARENA_INT_CONST:
-        return div_arena_int(ar2.as.ival, ar1);
-    case ARENA_LLINT_CONST:
-        return div_arena_llint(ar2.as.llint, ar1);
+    case ARENA_CHAR:
+        return div_arena_char(ar2.as.Char, ar1);
+    case ARENA_DOUBLE:
+        return div_arena_double(ar2.as.Double, ar1);
+    case ARENA_INT:
+        return div_arena_int(ar2.as.Int, ar1);
+    case ARENA_LONG:
+        return add_arena_long(ar2.as.Long, ar1);
     }
     return ar2;
 }
@@ -204,12 +202,12 @@ static arena _mod(arena a, arena b)
 
     switch (ar2.type)
     {
-    case ARENA_CHAR_CONST:
-        return mod_arena_char(ar2.as.ch, ar1);
-    case ARENA_INT_CONST:
-        return mod_arena_int(ar2.as.ival, ar1);
-    case ARENA_LLINT_CONST:
-        return mod_arena_llint(ar2.as.llint, ar1);
+    case ARENA_CHAR:
+        return mod_arena_char(ar2.as.Char, ar1);
+    case ARENA_INT:
+        return mod_arena_int(ar2.as.Int, ar1);
+    case ARENA_LONG:
+        return add_arena_long(ar2.as.Long, ar1);
     }
 
     return ar2;
@@ -225,23 +223,23 @@ static arena _eq(arena a, arena b)
 
     switch (ar2.type)
     {
-    case ARENA_INT_CONST:
-        return int_eq(ar2.as.ival, ar1);
-    case ARENA_DOUBLE_CONST:
-        return double_eq(ar2.as.dval, ar1);
-    case ARENA_LLINT_CONST:
-        return llint_eq(ar2.as.llint, ar1);
-    case ARENA_CHAR_CONST:
-        return char_eq(ar2.as.ch, ar1);
+    case ARENA_INT:
+        return int_eq(ar2.as.Int, ar1);
+    case ARENA_DOUBLE:
+        return double_eq(ar2.as.Double, ar1);
+    case ARENA_LONG:
+        return long_eq(ar2.as.Long, ar1);
+    case ARENA_CHAR:
+        return char_eq(ar2.as.Char, ar1);
     case ARENA_STR:
         return string_eq(ar2, ar1);
     case ARENA_NULL:
         switch (ar1.type)
         {
         case ARENA_BOOL:
-            return arena_bool(ar1.as.boolean ? false : true);
+            return Bool(ar1.as.Bool ? false : true);
         case ARENA_NULL:
-            return arena_bool(ar1.as.boolean == ar2.as.boolean);
+            return Bool(ar1.as.Bool == ar2.as.Bool);
         default:
             runtime_error("ERROR: Comparison type mismatch\n");
         }
@@ -249,9 +247,9 @@ static arena _eq(arena a, arena b)
         switch (ar1.type)
         {
         case ARENA_BOOL:
-            return arena_bool(ar1.as.boolean == ar2.as.boolean);
+            return Bool(ar1.as.Bool == ar2.as.Bool);
         case ARENA_NULL:
-            return arena_bool(ar2.as.boolean ? false : true);
+            return Bool(ar2.as.Bool ? false : true);
         default:
             runtime_error("ERROR: Comparison type mismatch\n");
         }
@@ -268,23 +266,23 @@ static arena _ne(arena a, arena b)
 
     switch (ar2.type)
     {
-    case ARENA_INT_CONST:
-        return int_ne(ar2.as.ival, ar1);
-    case ARENA_DOUBLE_CONST:
-        return double_ne(ar2.as.dval, ar1);
-    case ARENA_LLINT_CONST:
-        return llint_ne(ar2.as.llint, ar1);
-    case ARENA_CHAR_CONST:
-        return char_ne(ar2.as.ch, ar1);
+    case ARENA_INT:
+        return int_ne(ar2.as.Int, ar1);
+    case ARENA_DOUBLE:
+        return double_ne(ar2.as.Double, ar1);
+    case ARENA_LONG:
+        return long_ne(ar2.as.Long, ar1);
+    case ARENA_CHAR:
+        return char_ne(ar2.as.Char, ar1);
     case ARENA_STR:
         return string_ne(ar2, ar1);
     case ARENA_NULL:
         switch (ar1.type)
         {
         case ARENA_BOOL:
-            return arena_bool(ar1.as.boolean ? true : false);
+            return Bool(ar1.as.Bool ? true : false);
         case ARENA_NULL:
-            return arena_bool(ar1.as.boolean != ar2.as.boolean);
+            return Bool(ar1.as.Bool != ar2.as.Bool);
         default:
             runtime_error("ERROR: Comparison type mismatch\n");
         }
@@ -292,9 +290,9 @@ static arena _ne(arena a, arena b)
         switch (ar1.type)
         {
         case ARENA_BOOL:
-            return arena_bool(ar1.as.boolean != ar2.as.boolean);
+            return Bool(ar1.as.Bool != ar2.as.Bool);
         case ARENA_NULL:
-            return arena_bool(ar2.as.boolean ? true : false);
+            return Bool(ar2.as.Bool ? true : false);
         default:
             runtime_error("ERROR: Comparison type mismatch\n");
         }
@@ -312,14 +310,14 @@ static arena _lt(arena a, arena b)
 
     switch (ar2.type)
     {
-    case ARENA_INT_CONST:
-        return int_lt(ar2.as.ival, ar1);
-    case ARENA_DOUBLE_CONST:
-        return double_lt(ar2.as.dval, ar1);
-    case ARENA_LLINT_CONST:
-        return llint_lt(ar2.as.llint, ar1);
-    case ARENA_CHAR_CONST:
-        return char_lt(ar2.as.ch, ar1);
+    case ARENA_INT:
+        return int_lt(ar2.as.Int, ar1);
+    case ARENA_DOUBLE:
+        return double_lt(ar2.as.Double, ar1);
+    case ARENA_LONG:
+        return long_lt(ar2.as.Long, ar1);
+    case ARENA_CHAR:
+        return char_lt(ar2.as.Char, ar1);
     case ARENA_STR:
         return string_lt(ar2, ar1);
     }
@@ -336,14 +334,14 @@ static arena _le(arena a, arena b)
 
     switch (ar2.type)
     {
-    case ARENA_INT_CONST:
-        return int_le(ar2.as.ival, ar1);
-    case ARENA_DOUBLE_CONST:
-        return double_le(ar2.as.dval, ar1);
-    case ARENA_LLINT_CONST:
-        return llint_le(ar2.as.llint, ar1);
-    case ARENA_CHAR_CONST:
-        return char_le(ar2.as.ch, ar1);
+    case ARENA_INT:
+        return int_le(ar2.as.Int, ar1);
+    case ARENA_DOUBLE:
+        return double_le(ar2.as.Double, ar1);
+    case ARENA_LONG:
+        return long_le(ar2.as.Long, ar1);
+    case ARENA_CHAR:
+        return char_le(ar2.as.Char, ar1);
     case ARENA_STR:
         return string_le(ar2, ar1);
     }
@@ -360,14 +358,14 @@ static arena _gt(arena a, arena b)
 
     switch (ar2.type)
     {
-    case ARENA_INT_CONST:
-        return int_gt(ar2.as.ival, ar1);
-    case ARENA_DOUBLE_CONST:
-        return double_gt(ar2.as.dval, ar1);
-    case ARENA_LLINT_CONST:
-        return llint_gt(ar2.as.llint, ar1);
-    case ARENA_CHAR_CONST:
-        return char_gt(ar2.as.ch, ar1);
+    case ARENA_INT:
+        return int_gt(ar2.as.Int, ar1);
+    case ARENA_DOUBLE:
+        return double_gt(ar2.as.Double, ar1);
+    case ARENA_LONG:
+        return long_gt(ar2.as.Long, ar1);
+    case ARENA_CHAR:
+        return char_gt(ar2.as.Char, ar1);
     case ARENA_STR:
         return string_gt(ar2, ar1);
     }
@@ -383,14 +381,14 @@ static arena _ge(arena a, arena b)
 
     switch (ar2.type)
     {
-    case ARENA_INT_CONST:
-        return int_ge(ar2.as.ival, ar1);
-    case ARENA_DOUBLE_CONST:
-        return double_ge(ar2.as.dval, ar1);
-    case ARENA_LLINT_CONST:
-        return llint_ge(ar2.as.llint, ar1);
-    case ARENA_CHAR_CONST:
-        return char_ge(ar2.as.ch, ar1);
+    case ARENA_INT:
+        return int_ge(ar2.as.Int, ar1);
+    case ARENA_DOUBLE:
+        return double_ge(ar2.as.Double, ar1);
+    case ARENA_LONG:
+        return long_ge(ar2.as.Long, ar1);
+    case ARENA_CHAR:
+        return char_ge(ar2.as.Char, ar1);
     case ARENA_STR:
         return string_ge(ar2, ar1);
     }
@@ -408,9 +406,9 @@ static arena _or(arena a, arena b)
     if (ar1.type != ARENA_BOOL || ar2.type != ARENA_BOOL)
     {
         runtime_error("ERROR: or type mismatch");
-        return arena_bool(false);
+        return Bool(false);
     }
-    return arena_bool(ar1.as.boolean || ar2.as.boolean);
+    return Bool(ar1.as.Bool || ar2.as.Bool);
 }
 static arena _and(arena a, arena b)
 {
@@ -423,9 +421,9 @@ static arena _and(arena a, arena b)
     if (ar1.type != ARENA_BOOL || ar2.type != ARENA_BOOL)
     {
         runtime_error("ERROR: or type mismatch");
-        return arena_bool(false);
+        return Bool(false);
     }
-    return arena_bool(ar2.as.boolean && ar1.as.boolean);
+    return Bool(ar2.as.Bool && ar1.as.Bool);
 }
 
 static arena _assign(arena a, arena b)
@@ -452,7 +450,7 @@ static arena _assign(arena a, arena b)
 Interpretation run()
 {
 
-#define READ_BYTE() (*machine.ip.as.bytes++)
+#define READ_BYTE() (*machine.ip.as.Bytes++)
 #define READ_CONSTANT() (machine.ch->constants.vals[READ_BYTE()])
 #define POP() (*--machine.stack_top)
 
@@ -465,7 +463,7 @@ Interpretation run()
         for (arena *v = machine.stack; v < machine.stack_top; v++)
             print(*v);
         disassemble_instruction(machine.ch,
-                                (int)(machine.ip.as.bytes - machine.ch->op_codes.as.bytes));
+                                (int)(machine.ip.as.Bytes - machine.ch->op_codes.as.Bytes));
 #endif
 
         switch (instruction = READ_BYTE())
@@ -516,7 +514,7 @@ Interpretation run()
             push(_and(POP(), POP()));
             break;
         case OP_NULL:
-            push(arena_null());
+            push(Null());
             break;
         case OP_ASSIGN:
             push(_assign(POP(), POP()));

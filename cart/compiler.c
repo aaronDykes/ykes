@@ -279,19 +279,19 @@ static void emit_constant(arena ar)
 static void dval()
 {
     double val = strtod(parser.pre.start, NULL);
-    emit_constant(arena_double(val));
+    emit_constant(Double(val));
 }
 static void ival()
 {
-    emit_constant(arena_int(atoi(parser.pre.start)));
+    emit_constant(Int(atoi(parser.pre.start)));
 }
 static void llint()
 {
-    emit_constant(arena_llint(atoll(parser.pre.start)));
+    emit_constant(Long(atoll(parser.pre.start)));
 }
 static void ch()
 {
-    emit_constant(arena_char(*++parser.pre.start));
+    emit_constant(Char(*++parser.pre.start));
 }
 
 static void boolean()
@@ -299,14 +299,14 @@ static void boolean()
     if (*parser.pre.start == 'n')
         emit_byte(OP_NULL);
     else
-        emit_constant(arena_bool(*parser.pre.start == 't' ? true : false));
+        emit_constant(Bool(*parser.pre.start == 't' ? true : false));
 }
 static void id()
 {
 
     char *ch = parser.pre.start;
     ch[parser.pre.size] = '\0';
-    arena tmp = arena_var(ch);
+    arena tmp = Var(ch, machine.d.capacity);
 
     emit_constant(tmp);
 }
@@ -317,7 +317,7 @@ static void cstr()
     char *ch = ++parser.pre.start;
     ch[parser.pre.size - 2] = '\0';
 
-    emit_constant(string(ch));
+    emit_constant(String(ch));
 }
 
 static void end_compile()

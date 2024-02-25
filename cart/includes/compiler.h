@@ -2,6 +2,7 @@
 #define _YKES_COMPILER_H
 #include "chunk.h"
 #include "scanner.h"
+#include "virtual_machine.h"
 
 struct Parser
 {
@@ -38,6 +39,7 @@ struct parse_rule
 
 typedef struct parse_rule PRule;
 typedef struct Parser Parser;
+vm machine;
 
 bool compile(const char *src, Chunk ch);
 #endif

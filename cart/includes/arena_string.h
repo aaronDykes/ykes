@@ -4,7 +4,7 @@
 
 arena prepend_int_to_str(arena s, arena a);
 arena prepend_char_to_str(arena s, arena a);
-arena prepend_llint_to_str(arena s, arena a);
+arena prepend_long_to_str(arena s, arena a);
 
 arena append(arena s, arena ar);
 

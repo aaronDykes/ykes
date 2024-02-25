@@ -2,9 +2,6 @@
 #define _ARENA_TABLE_H
 #include "arena_memory.h"
 
-#define INC_SIZE(capacity) \
-    ((capacity) < CAPACITY ? CAPACITY : CAPACITY * INC)
-
 #define GROW_TABLE(ar, size) \
     arena_realloc_table(ar, size)
 
@@ -14,44 +11,33 @@
 #define HASH_SIZE(X) \
     (250 * sizeof(X))
 
-struct element
+struct hash_arena
 {
     size_t size;
     arena key;
     arena val;
-    struct element *next;
-    struct element *prev;
-};
-
-typedef struct element element;
-
-struct hash_arena
-{
-    size_t size;
-    element entry;
+    struct hash_arena *next;
+    struct hash_arena *prev;
 };
 
 typedef struct hash_arena table;
 typedef table *Table;
 
-void insert_entry(Table *t, element entry);
+void insert_entry(Table *t, table entry);
 void delete_entry(Table *t, arena key);
 
 arena find_entry(Table *t, arena *key);
-element new_entry(arena *key, arena *val, size_t size);
-element eentry(arena key, arena val);
+table entry(arena key, arena val);
+table new_entry(table t);
 
 Table arena_alloc_table(size_t size);
 Table arena_realloc_table(Table t, size_t size);
 
-void alloc_entry(element **e, element el);
-
-element *alloc_entry_ptr(size_t size);
-void free_entry_ptr(element *e);
+void alloc_entry(Table *e, table el);
 void arena_free_table(Table t);
-void arena_free_entry(element *entry);
+void arena_free_entry(Table entry);
 
-arena arena_var(const char *str);
+arena Var(const char *str, size_t table_size);
 size_t hash(arena key, size_t size);
 
 #endif
