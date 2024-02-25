@@ -107,7 +107,7 @@ static arena _add(arena a, arena b)
     arena ar1 = a, ar2 = b;
     if (a.type == ARENA_VAR)
         ar1 = find_entry(&machine.d.map, &a);
-    else if (b.type == ARENA_VAR)
+    if (b.type == ARENA_VAR)
         ar2 = find_entry(&machine.d.map, &b);
 
     switch (ar2.type)
@@ -131,7 +131,7 @@ static arena _sub(arena a, arena b)
     arena ar1 = a, ar2 = b;
     if (a.type == ARENA_VAR)
         ar1 = find_entry(&machine.d.map, &a);
-    else if (b.type == ARENA_VAR)
+    if (b.type == ARENA_VAR)
         ar2 = find_entry(&machine.d.map, &b);
 
     switch (ar2.type)
@@ -153,7 +153,7 @@ static arena _mul(arena a, arena b)
     arena ar1 = a, ar2 = b;
     if (a.type == ARENA_VAR)
         ar1 = find_entry(&machine.d.map, &a);
-    else if (b.type == ARENA_VAR)
+    if (b.type == ARENA_VAR)
         ar2 = find_entry(&machine.d.map, &b);
 
     switch (ar1.type)
@@ -175,7 +175,7 @@ static arena _div(arena a, arena b)
     arena ar1 = a, ar2 = b;
     if (a.type == ARENA_VAR)
         ar1 = find_entry(&machine.d.map, &a);
-    else if (b.type == ARENA_VAR)
+    if (b.type == ARENA_VAR)
         ar2 = find_entry(&machine.d.map, &b);
 
     switch (ar2.type)
@@ -197,7 +197,7 @@ static arena _mod(arena a, arena b)
     arena ar1 = a, ar2 = b;
     if (a.type == ARENA_VAR)
         ar1 = find_entry(&machine.d.map, &a);
-    else if (b.type == ARENA_VAR)
+    if (b.type == ARENA_VAR)
         ar2 = find_entry(&machine.d.map, &b);
 
     switch (ar2.type)
@@ -218,7 +218,7 @@ static arena _eq(arena a, arena b)
     arena ar1 = a, ar2 = b;
     if (a.type == ARENA_VAR)
         ar1 = find_entry(&machine.d.map, &a);
-    else if (b.type == ARENA_VAR)
+    if (b.type == ARENA_VAR)
         ar2 = find_entry(&machine.d.map, &b);
 
     switch (ar2.type)
@@ -261,7 +261,7 @@ static arena _ne(arena a, arena b)
     arena ar1 = a, ar2 = b;
     if (a.type == ARENA_VAR)
         ar1 = find_entry(&machine.d.map, &a);
-    else if (b.type == ARENA_VAR)
+    if (b.type == ARENA_VAR)
         ar2 = find_entry(&machine.d.map, &b);
 
     switch (ar2.type)
@@ -305,7 +305,7 @@ static arena _lt(arena a, arena b)
     arena ar1 = a, ar2 = b;
     if (a.type == ARENA_VAR)
         ar1 = find_entry(&machine.d.map, &a);
-    else if (b.type == ARENA_VAR)
+    if (b.type == ARENA_VAR)
         ar2 = find_entry(&machine.d.map, &b);
 
     switch (ar2.type)
@@ -329,7 +329,7 @@ static arena _le(arena a, arena b)
     arena ar1 = a, ar2 = b;
     if (a.type == ARENA_VAR)
         ar1 = find_entry(&machine.d.map, &a);
-    else if (b.type == ARENA_VAR)
+    if (b.type == ARENA_VAR)
         ar2 = find_entry(&machine.d.map, &b);
 
     switch (ar2.type)
@@ -353,7 +353,7 @@ static arena _gt(arena a, arena b)
     arena ar1 = a, ar2 = b;
     if (a.type == ARENA_VAR)
         ar1 = find_entry(&machine.d.map, &a);
-    else if (b.type == ARENA_VAR)
+    if (b.type == ARENA_VAR)
         ar2 = find_entry(&machine.d.map, &b);
 
     switch (ar2.type)
@@ -376,7 +376,7 @@ static arena _ge(arena a, arena b)
     arena ar1 = a, ar2 = b;
     if (a.type == ARENA_VAR)
         ar1 = find_entry(&machine.d.map, &a);
-    else if (b.type == ARENA_VAR)
+    if (b.type == ARENA_VAR)
         ar2 = find_entry(&machine.d.map, &b);
 
     switch (ar2.type)
@@ -400,14 +400,9 @@ static arena _or(arena a, arena b)
     arena ar1 = a, ar2 = b;
     if (a.type == ARENA_VAR)
         ar1 = find_entry(&machine.d.map, &a);
-    else if (b.type == ARENA_VAR)
+    if (b.type == ARENA_VAR)
         ar2 = find_entry(&machine.d.map, &b);
 
-    if (ar1.type != ARENA_BOOL || ar2.type != ARENA_BOOL)
-    {
-        runtime_error("ERROR: or type mismatch");
-        return Bool(false);
-    }
     return Bool(ar1.as.Bool || ar2.as.Bool);
 }
 static arena _and(arena a, arena b)
@@ -415,14 +410,9 @@ static arena _and(arena a, arena b)
     arena ar1 = a, ar2 = b;
     if (a.type == ARENA_VAR)
         ar1 = find_entry(&machine.d.map, &a);
-    else if (b.type == ARENA_VAR)
+    if (b.type == ARENA_VAR)
         ar2 = find_entry(&machine.d.map, &b);
 
-    if (ar1.type != ARENA_BOOL || ar2.type != ARENA_BOOL)
-    {
-        runtime_error("ERROR: or type mismatch");
-        return Bool(false);
-    }
     return Bool(ar2.as.Bool && ar1.as.Bool);
 }
 
@@ -430,9 +420,6 @@ static arena _assign(arena a, arena b)
 {
 
     arena tmp;
-
-    if (b.type != ARENA_VAR && a.type != ARENA_VAR)
-        return b;
 
     if (a.type == ARENA_VAR)
     {
@@ -476,6 +463,9 @@ Interpretation run()
             break;
         case OP_ADD:
             push(_add(POP(), POP()));
+            break;
+        case OP_POP:
+            POP();
             break;
         case OP_SUB:
             push(_sub(POP(), POP()));

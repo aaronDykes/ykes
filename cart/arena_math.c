@@ -132,13 +132,13 @@ arena add_arena_int(int ival, arena ar)
     case ARENA_STR:
         return prepend_int_to_str(Int(ival), ar);
     case ARENA_INT:
-        return Num(ival + ar.as.Int);
+        return Num((long long int)ival + ar.as.Int);
     case ARENA_DOUBLE:
         return Double((double)ival + ar.as.Double);
     case ARENA_LONG:
-        return Num(ival + ar.as.Long);
+        return Num((long long int)ival + ar.as.Long);
     case ARENA_CHAR:
-        return Num(ival + ar.as.Char);
+        return Num((long long int)ival + ar.as.Char);
     default:
         log_err("ERROR: addition type mismatch\n");
     }
@@ -166,11 +166,11 @@ arena mul_arena_int(int ival, arena ar)
     switch (ar.type)
     {
     case ARENA_INT:
-        return Num(ival * ar.as.Int);
+        return Num((long long int)ival * ar.as.Int);
     case ARENA_DOUBLE:
         return Double((double)ival * ar.as.Double);
     case ARENA_LONG:
-        return Num(ival * ar.as.Long);
+        return Num((long long int)ival * ar.as.Long);
     case ARENA_CHAR:
         return Num(ival * ar.as.Char);
     default:

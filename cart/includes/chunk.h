@@ -8,6 +8,8 @@ typedef enum
     OP_CONSTANT,
     OP_PRINT,
 
+    OP_POP,
+
     OP_ASSIGN,
     OP_NEG,
     OP_ADD,

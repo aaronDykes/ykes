@@ -1,2 +1,13 @@
-hello=(69*69+102323823) - (69 * 69) + " is a large number";
+foo=102323 - (69 * 69);
+bar=(69*69)+102323;
+
+
+
+hello= (69 * 69 * 2);
+hello=hello+foo;
+
+print hello == bar;
 print hello;
+print bar;
+
+

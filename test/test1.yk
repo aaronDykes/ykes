@@ -1,2 +1,8 @@
-hello="okay, " + " this is cool." + " I am a number";
+hello="okay," + " this is cool." + " I am a number";
+
+foo=69*420+2198337 / 10;
+
+bar=("okay, this is cool. I am a number" == hello) and foo > 420 and (foo / 420) > 420;
 print hello;
+print bar;
+print foo;

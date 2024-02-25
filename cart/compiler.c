@@ -137,6 +137,7 @@ static void statement()
     {
         expression();
         consume(TOKEN_CH_SEMI, "Expect `;` after expression.");
+        emit_byte(OP_POP);
     }
 }
 
