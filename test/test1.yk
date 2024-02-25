@@ -1,2 +1,2 @@
-hello="okay, " + " fuck my life." + " This is awkward";
+hello="okay, " + " this is cool." + " I am a number";
 print hello;
