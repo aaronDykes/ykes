@@ -131,8 +131,14 @@ static void declaration()
 }
 static void statement()
 {
+
     if (match(TOKEN_PRINT))
         print_statement();
+    else if (check(TOKEN_LINE_COMMENT) || check(TOKEN_NLINE_COMMENT))
+    {
+        advance_compiler();
+        emit_byte(OP_NOOP);
+    }
     else
     {
         expression();

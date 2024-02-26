@@ -98,18 +98,14 @@ void *alloc_ptr(size_t size)
 }
 Arena arena_alloc_arena(size_t size)
 {
-    Arena p = alloc_ptr(size + sizeof(arena));
+    Arena p = alloc_ptr((size * sizeof(arena)) + sizeof(arena));
 
-    p->size = (size + sizeof(arena)) / sizeof(arena);
-    p->length = (int)(size / sizeof(arena));
+    p->size = size + 1;
+    p->length = (int)size;
 
     return p + 1;
 }
 
-/**
- * TODO:
- * properly implement realloc
- */
 Arena arena_realloc_arena(Arena ar, size_t size)
 {
     Arena ptr = NULL;
@@ -125,7 +121,6 @@ Arena arena_realloc_arena(Arena ar, size_t size)
     }
 
     ptr = arena_alloc_arena(size);
-    size /= sizeof(arena);
 
     size_t new_size = (size <= (ar - 1)->size) ? size : (ar - 1)->size;
 

@@ -6,8 +6,11 @@ bar=(69*69)+102323;
 hello= (69 * 69 * 2);
 hello=hello+foo;
 
-print hello == bar;
+print hello == bar and hello == foo;
 print hello;
 print bar;
 
+aaron_dykes='A' + "aron " + 'D' + "ykes" + ": " + 169;
 
+print aaron_dykes;
+print aaron_dykes + ", " + "420";

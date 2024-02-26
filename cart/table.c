@@ -2,19 +2,19 @@
 
 void init_dict(Dict d)
 {
-    d->capacity = TABLE_SIZE;
+    d->capacity = 3;
     d->count = 0;
-    d->map = GROW_TABLE(NULL, sizeof(table) * d->capacity);
+    d->map = GROW_TABLE(NULL, d->capacity);
 }
 
 void write_dict(Dict d, arena *ar1, arena *ar2)
 {
-    int load_capacity = (int)(d->count * LOAD_FACTOR);
+    int load_capacity = (int)(d->capacity * LOAD_FACTOR);
 
-    if (load_capacity > d->capacity)
+    if (load_capacity < d->count + 1)
     {
         d->capacity = GROW_CAPACITY(d->capacity);
-        d->map = GROW_TABLE(d->map, sizeof(table) * d->capacity);
+        d->map = GROW_TABLE(d->map, d->capacity);
     }
     insert_entry(&d->map, entry(*ar1, *ar2));
     d->count++;

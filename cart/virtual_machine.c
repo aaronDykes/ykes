@@ -11,7 +11,7 @@ void initVM()
     initialize_global_memory(PAGE * 16);
     machine.max_size = STACK_SIZE;
     machine.current_size = 0;
-    machine.stack = GROW_ARENA(NULL, sizeof(arena) * STACK_SIZE);
+    machine.stack = GROW_ARENA(NULL, STACK_SIZE);
     init_dict(&machine.d);
     reset_stack();
 }
@@ -44,7 +44,7 @@ static void check_stack_size()
     if (machine.current_size + 1 >= machine.max_size)
     {
         machine.max_size *= INC;
-        machine.stack = GROW_ARENA(machine.stack, sizeof(arena) * machine.max_size);
+        machine.stack = GROW_ARENA(machine.stack, machine.max_size);
         reset_stack();
     }
 }

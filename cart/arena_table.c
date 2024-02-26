@@ -13,14 +13,13 @@ static void log_err(const char *format, ...)
 
 Table arena_alloc_table(size_t size)
 {
-    Table t = alloc_ptr(size + sizeof(table));
+    Table t = alloc_ptr((size * sizeof(table)) + sizeof(table));
 
-    size_t n = ((size + sizeof(table)) / sizeof(table));
-
+    size_t n = (size_t)size + 1;
     for (size_t i = 1; i < n; i++)
         t[i] = entry(Null(), Null());
 
-    t->size = n;
+    t->size = size;
     return t + 1;
 }
 
@@ -41,7 +40,6 @@ Table arena_realloc_table(Table t, size_t size)
     }
 
     ptr = arena_alloc_table(size);
-    size /= sizeof(table);
 
     size_t new_size = (size <= (t - 1)->size) ? size : (t - 1)->size;
 
@@ -84,7 +82,6 @@ void insert_entry(Table *t, table entry)
     table e = tmp[entry.key.hash];
     arena f;
     Table ptr = e.next;
-    char *c = e.key.as.String;
 
     if (e.key.type == ARENA_NULL)
     {
@@ -106,40 +103,29 @@ void insert_entry(Table *t, table entry)
         return;
     }
     for (; ptr; ptr = ptr->next)
-    {
         switch (ptr->key.type)
         {
         case ARENA_VAR:
         case ARENA_STR:
             if (strcmp(ptr->key.as.String, entry.key.as.String) == 0)
-            {
-                ptr->val = entry.val;
-                return;
-            }
-            return;
+                goto END;
+            break;
         case ARENA_INT:
             if (ptr->key.as.Int == entry.key.as.Int)
-            {
-                ptr->val = entry.val;
-                return;
-            }
+                goto END;
             break;
         case ARENA_DOUBLE:
             if (ptr->key.as.Double == entry.key.as.Double)
-            {
-                ptr->val = entry.val;
-                return;
-            }
+                goto END;
             break;
         case ARENA_CHAR:
             if (ptr->key.as.Char == entry.key.as.Char)
-            {
-                ptr->val = entry.val;
-                return;
-            }
+                goto END;
             break;
         }
-    }
+    return;
+END:
+    ptr->val = entry.val;
 }
 void delete_entry(Table *t, arena key)
 {

@@ -9,6 +9,7 @@ typedef enum
     OP_PRINT,
 
     OP_POP,
+    OP_PUSH,
 
     OP_ASSIGN,
     OP_NEG,

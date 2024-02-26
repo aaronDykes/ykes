@@ -6,15 +6,15 @@ void init_value_array(Value v)
 {
     v->capacity = ARENA_SIZE;
     v->count = 0;
-    v->vals = GROW_ARENA(NULL, sizeof(arena) * ARENA_SIZE);
+    v->vals = GROW_ARENA(NULL, ARENA_SIZE);
 }
 
 static void check_value_size(Value v)
 {
-    if (v->count + 1 >= v->capacity)
+    if (v->count + 1 > v->capacity)
     {
         v->capacity *= INC;
-        v->vals = GROW_ARENA(v->vals, sizeof(arena) * v->capacity);
+        v->vals = GROW_ARENA(v->vals, v->capacity);
     }
 }
 
