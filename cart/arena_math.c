@@ -1,8 +1,10 @@
 #include "arena_math.h"
+#include "arena_math_util.h"
+#include "arena_string.h"
 #include <stdio.h>
 #include <stdarg.h>
 
-static void log_err(const char *format, ...)
+void log_err(const char *format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -20,7 +22,7 @@ static arena Num(long long int range)
     return Null();
 }
 
-arena add_arena_char(char ch, arena ar)
+static arena add_arena_char(char ch, arena ar)
 {
     long long int test = 0;
     switch (ar.type)
@@ -40,7 +42,7 @@ arena add_arena_char(char ch, arena ar)
     }
     return ar;
 }
-arena sub_arena_char(char ch, arena ar)
+static arena sub_arena_char(char ch, arena ar)
 {
     long long int test = 0;
     switch (ar.type)
@@ -61,7 +63,7 @@ arena sub_arena_char(char ch, arena ar)
     }
     return ar;
 }
-arena mul_arena_char(char ch, arena ar)
+static arena mul_arena_char(char ch, arena ar)
 {
     long long int test = 0;
     switch (ar.type)
@@ -81,7 +83,7 @@ arena mul_arena_char(char ch, arena ar)
     }
     return ar;
 }
-arena div_arena_char(char ch, arena ar)
+static arena div_arena_char(char ch, arena ar)
 {
     switch (ar.type)
     {
@@ -109,7 +111,7 @@ ERR:
 
     return ar;
 }
-arena mod_arena_char(char ch, arena ar)
+static arena mod_arena_char(char ch, arena ar)
 {
     switch (ar.type)
     {
@@ -125,7 +127,7 @@ arena mod_arena_char(char ch, arena ar)
     return ar;
 }
 
-arena add_arena_int(int ival, arena ar)
+static arena add_arena_int(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -144,7 +146,7 @@ arena add_arena_int(int ival, arena ar)
     }
     return ar;
 }
-arena sub_arena_int(int ival, arena ar)
+static arena sub_arena_int(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -161,7 +163,7 @@ arena sub_arena_int(int ival, arena ar)
     }
     return ar;
 }
-arena mul_arena_int(int ival, arena ar)
+static arena mul_arena_int(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -178,7 +180,7 @@ arena mul_arena_int(int ival, arena ar)
     }
     return ar;
 }
-arena div_arena_int(int ival, arena ar)
+static arena div_arena_int(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -206,7 +208,7 @@ ERR:
 
     return ar;
 }
-arena mod_arena_int(int ival, arena ar)
+static arena mod_arena_int(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -222,7 +224,7 @@ arena mod_arena_int(int ival, arena ar)
     return ar;
 }
 
-arena add_arena_long(long long int llint, arena ar)
+static arena add_arena_long(long long int llint, arena ar)
 {
     switch (ar.type)
     {
@@ -241,7 +243,7 @@ arena add_arena_long(long long int llint, arena ar)
     }
     return ar;
 }
-arena sub_arena_long(long long int llint, arena ar)
+static arena sub_arena_long(long long int llint, arena ar)
 {
 
     switch (ar.type)
@@ -259,7 +261,7 @@ arena sub_arena_long(long long int llint, arena ar)
     }
     return ar;
 }
-arena mul_arena_long(long long int llint, arena ar)
+static arena mul_arena_long(long long int llint, arena ar)
 {
     switch (ar.type)
     {
@@ -276,7 +278,7 @@ arena mul_arena_long(long long int llint, arena ar)
     }
     return ar;
 }
-arena div_arena_long(long long int llint, arena ar)
+static arena div_arena_long(long long int llint, arena ar)
 {
     switch (ar.type)
     {
@@ -304,7 +306,7 @@ ERR:
 
     return ar;
 }
-arena mod_arena_long(long long int llint, arena ar)
+static arena mod_arena_long(long long int llint, arena ar)
 {
     switch (ar.type)
     {
@@ -320,7 +322,7 @@ arena mod_arena_long(long long int llint, arena ar)
     return ar;
 }
 
-arena add_arena_double(double dval, arena ar)
+static arena add_arena_double(double dval, arena ar)
 {
     switch (ar.type)
     {
@@ -337,7 +339,7 @@ arena add_arena_double(double dval, arena ar)
     }
     return ar;
 }
-arena sub_arena_double(double dval, arena ar)
+static arena sub_arena_double(double dval, arena ar)
 {
     switch (ar.type)
     {
@@ -354,7 +356,7 @@ arena sub_arena_double(double dval, arena ar)
     }
     return ar;
 }
-arena mul_arena_double(double dval, arena ar)
+static arena mul_arena_double(double dval, arena ar)
 {
     switch (ar.type)
     {
@@ -371,7 +373,7 @@ arena mul_arena_double(double dval, arena ar)
     }
     return ar;
 }
-arena div_arena_double(double dval, arena ar)
+static arena div_arena_double(double dval, arena ar)
 {
     switch (ar.type)
     {
@@ -400,7 +402,7 @@ ERR:
     return ar;
 }
 
-arena char_eq(char ch, arena ar)
+static arena char_eq(char ch, arena ar)
 {
     switch (ar.type)
     {
@@ -419,7 +421,7 @@ arena char_eq(char ch, arena ar)
     }
     return Bool(false);
 }
-arena char_ne(char ch, arena ar)
+static arena char_ne(char ch, arena ar)
 {
     switch (ar.type)
     {
@@ -438,7 +440,7 @@ arena char_ne(char ch, arena ar)
     }
     return Bool(false);
 }
-arena char_lt(char ch, arena ar)
+static arena char_lt(char ch, arena ar)
 {
     switch (ar.type)
     {
@@ -455,7 +457,7 @@ arena char_lt(char ch, arena ar)
     }
     return Bool(false);
 }
-arena char_le(char ch, arena ar)
+static arena char_le(char ch, arena ar)
 {
     switch (ar.type)
     {
@@ -473,7 +475,7 @@ arena char_le(char ch, arena ar)
 
     return Bool(false);
 }
-arena char_gt(char ch, arena ar)
+static arena char_gt(char ch, arena ar)
 {
     switch (ar.type)
     {
@@ -491,7 +493,7 @@ arena char_gt(char ch, arena ar)
 
     return Bool(false);
 }
-arena char_ge(char ch, arena ar)
+static arena char_ge(char ch, arena ar)
 {
     switch (ar.type)
     {
@@ -509,7 +511,7 @@ arena char_ge(char ch, arena ar)
     return Bool(false);
 }
 
-arena int_eq(int ival, arena ar)
+static arena int_eq(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -526,7 +528,7 @@ arena int_eq(int ival, arena ar)
     }
     return Bool(false);
 }
-arena int_ne(int ival, arena ar)
+static arena int_ne(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -543,7 +545,7 @@ arena int_ne(int ival, arena ar)
     }
     return Bool(false);
 }
-arena int_lt(int ival, arena ar)
+static arena int_lt(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -560,7 +562,7 @@ arena int_lt(int ival, arena ar)
     }
     return Bool(false);
 }
-arena int_le(int ival, arena ar)
+static arena int_le(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -577,7 +579,7 @@ arena int_le(int ival, arena ar)
     }
     return Bool(false);
 }
-arena int_gt(int ival, arena ar)
+static arena int_gt(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -594,7 +596,7 @@ arena int_gt(int ival, arena ar)
     }
     return Bool(false);
 }
-arena int_ge(int ival, arena ar)
+static arena int_ge(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -612,7 +614,7 @@ arena int_ge(int ival, arena ar)
     return Bool(false);
 }
 
-arena long_eq(long long int llint, arena ar)
+static arena long_eq(long long int llint, arena ar)
 {
     switch (ar.type)
     {
@@ -629,7 +631,7 @@ arena long_eq(long long int llint, arena ar)
     }
     return Bool(false);
 }
-arena long_ne(long long int llint, arena ar)
+static arena long_ne(long long int llint, arena ar)
 {
     switch (ar.type)
     {
@@ -646,7 +648,7 @@ arena long_ne(long long int llint, arena ar)
     }
     return Bool(false);
 }
-arena long_lt(long long int llint, arena ar)
+static arena long_lt(long long int llint, arena ar)
 {
     switch (ar.type)
     {
@@ -663,7 +665,7 @@ arena long_lt(long long int llint, arena ar)
     }
     return Bool(false);
 }
-arena long_le(long long int llint, arena ar)
+static arena long_le(long long int llint, arena ar)
 {
     switch (ar.type)
     {
@@ -680,7 +682,7 @@ arena long_le(long long int llint, arena ar)
     }
     return Bool(false);
 }
-arena long_gt(long long int llint, arena ar)
+static arena long_gt(long long int llint, arena ar)
 {
     switch (ar.type)
     {
@@ -697,7 +699,7 @@ arena long_gt(long long int llint, arena ar)
     }
     return Bool(false);
 }
-arena long_ge(long long int llint, arena ar)
+static arena long_ge(long long int llint, arena ar)
 {
     switch (ar.type)
     {
@@ -715,7 +717,7 @@ arena long_ge(long long int llint, arena ar)
     return Bool(false);
 }
 
-arena double_eq(double dval, arena ar)
+static arena double_eq(double dval, arena ar)
 {
     switch (ar.type)
     {
@@ -732,7 +734,7 @@ arena double_eq(double dval, arena ar)
     }
     return Bool(false);
 }
-arena double_ne(double dval, arena ar)
+static arena double_ne(double dval, arena ar)
 {
     switch (ar.type)
     {
@@ -749,7 +751,7 @@ arena double_ne(double dval, arena ar)
     }
     return Bool(false);
 }
-arena double_lt(double dval, arena ar)
+static arena double_lt(double dval, arena ar)
 {
     switch (ar.type)
     {
@@ -766,7 +768,7 @@ arena double_lt(double dval, arena ar)
     }
     return Bool(false);
 }
-arena double_le(double dval, arena ar)
+static arena double_le(double dval, arena ar)
 {
     switch (ar.type)
     {
@@ -783,7 +785,7 @@ arena double_le(double dval, arena ar)
     }
     return Bool(false);
 }
-arena double_gt(double dval, arena ar)
+static arena double_gt(double dval, arena ar)
 {
     switch (ar.type)
     {
@@ -800,7 +802,7 @@ arena double_gt(double dval, arena ar)
     }
     return Bool(false);
 }
-arena double_ge(double dval, arena ar)
+static arena double_ge(double dval, arena ar)
 {
     switch (ar.type)
     {
@@ -816,4 +818,274 @@ arena double_ge(double dval, arena ar)
         log_err("ERROR: comparison type mismatch");
     }
     return Bool(false);
+}
+
+arena _neg(arena n)
+{
+    arena ar = n;
+
+    switch (ar.type)
+    {
+    case ARENA_DOUBLE:
+        ar.as.Double = -ar.as.Double;
+        break;
+    case ARENA_INT:
+        ar.as.Int = -ar.as.Int;
+        break;
+    case ARENA_LONG:
+        ar.as.Long = -ar.as.Long;
+        break;
+    case ARENA_BOOL:
+        ar.as.Bool = !ar.as.Bool;
+        break;
+    case ARENA_NULL:
+        return Bool(true);
+    default:
+        log_err("ERROR: negation type mismatch");
+    }
+    return ar;
+}
+arena _add(arena a, arena b)
+{
+
+    switch (b.type)
+    {
+    case ARENA_CHAR:
+        return add_arena_char(b.as.Char, a);
+    case ARENA_DOUBLE:
+        return add_arena_double(b.as.Double, a);
+    case ARENA_INT:
+        return add_arena_int(b.as.Int, a);
+    case ARENA_LONG:
+        return add_arena_long(b.as.Long, a);
+    case ARENA_STR:
+        return append(b, a);
+    }
+    return a;
+}
+
+arena _sub(arena a, arena b)
+{
+
+    switch (b.type)
+    {
+    case ARENA_DOUBLE:
+        return sub_arena_double(b.as.Double, a);
+    case ARENA_INT:
+        return sub_arena_int(b.as.Int, a);
+    case ARENA_CHAR:
+        return sub_arena_char(b.as.Char, a);
+    case ARENA_LONG:
+        return sub_arena_long(b.as.Long, a);
+    }
+    return b;
+}
+
+arena _mul(arena a, arena b)
+{
+
+    switch (a.type)
+    {
+    case ARENA_DOUBLE:
+        return mul_arena_double(a.as.Double, b);
+    case ARENA_CHAR:
+        return mul_arena_char(a.as.Char, b);
+    case ARENA_INT:
+        return mul_arena_int(a.as.Int, b);
+    case ARENA_LONG:
+        return add_arena_long(a.as.Long, b);
+    }
+    return a;
+}
+
+arena _div(arena a, arena b)
+{
+
+    switch (b.type)
+    {
+    case ARENA_CHAR:
+        return div_arena_char(b.as.Char, a);
+    case ARENA_DOUBLE:
+        return div_arena_double(b.as.Double, a);
+    case ARENA_INT:
+        return div_arena_int(b.as.Int, a);
+    case ARENA_LONG:
+        return add_arena_long(b.as.Long, a);
+    }
+    return b;
+}
+
+arena _mod(arena a, arena b)
+{
+
+    switch (b.type)
+    {
+    case ARENA_CHAR:
+        return mod_arena_char(b.as.Char, a);
+    case ARENA_INT:
+        return mod_arena_int(b.as.Int, a);
+    case ARENA_LONG:
+        return add_arena_long(b.as.Long, a);
+    }
+
+    return b;
+}
+
+arena _eq(arena a, arena b)
+{
+
+    switch (b.type)
+    {
+    case ARENA_INT:
+        return int_eq(b.as.Int, a);
+    case ARENA_DOUBLE:
+        return double_eq(b.as.Double, a);
+    case ARENA_LONG:
+        return long_eq(b.as.Long, a);
+    case ARENA_CHAR:
+        return char_eq(b.as.Char, a);
+    case ARENA_STR:
+        return string_eq(b, a);
+    case ARENA_NULL:
+        switch (a.type)
+        {
+        case ARENA_BOOL:
+            return Bool(a.as.Bool ? false : true);
+        case ARENA_NULL:
+            return Bool(a.as.Bool == b.as.Bool);
+        default:
+            log_err("ERROR: Comparison type mismatch\n");
+        }
+    case ARENA_BOOL:
+        switch (a.type)
+        {
+        case ARENA_BOOL:
+            return Bool(a.as.Bool == b.as.Bool);
+        case ARENA_NULL:
+            return Bool(b.as.Bool ? false : true);
+        default:
+            log_err("ERROR: Comparison type mismatch\n");
+        }
+    }
+    return b;
+}
+arena _ne(arena a, arena b)
+{
+
+    switch (b.type)
+    {
+    case ARENA_INT:
+        return int_ne(b.as.Int, a);
+    case ARENA_DOUBLE:
+        return double_ne(b.as.Double, a);
+    case ARENA_LONG:
+        return long_ne(b.as.Long, a);
+    case ARENA_CHAR:
+        return char_ne(b.as.Char, a);
+    case ARENA_STR:
+        return string_ne(b, a);
+    case ARENA_NULL:
+        switch (a.type)
+        {
+        case ARENA_BOOL:
+            return Bool(a.as.Bool ? true : false);
+        case ARENA_NULL:
+            return Bool(a.as.Bool != b.as.Bool);
+        default:
+            log_err("ERROR: Comparison type mismatch\n");
+        }
+    case ARENA_BOOL:
+        switch (a.type)
+        {
+        case ARENA_BOOL:
+            return Bool(a.as.Bool != b.as.Bool);
+        case ARENA_NULL:
+            return Bool(b.as.Bool ? true : false);
+        default:
+            log_err("ERROR: Comparison type mismatch\n");
+        }
+    }
+    return b;
+}
+
+arena _lt(arena a, arena b)
+{
+
+    switch (b.type)
+    {
+    case ARENA_INT:
+        return int_lt(b.as.Int, a);
+    case ARENA_DOUBLE:
+        return double_lt(b.as.Double, a);
+    case ARENA_LONG:
+        return long_lt(b.as.Long, a);
+    case ARENA_CHAR:
+        return char_lt(b.as.Char, a);
+    case ARENA_STR:
+        return string_lt(b, a);
+    }
+    return b;
+}
+arena _le(arena a, arena b)
+{
+
+    switch (b.type)
+    {
+    case ARENA_INT:
+        return int_le(b.as.Int, a);
+    case ARENA_DOUBLE:
+        return double_le(b.as.Double, a);
+    case ARENA_LONG:
+        return long_le(b.as.Long, a);
+    case ARENA_CHAR:
+        return char_le(b.as.Char, a);
+    case ARENA_STR:
+        return string_le(b, a);
+    }
+    return b;
+}
+arena _gt(arena a, arena b)
+{
+
+    switch (b.type)
+    {
+    case ARENA_INT:
+        return int_gt(b.as.Int, a);
+    case ARENA_DOUBLE:
+        return double_gt(b.as.Double, a);
+    case ARENA_LONG:
+        return long_gt(b.as.Long, a);
+    case ARENA_CHAR:
+        return char_gt(b.as.Char, a);
+    case ARENA_STR:
+        return string_gt(b, a);
+    }
+    return b;
+}
+arena _ge(arena a, arena b)
+{
+
+    switch (b.type)
+    {
+    case ARENA_INT:
+        return int_ge(b.as.Int, a);
+    case ARENA_DOUBLE:
+        return double_ge(b.as.Double, a);
+    case ARENA_LONG:
+        return long_ge(b.as.Long, a);
+    case ARENA_CHAR:
+        return char_ge(b.as.Char, a);
+    case ARENA_STR:
+        return string_ge(b, a);
+    }
+    return b;
+}
+
+arena _or(arena a, arena b)
+{
+    return Bool(a.as.Bool || b.as.Bool);
+}
+arena _and(arena a, arena b)
+{
+    return Bool(b.as.Bool && a.as.Bool);
 }

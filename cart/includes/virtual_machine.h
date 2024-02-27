@@ -26,6 +26,7 @@ struct vm
 
 typedef struct vm vm;
 typedef vm *Vm;
+static vm machine;
 
 void initVM();
 void freeVM();

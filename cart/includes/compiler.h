@@ -2,7 +2,5 @@
 #define _YKES_COMPILER_H
 #include "virtual_machine.h"
 
-vm machine;
-
-bool compile(const char *src, Chunk ch);
+bool compile(const char *src, Chunk ch, vm *machine);
 #endif

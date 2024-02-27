@@ -3,8 +3,7 @@
 #include "scanner.h"
 #include "chunk.h"
 
-#define UINT8_COUNT \
-    (UINT8_MAX + 1)
+#define LOCAL_COUNT 500
 
 struct Parser
 {
@@ -30,7 +29,35 @@ typedef enum
 
 } Precedence;
 
-typedef void (*parse_fn)();
+struct Local
+{
+    arena name;
+    int depth;
+};
+typedef struct Local Local;
+
+struct comp
+{
+    Local locals[LOCAL_COUNT];
+    int local_count;
+    int scope_depth;
+};
+
+typedef struct parse_rule PRule;
+typedef struct Parser Parser;
+typedef struct comp comp;
+
+struct Compiler
+{
+    comp compiler;
+    Parser parser;
+    Chunk ch;
+    vm *machine;
+};
+
+typedef struct Compiler Compiler;
+
+typedef void (*parse_fn)(Compiler *);
 
 struct parse_rule
 {
@@ -39,77 +66,55 @@ struct parse_rule
     Precedence prec;
 };
 
-struct Local
-{
-    arena name;
-    int depth;
-};
-typedef struct Local Local;
+static void consume(int t, const char *str, Parser *parser);
+static void advance_compiler(Parser *parser);
 
-struct Compiler
-{
-    Local locals[UINT8_COUNT];
-    int local_count;
-    int scope_depth;
-};
+static void declaration(Compiler *c);
+static void var_dec(Compiler *c);
+static void synchronize(Parser *parser);
 
-typedef struct parse_rule PRule;
-typedef struct Parser Parser;
-typedef struct Compiler Compiler;
+static void statement(Compiler *c);
+static void print_statement(Compiler *c);
 
-static Parser parser;
-static Chunk compile_chunk;
-static Compiler *current;
+static void begin_scope(comp *c);
+static void end_scope(Compiler *c);
+static void block(Compiler *c);
 
-static void consume(int t, const char *str);
-static void advance_compiler();
-
-static void declaration();
-static void var_dec();
-static void synchronize();
-
-static void statement();
-static void print_statement();
-
-static void begin_scope();
-static void end_scope();
-static void block();
-
-static bool match(int t);
-static bool check(int t);
-static void expression();
-static void grouping();
+static bool match(int t, Parser *parser);
+static bool check(int t, Parser *parser);
+static void expression(Compiler *c);
+static void grouping(Compiler *c);
 static PRule *get_rule(int t);
-static void parse_precedence(Precedence precedence);
+static void parse_precedence(Precedence precedence, Compiler *c);
 
-static void binary();
-static void unary();
+static void binary(Compiler *c);
+static void unary(Compiler *c);
 
-static void current_err(const char *err);
-static void error(const char *err);
-static void error_at(Token t, const char *err);
+static void current_err(const char *err, Parser *parser);
+static void error(const char *err, Parser *parser);
+static void error_at(Token t, Parser *parser, const char *err);
 
-static void emit_byte(uint8_t byte);
-static void emit_bytes(uint8_t b1, uint8_t b2);
-static void emit_constant(arena ar);
-static void emit_return();
+static void emit_byte(Chunk ch, uint8_t byte);
+static void emit_bytes(Chunk ch, uint8_t b1, uint8_t b2);
+static void emit_constant(Chunk ch, arena ar);
+static void emit_return(Chunk ch);
 
-static void dval();
-static void ival();
-static void llint();
-static void ch();
-static void boolean();
-static void cstr();
+static void dval(Compiler *c);
+static void ival(Compiler *c);
+static void llint(Compiler *c);
+static void ch(Compiler *c);
+static void boolean(Compiler *c);
+static void cstr(Compiler *c);
 
-static int resolve_local(Compiler *compiler, arena *name);
+static int resolve_local(comp *c, arena *name);
 
-static arena parse_id();
-static int parse_var(arena ar);
-static void id();
+static arena parse_id(Compiler *c);
+static int parse_var(Compiler *c, arena ar);
+static void id(Compiler *c);
 
 static bool idcmp(arena a, arena b);
-static void declare_var(arena ar);
-static void add_local(arena *ar);
+static void declare_var(Compiler *c, arena ar);
+static void add_local(Compiler *c, arena *ar);
 
 static PRule rules[] = {
     [TOKEN_CH_LPAREN] = {grouping, NULL, PREC_NONE},
@@ -168,7 +173,7 @@ static PRule rules[] = {
     [TOKEN_EOF] = {NULL, NULL, PREC_NONE},
 };
 
-static void end_compile();
-static void init_compiler(Compiler *compiler);
+static void end_compile(Chunk ch);
+static void init_compiler(comp *compiler);
 
 #endif
