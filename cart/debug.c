@@ -1,6 +1,14 @@
 #include <stdio.h>
 #include "debug.h"
 
+static int byte_instruction(const char *name, Chunk chunk,
+                            int offset)
+{
+    uint8_t slot = chunk->op_codes.as.Bytes[offset + 1];
+    printf("%-16s %4d\n", name, slot);
+    return offset + 2;
+}
+
 static int simple_instruction(const char *name, int offset)
 {
     printf("%s\n", name);
@@ -68,12 +76,20 @@ int disassemble_instruction(Chunk c, int offset)
         return simple_instruction("OP_NULL", offset);
     case OP_NOOP:
         return ++offset;
+    case OP_GET_LOCAL:
+        return byte_instruction("OP_GET_LOCAL", c, offset);
+    case OP_SET_LOCAL:
+        return byte_instruction("OP_SET_LOCAL", c, offset);
     case OP_GET_GLOBAL:
         return simple_instruction("OP_GET_GLOBAL", offset);
     case OP_SET_GLOBAL:
         return simple_instruction("OP_SET_GLOBAL", offset);
     case OP_GLOBAL_DEF:
         return simple_instruction("OP_GLOBAL_DEF", offset);
+    case OP_POPN:
+        return simple_instruction("OP_POPN", offset);
+    case OP_POP:
+        return simple_instruction("OP_POP", offset);
     case OP_PRINT:
         return simple_instruction("OP_PRINT", offset);
     case OP_RETURN:

@@ -288,7 +288,7 @@ arena Var(const char *str, size_t table_size)
 {
     size_t size = strlen(str);
     arena ar = arena_alloc(size, ARENA_VAR);
-    strcpy(ar.as.String, str);
+    memcpy(ar.as.String, str, size);
     ar.as.String[size] = '\0';
     size_t h = hash(ar, table_size);
     ar.hash = h;

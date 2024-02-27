@@ -4,6 +4,14 @@
 #include "debug.h"
 #include "table.h"
 
+typedef enum
+{
+    INTERPRET_SUCCESS,
+    INTERPRET_COMPILE_ERR,
+    INTERPRET_RUNTIME_ERR
+
+} Interpretation;
+
 struct vm
 {
     Chunk ch;
@@ -16,21 +24,11 @@ struct vm
     dict glob;
 };
 
-typedef enum
-{
-    INTERPRET_SUCCESS,
-    INTERPRET_COMPILE_ERR,
-    INTERPRET_RUNTIME_ERR
-
-} Interpretation;
-
 typedef struct vm vm;
 typedef vm *Vm;
 
 void initVM();
 void freeVM();
-
-void push(arena v);
 
 Interpretation run();
 Interpretation interpret(const char *source);

@@ -9,10 +9,15 @@ typedef enum
     OP_PRINT,
 
     OP_POP,
+    OP_POPN,
     OP_PUSH,
+
     OP_GLOBAL_DEF,
     OP_GET_GLOBAL,
     OP_SET_GLOBAL,
+
+    OP_GET_LOCAL,
+    OP_SET_LOCAL,
 
     OP_ASSIGN,
     OP_NEG,
