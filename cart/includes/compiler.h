@@ -8,8 +8,8 @@ struct Parser
 {
     token cur;
     token pre;
-    bool had_err;
-    bool fuck;
+    bool err;
+    bool panic;
 };
 
 typedef enum

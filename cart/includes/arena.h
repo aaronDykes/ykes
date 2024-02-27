@@ -4,7 +4,8 @@
 #include <stdbool.h>
 
 typedef double Align;
-typedef enum
+
+enum
 {
     ARENA_BYTE_PTR,
     ARENA_INT_PTR,
@@ -22,11 +23,11 @@ typedef enum
     ARENA_BOOL,
     ARENA_NULL,
 
-} T;
+};
 
 struct arena_struct
 {
-    T type;
+    int type;
     size_t size;
     size_t hash;
     int length;

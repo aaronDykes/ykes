@@ -1,7 +1,7 @@
 #include "scanner.h"
 #include <stdlib.h>
 
-static token make_token(token_type t);
+static token make_token(int t);
 static token err_token(const char *err);
 
 static token string();
@@ -9,8 +9,8 @@ static token number();
 static token id();
 static token character();
 
-static token_type id_type();
-static token_type check_keyword(int start, int end, const char *str, token_type t);
+static int id_type();
+static int check_keyword(int start, int end, const char *str, int t);
 
 static char next();
 static char advance();
@@ -97,7 +97,7 @@ token scan_token()
     return err_token("ERROR: invalid token");
 }
 
-static token make_token(token_type t)
+static token make_token(int t)
 {
     token toke;
     toke.start = scan.start;
@@ -163,7 +163,7 @@ static token character()
     return make_token(TOKEN_CHAR);
 }
 
-static token_type id_type()
+static int id_type()
 {
     switch (*scan.start)
     {
@@ -183,6 +183,8 @@ static token_type id_type()
                 return check_keyword(2, 1, "r", TOKEN_FOR);
             case 'a':
                 return check_keyword(2, 3, "lse", TOKEN_FALSE);
+            case 'u':
+                return check_keyword(2, 6, "nction", TOKEN_FUNC);
             }
     case 'i':
         return check_keyword(1, 1, "f", TOKEN_IF);
@@ -221,7 +223,7 @@ static token_type id_type()
     }
     return TOKEN_ID;
 }
-static token_type check_keyword(int start, int end, const char *str, token_type t)
+static int check_keyword(int start, int end, const char *str, int t)
 {
 
     if (((int)(scan.current - scan.start) == start + end) && memcmp(scan.start + start, str, end) == 0)
@@ -302,15 +304,14 @@ static void skip_multi_line_comment()
             scan.line++;
         else if (*scan.current == '*' && scan.current[1] == '/')
             break;
-
     nskip(2);
 }
 static token skip_comment()
 {
     int type = TOKEN_LINE_COMMENT;
-    if (match('/'))
+    if (scan.current[1] == '/' || next() == '/')
         skip_line_comment();
-    if (match('*'))
+    else if (scan.current[1] == '*' || next() == '*')
     {
         type = TOKEN_NLINE_COMMENT;
         skip_multi_line_comment();
@@ -329,7 +330,7 @@ static void skip_whitespace()
             scan.line++;
             break;
         case '/':
-            if (match('*') || match('/'))
+            if (scan.current[1] == '*' || scan.current[1] == '/')
                 skip_comment();
             break;
         }

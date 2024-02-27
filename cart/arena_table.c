@@ -1,19 +1,8 @@
 #include "arena_table.h"
-#include <stdio.h>
-#include <stdarg.h>
-
-static void log_err(const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    vfprintf(stderr, format, args);
-    va_end(args);
-    fputs("\n", stderr);
-}
 
 Table arena_alloc_table(size_t size)
 {
-    Table t = alloc_ptr((size * sizeof(table)) + sizeof(table));
+    Table t = alloc_ptr(((size_t)size * sizeof(table)) + sizeof(table));
 
     size_t n = (size_t)size + 1;
     for (size_t i = 1; i < n; i++)
@@ -89,9 +78,9 @@ void insert_entry(Table *t, table entry)
         return;
     }
 
-    if (strcmp(e.key.as.String, entry.key.as.String) == 0)
+    if (e.key.as.String && strcmp(e.key.as.String, entry.key.as.String) == 0)
     {
-        tmp[entry.key.hash] = entry;
+        tmp[entry.key.hash] = new_entry(entry);
         return;
     }
 
@@ -133,7 +122,7 @@ void delete_entry(Table *t, arena key)
     size_t index = key.hash;
     table e = a[index];
 
-    if (key.type == ARENA_NULL)
+    if (e.key.type == ARENA_NULL)
         return;
 
     if (e.next && (strcmp(e.key.as.String, key.as.String) == 0))
@@ -166,7 +155,7 @@ void delete_entry(Table *t, arena key)
     for (; tmp->next; tmp = tmp->next)
         switch (tmp->key.type)
         {
-        case ARENA_STR:
+        case ARENA_VAR:
             if (strcmp(tmp->key.as.String, key.as.String) == 0)
                 goto DEL;
             break;
@@ -186,7 +175,7 @@ void delete_entry(Table *t, arena key)
 
     switch (tmp->key.type)
     {
-    case ARENA_STR:
+    case ARENA_VAR:
         if (strcmp(tmp->key.as.String, key.as.String) == 0)
             goto DEL_LAST;
         break;
@@ -223,7 +212,7 @@ arena find_entry(Table *t, arena *hash)
     size_t index = hash->hash;
     table entry = a[index];
 
-    if (entry.key.type == ARENA_NULL)
+    if (entry.key.type == ARENA_NULL || hash->type != ARENA_VAR)
         return Null();
 
     if (strcmp(entry.key.as.String, hash->as.String) == 0)
@@ -299,9 +288,9 @@ arena Var(const char *str, size_t table_size)
 {
     size_t size = strlen(str);
     arena ar = arena_alloc(size, ARENA_VAR);
-    memcpy(ar.as.String, str, size);
+    strcpy(ar.as.String, str);
     ar.as.String[size] = '\0';
-    size_t h = hash(ar, table_size - 1);
+    size_t h = hash(ar, table_size);
     ar.hash = h;
     ar.type = ARENA_VAR;
     return ar;

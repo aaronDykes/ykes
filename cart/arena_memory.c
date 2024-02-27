@@ -1,16 +1,5 @@
 #include "arena_memory.h"
-
 #include <stdio.h>
-#include <stdarg.h>
-
-static void log_err(const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    vfprintf(stderr, format, args);
-    va_end(args);
-    fputs("\n", stderr);
-}
 
 void initialize_global_memory(size_t size)
 {
@@ -20,7 +9,7 @@ void initialize_global_memory(size_t size)
     global_mem.glob = malloc(size * sizeof(uint8_t));
 }
 
-arena arena_init(void *data, size_t size, T type)
+arena arena_init(void *data, size_t size, int type)
 {
     arena ar;
 
@@ -100,8 +89,12 @@ Arena arena_alloc_arena(size_t size)
 {
     Arena p = alloc_ptr((size * sizeof(arena)) + sizeof(arena));
 
-    p->size = size + 1;
+    size_t n = size + 1;
+    p->size = size;
     p->length = (int)size;
+
+    for (size_t i = 1; i < n; i++)
+        p[i] = Null();
 
     return p + 1;
 }
@@ -155,7 +148,7 @@ void arena_free_arena(Arena ar)
     ar = NULL;
 }
 
-arena arena_alloc(size_t size, T type)
+arena arena_alloc(size_t size, int type)
 {
 
     void *ptr = alloc_ptr(size);
@@ -179,17 +172,17 @@ arena arena_realloc(Arena ar, size_t size)
     case ARENA_BYTE_PTR:
         if (!ar->as.Bytes)
             return arena_init(ptr, size, type);
-        memcpy(ptr, ar->as.Bytes, size);
+        memcpy(ptr, ar->as.Bytes, ar->size);
         break;
     case ARENA_STR:
         if (!ar->as.String)
             return arena_init(ptr, size, type);
-        memcpy(ptr, ar->as.String, size);
+        memcpy(ptr, ar->as.String, ar->size);
         break;
     case ARENA_INT_PTR:
         if (!ar->as.Ints)
             return arena_init(ptr, size, type);
-        memcpy(ptr, ar->as.Ints, size);
+        memcpy(ptr, ar->as.Ints, ar->size);
         break;
     }
     arena_free(ar);
@@ -244,7 +237,7 @@ arena String(const char *str)
 {
     size_t size = strlen(str);
     arena ar = arena_alloc(size, ARENA_STR);
-    memcpy(ar.as.String, str, size);
+    strcpy(ar.as.String, str);
     ar.as.String[size] = '\0';
     ar.length = (int)size;
     ar.size = size;

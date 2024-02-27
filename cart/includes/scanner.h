@@ -7,7 +7,7 @@
 
 struct token
 {
-    token_type type;
+    int type;
     int line;
     int size;
     const char *start;

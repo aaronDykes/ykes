@@ -6,7 +6,7 @@ void init_value_array(Value v)
 {
     v->capacity = ARENA_SIZE;
     v->count = 0;
-    v->vals = GROW_ARENA(NULL, ARENA_SIZE);
+    v->vals = GROW_ARENA(NULL, (size_t)ARENA_SIZE);
 }
 
 static void check_value_size(Value v)
@@ -14,7 +14,7 @@ static void check_value_size(Value v)
     if (v->count + 1 > v->capacity)
     {
         v->capacity *= INC;
-        v->vals = GROW_ARENA(v->vals, v->capacity);
+        v->vals = GROW_ARENA(v->vals, (size_t)v->capacity);
     }
 }
 

@@ -2,7 +2,7 @@
 #ifndef _TOKEN_TYPE_H
 #define _TOKEN_TYPE_H
 
-typedef enum
+enum
 {
 
     TOKEN_CH_LPAREN,
@@ -47,6 +47,7 @@ typedef enum
     // Keywords.
     TOKEN_CLASS,
     TOKEN_ELSE,
+    TOKEN_FUNC,
     TOKEN_FALSE,
     TOKEN_FOR,
     TOKEN_IF,
@@ -63,6 +64,6 @@ typedef enum
 
     TOKEN_ERR,
     TOKEN_EOF
-} token_type;
+};
 
 #endif

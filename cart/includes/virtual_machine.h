@@ -13,6 +13,7 @@ struct vm
     arena *stack;
     arena *stack_top;
     dict d;
+    dict glob;
 };
 
 typedef enum

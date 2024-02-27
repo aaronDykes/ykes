@@ -68,8 +68,12 @@ int disassemble_instruction(Chunk c, int offset)
         return simple_instruction("OP_NULL", offset);
     case OP_NOOP:
         return ++offset;
-    case OP_ASSIGN:
-        return simple_instruction("OP_ASSIGN", offset);
+    case OP_GET_GLOBAL:
+        return simple_instruction("OP_GET_GLOBAL", offset);
+    case OP_SET_GLOBAL:
+        return simple_instruction("OP_SET_GLOBAL", offset);
+    case OP_GLOBAL_DEF:
+        return simple_instruction("OP_GLOBAL_DEF", offset);
     case OP_PRINT:
         return simple_instruction("OP_PRINT", offset);
     case OP_RETURN:

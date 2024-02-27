@@ -9,18 +9,20 @@
 static Parser parser;
 static Chunk compile_chunk;
 
-static void consume(token_type t, const char *str);
+static void consume(int t, const char *str);
 static void advance_compiler();
 
 static void declaration();
+static void var_dec();
+static uint8_t parse_var(const char *err);
+static void synchronize();
 static void statement();
 static void print_statement();
-
-static bool match(token_type t);
-static bool check(token_type t);
+static bool match(int t);
+static bool check(int t);
 static void expression();
 static void grouping();
-static PRule *get_rule(token_type t);
+static PRule *get_rule(int t);
 static void parse_precedence(Precedence precedence);
 
 static void binary();
@@ -33,6 +35,7 @@ static void error_at(Token t, const char *err);
 static void emit_byte(uint8_t byte);
 static void emit_bytes(uint8_t b1, uint8_t b2);
 static void emit_constant(arena ar);
+static void emit_global(uint8_t index);
 static void emit_return();
 
 static void dval();
@@ -59,7 +62,7 @@ static PRule rules[] = {
     [TOKEN_OP_MOD] = {NULL, binary, PREC_FACTOR},
     [TOKEN_OP_MUL] = {NULL, binary, PREC_FACTOR},
 
-    [TOKEN_OP_ASSIGN] = {NULL, binary, PREC_ASSIGNMENT},
+    [TOKEN_OP_ASSIGN] = {NULL, NULL, PREC_ASSIGNMENT},
     [TOKEN_OP_BANG] = {unary, NULL, PREC_TERM},
     [TOKEN_OP_NE] = {NULL, binary, PREC_EQUALITY},
     [TOKEN_OP_EQ] = {NULL, binary, PREC_EQUALITY},
@@ -102,7 +105,7 @@ static PRule rules[] = {
 
 static void end_compile();
 
-static void consume(token_type t, const char *err)
+static void consume(int t, const char *err)
 {
     if (parser.cur.type == t)
     {
@@ -127,8 +130,54 @@ static void advance_compiler()
 
 static void declaration()
 {
-    statement();
+
+    if (match(TOKEN_VAR))
+        var_dec();
+    // else if (check(TOKEN_ID))
+    // var_dec();
+    else
+        statement();
+
+    if (parser.panic)
+        synchronize();
 }
+
+static void var_dec()
+{
+    uint8_t glob = parse_var("Expect variable name");
+    if (match(TOKEN_OP_ASSIGN))
+        expression();
+    else
+        emit_byte(OP_NULL);
+    consume(TOKEN_CH_SEMI,
+            "Expect ';' after variable declaration.");
+    emit_global(glob);
+}
+
+static void synchronize()
+{
+    parser.panic = false;
+
+    while (parser.cur.type != TOKEN_EOF)
+    {
+        if (parser.pre.type == TOKEN_CH_SEMI)
+            return;
+
+        switch (parser.pre.type)
+        {
+        case TOKEN_FUNC:
+        case TOKEN_CLASS:
+        case TOKEN_FOR:
+        case TOKEN_IF:
+        case TOKEN_WHILE:
+        case TOKEN_PRINT:
+        case TOKEN_RETURN:
+            return;
+        }
+        advance_compiler();
+    }
+}
+
 static void statement()
 {
 
@@ -154,14 +203,14 @@ static void print_statement()
     emit_byte(OP_PRINT);
 }
 
-static bool match(token_type t)
+static bool match(int t)
 {
     if (!check(t))
         return false;
     advance_compiler();
     return true;
 }
-static bool check(token_type t)
+static bool check(int t)
 {
     return parser.cur.type == t;
 }
@@ -175,17 +224,14 @@ static void grouping()
     expression();
     consume(TOKEN_CH_RPAREN, "Expect `)` after expression");
 }
-static PRule *get_rule(token_type t)
+static PRule *get_rule(int t)
 {
     return &rules[t];
 }
 
 static void parse_precedence(Precedence prec)
 {
-    if ((parser.pre.type == TOKEN_NLINE_COMMENT || parser.pre.type == TOKEN_LINE_COMMENT) && (parser.cur.type == TOKEN_EOF))
-        return;
     advance_compiler();
-
     parse_fn prefix_rule = get_rule(parser.pre.type)->prefix;
 
     if (!prefix_rule)
@@ -206,7 +252,7 @@ static void parse_precedence(Precedence prec)
 
 static void binary()
 {
-    token_type t = parser.pre.type;
+    int t = parser.pre.type;
 
     PRule *rule = get_rule(t);
     parse_precedence((Precedence)rule->prec + 1);
@@ -252,16 +298,13 @@ static void binary()
     case TOKEN_OP_AND:
         emit_byte(OP_AND);
         break;
-    case TOKEN_OP_ASSIGN:
-        emit_byte(OP_ASSIGN);
-        break;
     default:
         return;
     }
 }
 static void unary()
 {
-    token_type op = parser.pre.type;
+    int op = parser.pre.type;
 
     parse_precedence(PREC_UNARY);
 
@@ -290,10 +333,10 @@ static void error(const char *err)
 }
 static void error_at(Token toke, const char *err)
 {
-    if (parser.fuck)
+    if (parser.panic)
         return;
-    parser.fuck = true;
-    parser.had_err = true;
+    parser.panic = true;
+    parser.err = true;
 
     fprintf(stderr, "[line %d] Error", toke->line);
 
@@ -323,6 +366,11 @@ static void emit_constant(arena ar)
     emit_bytes(OP_CONSTANT, add_constant(compile_chunk, ar));
 }
 
+static void emit_global(uint8_t index)
+{
+    emit_bytes(OP_GLOBAL_DEF, index);
+}
+
 static void dval()
 {
     double val = strtod(parser.pre.start, NULL);
@@ -348,20 +396,44 @@ static void boolean()
     else
         emit_constant(Bool(*parser.pre.start == 't' ? true : false));
 }
+
+static arena find(arena tmp)
+{
+    return find_entry(&machine.glob.map, &tmp);
+}
+static bool exists(arena tmp)
+{
+    return find_entry(&machine.glob.map, &tmp).type != ARENA_NULL;
+}
+
+static arena parse_id()
+{
+    char *ch = (char *)parser.pre.start;
+    ch[parser.pre.size] = '\0';
+    return Var(ch, machine.glob.capacity);
+}
 static void id()
 {
+    uint8_t glob = add_constant(compile_chunk, parse_id());
 
-    char *ch = parser.pre.start;
-    ch[parser.pre.size] = '\0';
-    arena tmp = Var(ch, machine.d.capacity);
-
-    emit_constant(tmp);
+    if (match(TOKEN_OP_ASSIGN))
+    {
+        expression();
+        emit_bytes(OP_SET_GLOBAL, glob);
+    }
+    else
+        emit_bytes(OP_GET_GLOBAL, glob);
+}
+static uint8_t parse_var(const char *err)
+{
+    consume(TOKEN_ID, err);
+    return add_constant(compile_chunk, parse_id());
 }
 
 static void cstr()
 {
 
-    char *ch = ++parser.pre.start;
+    char *ch = (char *)++parser.pre.start;
     ch[parser.pre.size - 2] = '\0';
 
     emit_constant(String(ch));
@@ -371,15 +443,15 @@ static void end_compile()
 {
     emit_return();
 #ifndef DEBUG_PRINT_CODE
-    if (!parser.had_err)
+    if (!parser.err)
         disassemble_chunk(compile_chunk, "code");
 #endif
 }
 bool compile(const char *src, Chunk ch)
 {
     init_scanner(src);
-    parser.fuck = false;
-    parser.had_err = false;
+    parser.panic = false;
+    parser.err = false;
     compile_chunk = ch;
 
     advance_compiler();
@@ -389,5 +461,5 @@ bool compile(const char *src, Chunk ch)
     consume(TOKEN_EOF, "Expect end of expression");
 
     end_compile();
-    return !parser.had_err;
+    return !parser.err;
 }

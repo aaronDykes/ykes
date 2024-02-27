@@ -10,6 +10,9 @@ typedef enum
 
     OP_POP,
     OP_PUSH,
+    OP_GLOBAL_DEF,
+    OP_GET_GLOBAL,
+    OP_SET_GLOBAL,
 
     OP_ASSIGN,
     OP_NEG,

@@ -8,16 +8,18 @@ static void reset_stack();
 void initVM()
 {
 
-    initialize_global_memory(PAGE * 16);
+    initialize_global_memory(PAGE);
     machine.max_size = STACK_SIZE;
     machine.current_size = 0;
-    machine.stack = GROW_ARENA(NULL, STACK_SIZE);
+    machine.stack = GROW_ARENA(NULL, (size_t)STACK_SIZE);
     init_dict(&machine.d);
+    init_dict(&machine.glob);
     reset_stack();
 }
 void freeVM()
 {
     free_dict(&machine.d);
+    free_dict(&machine.glob);
     FREE_ARENA(machine.stack);
     machine.stack_top = NULL;
     destroy_global_memory();
@@ -78,8 +80,7 @@ Interpretation interpret(const char *src)
 static arena _neg(arena n)
 {
     arena ar = n;
-    if (n.type == ARENA_VAR)
-        ar = find_entry(&machine.d.map, &n);
+
     switch (ar.type)
     {
     case ARENA_DOUBLE:
@@ -104,334 +105,280 @@ static arena _neg(arena n)
 static arena _add(arena a, arena b)
 {
 
-    arena ar1 = a, ar2 = b;
-    if (a.type == ARENA_VAR)
-        ar1 = find_entry(&machine.d.map, &a);
-    if (b.type == ARENA_VAR)
-        ar2 = find_entry(&machine.d.map, &b);
+    // if (a.type == ARENA_VAR)
+    //     a = find_entry(&machine.glob.map, &a);
+    // if (b.type == ARENA_VAR)
+    //     b = find_entry(&machine.glob.map, &b);
 
-    switch (ar2.type)
+    switch (b.type)
     {
     case ARENA_CHAR:
-        return add_arena_char(ar2.as.Char, ar1);
+        return add_arena_char(b.as.Char, a);
     case ARENA_DOUBLE:
-        return add_arena_double(ar2.as.Double, ar1);
+        return add_arena_double(b.as.Double, a);
     case ARENA_INT:
-        return add_arena_int(ar2.as.Int, ar1);
+        return add_arena_int(b.as.Int, a);
     case ARENA_LONG:
-        return add_arena_long(ar2.as.Long, ar1);
+        return add_arena_long(b.as.Long, a);
     case ARENA_STR:
-        return append(ar2, ar1);
+        return append(b, a);
     }
-    return ar1;
+    return a;
 }
 
 static arena _sub(arena a, arena b)
 {
-    arena ar1 = a, ar2 = b;
-    if (a.type == ARENA_VAR)
-        ar1 = find_entry(&machine.d.map, &a);
-    if (b.type == ARENA_VAR)
-        ar2 = find_entry(&machine.d.map, &b);
 
-    switch (ar2.type)
+    // if (a.type == ARENA_VAR)
+    //     a = find_entry(&machine.glob.map, &a);
+    // if (b.type == ARENA_VAR)
+    //     b = find_entry(&machine.glob.map, &b);
+
+    switch (b.type)
     {
     case ARENA_DOUBLE:
-        return sub_arena_double(ar2.as.Double, ar1);
+        return sub_arena_double(b.as.Double, a);
     case ARENA_INT:
-        return sub_arena_int(ar2.as.Int, ar1);
+        return sub_arena_int(b.as.Int, a);
     case ARENA_CHAR:
-        return sub_arena_char(ar2.as.Char, ar1);
+        return sub_arena_char(b.as.Char, a);
     case ARENA_LONG:
-        return sub_arena_long(ar2.as.Long, ar1);
+        return sub_arena_long(b.as.Long, a);
     }
-    return ar2;
+    return b;
 }
 
 static arena _mul(arena a, arena b)
 {
-    arena ar1 = a, ar2 = b;
-    if (a.type == ARENA_VAR)
-        ar1 = find_entry(&machine.d.map, &a);
-    if (b.type == ARENA_VAR)
-        ar2 = find_entry(&machine.d.map, &b);
 
-    switch (ar1.type)
+    // if (a.type == ARENA_VAR)
+    //     a = find_entry(&machine.glob.map, &a);
+    // if (b.type == ARENA_VAR)
+    //     b = find_entry(&machine.glob.map, &b);
+
+    switch (a.type)
     {
     case ARENA_DOUBLE:
-        return mul_arena_double(ar1.as.Double, ar2);
+        return mul_arena_double(a.as.Double, b);
     case ARENA_CHAR:
-        return mul_arena_char(ar1.as.Char, ar2);
+        return mul_arena_char(a.as.Char, b);
     case ARENA_INT:
-        return mul_arena_int(ar1.as.Int, ar2);
+        return mul_arena_int(a.as.Int, b);
     case ARENA_LONG:
-        return add_arena_long(ar1.as.Long, ar2);
+        return add_arena_long(a.as.Long, b);
     }
-    return ar1;
+    return a;
 }
 
 static arena _div(arena a, arena b)
 {
-    arena ar1 = a, ar2 = b;
-    if (a.type == ARENA_VAR)
-        ar1 = find_entry(&machine.d.map, &a);
-    if (b.type == ARENA_VAR)
-        ar2 = find_entry(&machine.d.map, &b);
 
-    switch (ar2.type)
+    // if (a.type == ARENA_VAR)
+    //     a = find_entry(&machine.glob.map, &a);
+    // if (b.type == ARENA_VAR)
+    //     b = find_entry(&machine.glob.map, &b);
+
+    switch (b.type)
     {
     case ARENA_CHAR:
-        return div_arena_char(ar2.as.Char, ar1);
+        return div_arena_char(b.as.Char, a);
     case ARENA_DOUBLE:
-        return div_arena_double(ar2.as.Double, ar1);
+        return div_arena_double(b.as.Double, a);
     case ARENA_INT:
-        return div_arena_int(ar2.as.Int, ar1);
+        return div_arena_int(b.as.Int, a);
     case ARENA_LONG:
-        return add_arena_long(ar2.as.Long, ar1);
+        return add_arena_long(b.as.Long, a);
     }
-    return ar2;
+    return b;
 }
 
 static arena _mod(arena a, arena b)
 {
-    arena ar1 = a, ar2 = b;
-    if (a.type == ARENA_VAR)
-        ar1 = find_entry(&machine.d.map, &a);
-    if (b.type == ARENA_VAR)
-        ar2 = find_entry(&machine.d.map, &b);
 
-    switch (ar2.type)
+    switch (b.type)
     {
     case ARENA_CHAR:
-        return mod_arena_char(ar2.as.Char, ar1);
+        return mod_arena_char(b.as.Char, a);
     case ARENA_INT:
-        return mod_arena_int(ar2.as.Int, ar1);
+        return mod_arena_int(b.as.Int, a);
     case ARENA_LONG:
-        return add_arena_long(ar2.as.Long, ar1);
+        return add_arena_long(b.as.Long, a);
     }
 
-    return ar2;
+    return b;
 }
 
 static arena _eq(arena a, arena b)
 {
-    arena ar1 = a, ar2 = b;
-    if (a.type == ARENA_VAR)
-        ar1 = find_entry(&machine.d.map, &a);
-    if (b.type == ARENA_VAR)
-        ar2 = find_entry(&machine.d.map, &b);
 
-    switch (ar2.type)
+    switch (b.type)
     {
     case ARENA_INT:
-        return int_eq(ar2.as.Int, ar1);
+        return int_eq(b.as.Int, a);
     case ARENA_DOUBLE:
-        return double_eq(ar2.as.Double, ar1);
+        return double_eq(b.as.Double, a);
     case ARENA_LONG:
-        return long_eq(ar2.as.Long, ar1);
+        return long_eq(b.as.Long, a);
     case ARENA_CHAR:
-        return char_eq(ar2.as.Char, ar1);
+        return char_eq(b.as.Char, a);
     case ARENA_STR:
-        return string_eq(ar2, ar1);
+        return string_eq(b, a);
     case ARENA_NULL:
-        switch (ar1.type)
+        switch (a.type)
         {
         case ARENA_BOOL:
-            return Bool(ar1.as.Bool ? false : true);
+            return Bool(a.as.Bool ? false : true);
         case ARENA_NULL:
-            return Bool(ar1.as.Bool == ar2.as.Bool);
+            return Bool(a.as.Bool == b.as.Bool);
         default:
             runtime_error("ERROR: Comparison type mismatch\n");
         }
     case ARENA_BOOL:
-        switch (ar1.type)
+        switch (a.type)
         {
         case ARENA_BOOL:
-            return Bool(ar1.as.Bool == ar2.as.Bool);
+            return Bool(a.as.Bool == b.as.Bool);
         case ARENA_NULL:
-            return Bool(ar2.as.Bool ? false : true);
+            return Bool(b.as.Bool ? false : true);
         default:
             runtime_error("ERROR: Comparison type mismatch\n");
         }
     }
-    return ar2;
+    return b;
 }
 static arena _ne(arena a, arena b)
 {
-    arena ar1 = a, ar2 = b;
-    if (a.type == ARENA_VAR)
-        ar1 = find_entry(&machine.d.map, &a);
-    if (b.type == ARENA_VAR)
-        ar2 = find_entry(&machine.d.map, &b);
 
-    switch (ar2.type)
+    switch (b.type)
     {
     case ARENA_INT:
-        return int_ne(ar2.as.Int, ar1);
+        return int_ne(b.as.Int, a);
     case ARENA_DOUBLE:
-        return double_ne(ar2.as.Double, ar1);
+        return double_ne(b.as.Double, a);
     case ARENA_LONG:
-        return long_ne(ar2.as.Long, ar1);
+        return long_ne(b.as.Long, a);
     case ARENA_CHAR:
-        return char_ne(ar2.as.Char, ar1);
+        return char_ne(b.as.Char, a);
     case ARENA_STR:
-        return string_ne(ar2, ar1);
+        return string_ne(b, a);
     case ARENA_NULL:
-        switch (ar1.type)
+        switch (a.type)
         {
         case ARENA_BOOL:
-            return Bool(ar1.as.Bool ? true : false);
+            return Bool(a.as.Bool ? true : false);
         case ARENA_NULL:
-            return Bool(ar1.as.Bool != ar2.as.Bool);
+            return Bool(a.as.Bool != b.as.Bool);
         default:
             runtime_error("ERROR: Comparison type mismatch\n");
         }
     case ARENA_BOOL:
-        switch (ar1.type)
+        switch (a.type)
         {
         case ARENA_BOOL:
-            return Bool(ar1.as.Bool != ar2.as.Bool);
+            return Bool(a.as.Bool != b.as.Bool);
         case ARENA_NULL:
-            return Bool(ar2.as.Bool ? true : false);
+            return Bool(b.as.Bool ? true : false);
         default:
             runtime_error("ERROR: Comparison type mismatch\n");
         }
     }
-    return ar2;
+    return b;
 }
 
 static arena _lt(arena a, arena b)
 {
-    arena ar1 = a, ar2 = b;
-    if (a.type == ARENA_VAR)
-        ar1 = find_entry(&machine.d.map, &a);
-    if (b.type == ARENA_VAR)
-        ar2 = find_entry(&machine.d.map, &b);
 
-    switch (ar2.type)
+    switch (b.type)
     {
     case ARENA_INT:
-        return int_lt(ar2.as.Int, ar1);
+        return int_lt(b.as.Int, a);
     case ARENA_DOUBLE:
-        return double_lt(ar2.as.Double, ar1);
+        return double_lt(b.as.Double, a);
     case ARENA_LONG:
-        return long_lt(ar2.as.Long, ar1);
+        return long_lt(b.as.Long, a);
     case ARENA_CHAR:
-        return char_lt(ar2.as.Char, ar1);
+        return char_lt(b.as.Char, a);
     case ARENA_STR:
-        return string_lt(ar2, ar1);
+        return string_lt(b, a);
     }
-    return ar2;
+    return b;
 }
 static arena _le(arena a, arena b)
 {
 
-    arena ar1 = a, ar2 = b;
-    if (a.type == ARENA_VAR)
-        ar1 = find_entry(&machine.d.map, &a);
-    if (b.type == ARENA_VAR)
-        ar2 = find_entry(&machine.d.map, &b);
-
-    switch (ar2.type)
+    switch (b.type)
     {
     case ARENA_INT:
-        return int_le(ar2.as.Int, ar1);
+        return int_le(b.as.Int, a);
     case ARENA_DOUBLE:
-        return double_le(ar2.as.Double, ar1);
+        return double_le(b.as.Double, a);
     case ARENA_LONG:
-        return long_le(ar2.as.Long, ar1);
+        return long_le(b.as.Long, a);
     case ARENA_CHAR:
-        return char_le(ar2.as.Char, ar1);
+        return char_le(b.as.Char, a);
     case ARENA_STR:
-        return string_le(ar2, ar1);
+        return string_le(b, a);
     }
-    return ar2;
+    return b;
 }
 static arena _gt(arena a, arena b)
 {
 
-    arena ar1 = a, ar2 = b;
-    if (a.type == ARENA_VAR)
-        ar1 = find_entry(&machine.d.map, &a);
-    if (b.type == ARENA_VAR)
-        ar2 = find_entry(&machine.d.map, &b);
-
-    switch (ar2.type)
+    switch (b.type)
     {
     case ARENA_INT:
-        return int_gt(ar2.as.Int, ar1);
+        return int_gt(b.as.Int, a);
     case ARENA_DOUBLE:
-        return double_gt(ar2.as.Double, ar1);
+        return double_gt(b.as.Double, a);
     case ARENA_LONG:
-        return long_gt(ar2.as.Long, ar1);
+        return long_gt(b.as.Long, a);
     case ARENA_CHAR:
-        return char_gt(ar2.as.Char, ar1);
+        return char_gt(b.as.Char, a);
     case ARENA_STR:
-        return string_gt(ar2, ar1);
+        return string_gt(b, a);
     }
-    return ar2;
+    return b;
 }
 static arena _ge(arena a, arena b)
 {
-    arena ar1 = a, ar2 = b;
-    if (a.type == ARENA_VAR)
-        ar1 = find_entry(&machine.d.map, &a);
-    if (b.type == ARENA_VAR)
-        ar2 = find_entry(&machine.d.map, &b);
 
-    switch (ar2.type)
+    switch (b.type)
     {
     case ARENA_INT:
-        return int_ge(ar2.as.Int, ar1);
+        return int_ge(b.as.Int, a);
     case ARENA_DOUBLE:
-        return double_ge(ar2.as.Double, ar1);
+        return double_ge(b.as.Double, a);
     case ARENA_LONG:
-        return long_ge(ar2.as.Long, ar1);
+        return long_ge(b.as.Long, a);
     case ARENA_CHAR:
-        return char_ge(ar2.as.Char, ar1);
+        return char_ge(b.as.Char, a);
     case ARENA_STR:
-        return string_ge(ar2, ar1);
+        return string_ge(b, a);
     }
-    return ar2;
+    return b;
 }
 
 static arena _or(arena a, arena b)
 {
-    arena ar1 = a, ar2 = b;
-    if (a.type == ARENA_VAR)
-        ar1 = find_entry(&machine.d.map, &a);
-    if (b.type == ARENA_VAR)
-        ar2 = find_entry(&machine.d.map, &b);
-
-    return Bool(ar1.as.Bool || ar2.as.Bool);
+    return Bool(a.as.Bool || b.as.Bool);
 }
 static arena _and(arena a, arena b)
 {
-    arena ar1 = a, ar2 = b;
-    if (a.type == ARENA_VAR)
-        ar1 = find_entry(&machine.d.map, &a);
-    if (b.type == ARENA_VAR)
-        ar2 = find_entry(&machine.d.map, &b);
-
-    return Bool(ar2.as.Bool && ar1.as.Bool);
+    return Bool(b.as.Bool && a.as.Bool);
 }
 
-static arena _assign(arena a, arena b)
+static arena find(arena tmp)
 {
-
-    arena tmp;
-
-    if (a.type == ARENA_VAR)
-    {
-        tmp = find_entry(&machine.d.map, &a);
-
-        if (tmp.type != ARENA_NULL)
-            write_dict(&machine.d, &b, &tmp);
-    }
-    else
-        write_dict(&machine.d, &b, &a);
-
-    return find_entry(&machine.d.map, &b);
+    return find_entry(&machine.glob.map, &tmp);
+}
+static bool exists(arena tmp)
+{
+    return find_entry(&machine.glob.map, &tmp).type != ARENA_NULL;
+}
+static Interpretation undefined_var(arena tmp)
+{
+    runtime_error("Undefined variable `%s`.", tmp.as.String);
+    return INTERPRET_RUNTIME_ERR;
 }
 
 Interpretation run()
@@ -506,17 +453,24 @@ Interpretation run()
         case OP_NULL:
             push(Null());
             break;
-        case OP_ASSIGN:
-            push(_assign(POP(), POP()));
+        case OP_SET_GLOBAL:
+            tmp = READ_CONSTANT();
+            if (!exists(tmp))
+                return undefined_var(tmp);
+            write_dict(&machine.glob, tmp, POP());
+            push(find(tmp));
+            break;
+        case OP_GET_GLOBAL:
+            push(find(READ_CONSTANT()));
             break;
         case OP_NOOP:
             break;
+        case OP_GLOBAL_DEF:
+            write_dict(&machine.glob, READ_CONSTANT(), POP());
+            break;
         case OP_PRINT:
             tmp = POP();
-            if (tmp.type == ARENA_VAR)
-                print(find_entry(&machine.d.map, &tmp));
-            else
-                print(tmp);
+            print(tmp.type == ARENA_VAR ? find(tmp) : tmp);
             break;
         case OP_RETURN:
             return INTERPRET_SUCCESS;

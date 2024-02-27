@@ -2,7 +2,7 @@
 
 void init_chunk(Chunk c)
 {
-    c->capacity = TABLE_SIZE;
+    c->capacity = IP_SIZE;
     c->count = 0;
     c->op_codes = arena_alloc(IP_SIZE * sizeof(uint8_t), ARENA_BYTE_PTR);
     c->line = 0;

@@ -148,7 +148,7 @@ static arena append_char_to_str(arena s, arena c)
     c = arena_alloc(sizeof(char) * 2, ARENA_STR);
     c.as.String[0] = ch;
     c.as.String[1] = '\0';
-    s = arena_realloc(&s, sizeof(char) * (s.length + 2));
+    s = arena_realloc(&s, sizeof(char) * (s.length + 1));
     strcat(s.as.String, c.as.String);
     arena_free(&c);
     return s;

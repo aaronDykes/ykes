@@ -6,11 +6,11 @@
 
 #define CAPACITY 50
 #define INC 2
-#define PAGE 16384 * 16
+#define PAGE 16384 * 4
 #define ARENA_SIZE 100
-#define STACK_SIZE 100
-#define TABLE_SIZE 100
-#define IP_SIZE 50
+#define STACK_SIZE 250
+#define TABLE_SIZE 250
+#define IP_SIZE 100
 #define MEM_OFFSET 1
 
 #define GROW_CAPACITY(capacity) \
@@ -46,8 +46,8 @@ void arena_free_arena(Arena ar);
 
 void *alloc_ptr(size_t size);
 
-arena arena_init(void *data, size_t size, T type);
-arena arena_alloc(size_t size, T type);
+arena arena_init(void *data, size_t size, int type);
+arena arena_alloc(size_t size, int type);
 arena arena_realloc(Arena ar, size_t size);
 
 arena Char(char ch);
