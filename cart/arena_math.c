@@ -893,7 +893,7 @@ arena _mul(arena a, arena b)
     case ARENA_INT:
         return mul_arena_int(a.as.Int, b);
     case ARENA_LONG:
-        return add_arena_long(a.as.Long, b);
+        return mul_arena_long(a.as.Long, b);
     }
     return a;
 }
@@ -910,7 +910,7 @@ arena _div(arena a, arena b)
     case ARENA_INT:
         return div_arena_int(b.as.Int, a);
     case ARENA_LONG:
-        return add_arena_long(b.as.Long, a);
+        return div_arena_long(b.as.Long, a);
     }
     return b;
 }
@@ -925,7 +925,7 @@ arena _mod(arena a, arena b)
     case ARENA_INT:
         return mod_arena_int(b.as.Int, a);
     case ARENA_LONG:
-        return add_arena_long(b.as.Long, a);
+        return mod_arena_long(b.as.Long, a);
     }
 
     return b;

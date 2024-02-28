@@ -96,7 +96,7 @@ static Interpretation undefined_var(arena tmp)
 }
 static uint8_t falsey()
 {
-    return (machine.stack_top[-1].as.Bool) ? 1 : 0;
+    return (!machine.stack_top[-1].as.Bool) ? 1 : 0;
 }
 
 Interpretation run()
@@ -178,11 +178,8 @@ Interpretation run()
             push(Null());
             break;
         case OP_JMPF:
-        {
-            uint16_t offset = READ_SHORT();
-            machine.ip.as.Bytes += (offset * falsey());
+            machine.ip.as.Bytes += (READ_SHORT() * falsey());
             break;
-        }
         case OP_JMP:
             machine.ip.as.Bytes += READ_SHORT();
             break;
