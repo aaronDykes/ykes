@@ -90,7 +90,13 @@ static void patch_jump(Compiler *c, int byte);
 
 static void for_statement(Compiler *c);
 static void while_statement(Compiler *c);
+
+static void consume_if(Compiler *c);
+static void consume_elif(Compiler *c);
+
 static void if_statement(Compiler *c);
+static int elif_statement(Compiler *c, int fi);
+
 static void default_expression(Compiler *c);
 static void expression(Compiler *c);
 

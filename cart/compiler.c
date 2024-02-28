@@ -151,29 +151,75 @@ static void while_statement(Compiler *c)
     emit_byte(c->ch, OP_POP);
 
     statement(c);
+
+    // If falsey, loop
     emit_loop(c, start);
 
+    // If true, exit
     patch_jump(c, exit_jmp);
     emit_byte(c->ch, OP_POP);
 }
 
+static void consume_if(Compiler *c)
+{
+    consume(TOKEN_CH_LPAREN, "Expect `(` after an 'if'.", &c->parser);
+    expression(c);
+    consume(TOKEN_CH_RPAREN, "Expect `)` after an 'if' condtion.", &c->parser);
+}
+static void consume_elif(Compiler *c)
+{
+    consume(TOKEN_CH_LPAREN, "Expect `(` after an 'elif'.", &c->parser);
+    expression(c);
+    consume(TOKEN_CH_RPAREN, "Expect `)` after an 'elif' condtion.", &c->parser);
+}
+
 static void if_statement(Compiler *c)
 {
-    consume(TOKEN_CH_LPAREN, "Expect `(` prior to if statement.", &c->parser);
-    expression(c);
-    consume(TOKEN_CH_RPAREN, "Expect `)` after an if statement.", &c->parser);
+
+    consume_if(c);
 
     int if_jump = emit_jump(c->ch, OP_JMPF);
+    // If truthy, jump here
     emit_byte(c->ch, OP_POP);
     statement(c);
+
+    if (match(TOKEN_ELIF, &c->parser))
+    {
+        consume_elif(c);
+
+        int elif = emit_jump(c->ch, OP_JMPF);
+        patch_jump(c, if_jump);
+        emit_byte(c->ch, OP_POP);
+
+        while (match(TOKEN_ELIF, &c->parser))
+        {
+            consume_elif(c);
+            int tmp = elif;
+            elif = emit_jump(c->ch, OP_JMPF);
+            patch_jump(c, tmp);
+            emit_byte(c->ch, OP_POP);
+            statement(c);
+        }
+        patch_jump(c, elif);
+    }
 
     int else_jump = emit_jump(c->ch, OP_JMP);
     patch_jump(c, if_jump);
     emit_byte(c->ch, OP_POP);
 
+    // if falsey, jump here
+    emit_byte(c->ch, OP_POP);
+
     if (match(TOKEN_ELSE, &c->parser))
         statement(c);
     patch_jump(c, else_jump);
+}
+
+static int elif_statement(Compiler *c, int fi)
+{
+
+    while (match(TOKEN_ELIF, &c->parser))
+        statement(c);
 }
 
 static void patch_jump(Compiler *c, int offset)

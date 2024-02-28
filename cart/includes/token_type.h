@@ -59,6 +59,7 @@ enum
     TOKEN_FALSE,
     TOKEN_FOR,
     TOKEN_IF,
+    TOKEN_ELIF,
     TOKEN_NULL,
     TOKEN_PRINT,
     TOKEN_RETURN,

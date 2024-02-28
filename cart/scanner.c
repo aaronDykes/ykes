@@ -169,7 +169,18 @@ static int id_type()
     case 'c':
         return check_keyword(1, 4, "lass", TOKEN_CLASS);
     case 'e':
-        return check_keyword(1, 3, "lse", TOKEN_ELSE);
+        if (scan.current - scan.start > 1)
+            switch (scan.start[1])
+            {
+            case 'l':
+                switch (scan.start[2])
+                {
+                case 's':
+                    return check_keyword(3, 1, "e", TOKEN_ELSE);
+                case 'i':
+                    return check_keyword(3, 1, "f", TOKEN_ELIF);
+                }
+            }
     case 'f':
         if (scan.current - scan.start > 1)
             switch (scan.start[1])
