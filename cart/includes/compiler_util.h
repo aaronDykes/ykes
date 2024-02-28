@@ -78,11 +78,22 @@ static void print_statement(Compiler *c);
 
 static void begin_scope(comp *c);
 static void end_scope(Compiler *c);
+
+static void parse_block(Compiler *c);
 static void block(Compiler *c);
+
+static void comment(Compiler *c);
+
+static int emit_jump(Chunk ch, int byte);
+static void patch_jump(Compiler *c, int byte);
+static void if_statement(Compiler *c);
+static void default_expression(Compiler *c);
+static void expression(Compiler *c);
 
 static bool match(int t, Parser *parser);
 static bool check(int t, Parser *parser);
-static void expression(Compiler *c);
+static bool is_comment(Parser *parser);
+
 static void grouping(Compiler *c);
 static PRule *get_rule(int t);
 static void parse_precedence(Precedence precedence, Compiler *c);

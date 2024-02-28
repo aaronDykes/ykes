@@ -103,23 +103,68 @@ static void statement(Compiler *c)
 
     if (match(TOKEN_PRINT, &c->parser))
         print_statement(c);
-    else if (check(TOKEN_LINE_COMMENT, &c->parser) || check(TOKEN_NLINE_COMMENT, &c->parser))
-    {
-        advance_compiler(&c->parser);
-        emit_byte(c->ch, OP_NOOP);
-    }
+    else if (match(TOKEN_IF, &c->parser))
+        if_statement(c);
     else if (match(TOKEN_CH_LCURL, &c->parser))
-    {
-        begin_scope(&c->compiler);
         block(c);
-        end_scope(c);
-    }
+    else if (is_comment(&c->parser))
+        comment(c);
     else
-    {
-        expression(c);
-        consume(TOKEN_CH_SEMI, "Expect `;` after expression.", &c->parser);
-        emit_byte(c->ch, OP_POP);
-    }
+        default_expression(c);
+}
+
+static inline bool is_comment(Parser *parser)
+{
+    return check(TOKEN_LINE_COMMENT, parser) || check(TOKEN_NLINE_COMMENT, parser);
+}
+
+static void comment(Compiler *c)
+{
+
+    advance_compiler(&c->parser);
+    emit_byte(c->ch, OP_NOOP);
+}
+
+static void if_statement(Compiler *c)
+{
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to if statement.", &c->parser);
+    expression(c);
+    consume(TOKEN_CH_RPAREN, "Expect `)` after an if statement.", &c->parser);
+
+    int jump = emit_jump(c->ch, OP_JMPF);
+    emit_byte(c->ch, OP_POP);
+    statement(c);
+    int else_jump = emit_jump(c->ch, OP_JMP);
+    patch_jump(c, jump);
+
+    if (match(TOKEN_ELSE, &c->parser))
+        statement(c);
+    patch_jump(c, else_jump);
+}
+
+static void patch_jump(Compiler *c, int offset)
+{
+    int jump = c->ch->count - offset - 2;
+
+    if (jump > INT16_MAX)
+        error("To great a distance ", &c->parser);
+
+    c->ch->op_codes.as.Bytes[offset] = (jump >> 8) & 0xFF;
+    c->ch->op_codes.as.Bytes[offset + 1] = jump & 0xFF;
+}
+static int emit_jump(Chunk ch, int byte)
+{
+    emit_byte(ch, byte);
+    emit_byte(ch, 0xFF);
+    emit_byte(ch, 0xFF);
+
+    return ch->count - 2;
+}
+static void default_expression(Compiler *c)
+{
+    expression(c);
+    consume(TOKEN_CH_SEMI, "Expect `;` after expression.", &c->parser);
+    emit_byte(c->ch, OP_POP);
 }
 
 static void print_statement(Compiler *c)
@@ -144,11 +189,17 @@ static void end_scope(Compiler *c)
         arena_free(&c->compiler.locals[--c->compiler.local_count].name);
 }
 
-static void block(Compiler *c)
+static void parse_block(Compiler *c)
 {
     while (!check(TOKEN_CH_RCURL, &c->parser) && !check(TOKEN_EOF, &c->parser))
         declaration(c);
     consume(TOKEN_CH_RCURL, "Expect `}` after block statement", &c->parser);
+}
+static void block(Compiler *c)
+{
+    begin_scope(&c->compiler);
+    parse_block(c);
+    end_scope(c);
 }
 
 static bool match(int t, Parser *parser)

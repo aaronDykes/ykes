@@ -34,6 +34,9 @@ typedef enum
     OP_GE,
     OP_NE,
 
+    OP_JMPF,
+    OP_JMP,
+
     OP_JEQ,
     OP_JLT,
     OP_JLE,

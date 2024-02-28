@@ -55,11 +55,7 @@ static void push(arena ar)
     machine.current_size++;
     *machine.stack_top++ = ar;
 }
-static arena pop()
-{
-    --machine.current_size;
-    return *--machine.stack_top;
-}
+
 static void popn(arena n)
 {
     for (int i = 0; i < n.as.Int; i++)
@@ -98,13 +94,19 @@ static Interpretation undefined_var(arena tmp)
     runtime_error("Undefined variable `%s`.", tmp.as.String);
     return INTERPRET_RUNTIME_ERR;
 }
+static uint8_t falsey()
+{
+    return (machine.stack_top[-1].as.Bool) ? 1 : 0;
+}
 
 Interpretation run()
 {
 
 #define READ_BYTE() (*machine.ip.as.Bytes++)
+#define READ_SHORT() ((uint16_t)((READ_BYTE() << 8) | READ_BYTE()))
 #define READ_CONSTANT() (machine.ch->constants.vals[READ_BYTE()])
-#define POP() (*--machine.stack_top)
+#define POP() \
+    (--machine.current_size, *--machine.stack_top)
 #define LOCAL() (machine.stack[READ_BYTE()])
 
     uint8_t instruction;
@@ -128,52 +130,61 @@ Interpretation run()
             *--machine.stack_top = _neg(*machine.stack_top++);
             break;
         case OP_ADD:
-            push(_add(pop(), pop()));
+            push(_add(POP(), POP()));
             break;
         case OP_POPN:
             popn(READ_CONSTANT());
             break;
         case OP_POP:
-            pop();
+            POP();
             break;
         case OP_SUB:
-            push(_sub(pop(), pop()));
+            push(_sub(POP(), POP()));
             break;
         case OP_MUL:
-            push(_mul(pop(), pop()));
+            push(_mul(POP(), POP()));
             break;
         case OP_MOD:
-            push(_mod(pop(), pop()));
+            push(_mod(POP(), POP()));
             break;
         case OP_DIV:
-            push(_div(pop(), pop()));
+            push(_div(POP(), POP()));
             break;
         case OP_EQ:
-            push(_eq(pop(), pop()));
+            push(_eq(POP(), POP()));
             break;
         case OP_LT:
-            push(_lt(pop(), pop()));
+            push(_lt(POP(), POP()));
             break;
         case OP_LE:
-            push(_le(pop(), pop()));
+            push(_le(POP(), POP()));
             break;
         case OP_GT:
-            push(_gt(pop(), pop()));
+            push(_gt(POP(), POP()));
             break;
         case OP_GE:
-            push(_ge(pop(), pop()));
+            push(_ge(POP(), POP()));
             break;
         case OP_NE:
-            push(_ne(pop(), pop()));
+            push(_ne(POP(), POP()));
             break;
         case OP_OR:
-            push(_or(pop(), pop()));
+            push(_or(POP(), POP()));
             break;
         case OP_AND:
-            push(_and(pop(), pop()));
+            push(_and(POP(), POP()));
             break;
         case OP_NULL:
             push(Null());
+            break;
+        case OP_JMPF:
+        {
+            uint16_t offset = READ_SHORT();
+            machine.ip.as.Bytes += (offset * falsey());
+            break;
+        }
+        case OP_JMP:
+            machine.ip.as.Bytes += READ_SHORT();
             break;
         case OP_GET_LOCAL:
             push(LOCAL());
@@ -185,7 +196,7 @@ Interpretation run()
             tmp = READ_CONSTANT();
             if (!exists(tmp))
                 return undefined_var(tmp);
-            write_dict(&machine.glob, tmp, pop());
+            write_dict(&machine.glob, tmp, POP());
             push(find(tmp));
             break;
         case OP_GET_GLOBAL:
@@ -194,10 +205,10 @@ Interpretation run()
         case OP_NOOP:
             break;
         case OP_GLOBAL_DEF:
-            write_dict(&machine.glob, READ_CONSTANT(), pop());
+            write_dict(&machine.glob, READ_CONSTANT(), POP());
             break;
         case OP_PRINT:
-            tmp = pop();
+            tmp = POP();
             print(tmp.type == ARENA_VAR ? find(tmp) : tmp);
             break;
         case OP_RETURN:
@@ -208,5 +219,6 @@ Interpretation run()
 #undef LOCAL
 #undef POP
 #undef READ_CONSTANT
+#undef READ_SHORT
 #undef READ_BYTE
 }

@@ -6,7 +6,6 @@ static void check_stack_size();
 static void reset_stack();
 
 static void push(arena ar);
-static arena pop();
 static void popn(arena n);
 
 static arena find(arena tmp);
