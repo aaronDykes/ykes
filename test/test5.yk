@@ -1,9 +1,7 @@
-if (69 == 9)
-{
+if (69 != "69")
     print "interpreter crafting 69420";
-}
 else
-{
     print "crafting interpreters 42069";
-}
 
+
+ 

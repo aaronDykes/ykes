@@ -153,6 +153,15 @@ Interpretation run()
         case OP_EQ:
             push(_eq(POP(), POP()));
             break;
+        case OP_NE:
+            push(_ne(POP(), POP()));
+            break;
+        case OP_SEQ:
+            push(_seq(POP(), POP()));
+            break;
+        case OP_SNE:
+            push(_sne(POP(), POP()));
+            break;
         case OP_LT:
             push(_lt(POP(), POP()));
             break;
@@ -164,9 +173,6 @@ Interpretation run()
             break;
         case OP_GE:
             push(_ge(POP(), POP()));
-            break;
-        case OP_NE:
-            push(_ne(POP(), POP()));
             break;
         case OP_OR:
             push(_or(POP(), POP()));
@@ -182,6 +188,9 @@ Interpretation run()
             break;
         case OP_JMP:
             machine.ip.as.Bytes += READ_SHORT();
+            break;
+        case OP_LOOP:
+            machine.ip.as.Bytes -= READ_SHORT();
             break;
         case OP_GET_LOCAL:
             push(LOCAL());

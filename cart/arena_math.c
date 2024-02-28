@@ -4,14 +4,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-void log_err(const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    vfprintf(stderr, format, args);
-    va_end(args);
-    fputs("\n", stderr);
-}
 static arena Num(long long int range)
 {
     if (range < INT32_MAX && range > INT32_MIN)
@@ -523,6 +515,8 @@ static arena int_eq(int ival, arena ar)
         return Bool(ival == ar.as.Long);
     case ARENA_CHAR:
         return Bool(ival == ar.as.Char);
+    case ARENA_STR:
+        return itoa_eqcmp(ival, ar);
     default:
         log_err("ERROR: comparison type mismatch");
     }
@@ -540,6 +534,8 @@ static arena int_ne(int ival, arena ar)
         return Bool(ival != ar.as.Long);
     case ARENA_CHAR:
         return Bool(ival != ar.as.Char);
+    case ARENA_STR:
+        return itoa_neqcmp(ival, ar);
     default:
         log_err("ERROR: comparison type mismatch");
     }
@@ -626,6 +622,8 @@ static arena long_eq(long long int llint, arena ar)
         return Bool(llint == ar.as.Char);
     case ARENA_LONG:
         return Bool(llint == ar.as.Long);
+    case ARENA_STR:
+        return ltoa_eqcmp(llint, ar);
     default:
         log_err("ERROR: comparison type mismatch");
     }
@@ -643,6 +641,8 @@ static arena long_ne(long long int llint, arena ar)
         return Bool(llint != ar.as.Char);
     case ARENA_LONG:
         return Bool(llint != ar.as.Long);
+    case ARENA_STR:
+        return ltoa_neqcmp(llint, ar);
     default:
         log_err("ERROR: comparison type mismatch");
     }
@@ -863,7 +863,6 @@ arena _add(arena a, arena b)
     }
     return a;
 }
-
 arena _sub(arena a, arena b)
 {
 
@@ -880,7 +879,6 @@ arena _sub(arena a, arena b)
     }
     return b;
 }
-
 arena _mul(arena a, arena b)
 {
 
@@ -897,7 +895,6 @@ arena _mul(arena a, arena b)
     }
     return a;
 }
-
 arena _div(arena a, arena b)
 {
 
@@ -914,7 +911,6 @@ arena _div(arena a, arena b)
     }
     return b;
 }
-
 arena _mod(arena a, arena b)
 {
 
@@ -1004,6 +1000,55 @@ arena _ne(arena a, arena b)
         default:
             log_err("ERROR: Comparison type mismatch\n");
         }
+    }
+    return b;
+}
+
+arena _seq(arena a, arena b)
+{
+    if (a.type != b.type)
+        return Bool(false);
+
+    switch (b.type)
+    {
+    case ARENA_INT:
+        return Bool(b.as.Int == a.as.Int);
+    case ARENA_DOUBLE:
+        return Bool(b.as.Double == a.as.Double);
+    case ARENA_LONG:
+        return Bool(b.as.Long == a.as.Long);
+    case ARENA_CHAR:
+        return Bool(b.as.Char == a.as.Char);
+    case ARENA_STR:
+        return Bool(strcmp(b.as.String, a.as.String) == 0);
+    case ARENA_NULL:
+        return Bool(false);
+    case ARENA_BOOL:
+        return Bool(b.as.Bool == a.as.Bool);
+    }
+    return b;
+}
+arena _sne(arena a, arena b)
+{
+    if (a.type != b.type)
+        return Bool(true);
+
+    switch (b.type)
+    {
+    case ARENA_INT:
+        return Bool(b.as.Int != a.as.Int);
+    case ARENA_DOUBLE:
+        return Bool(b.as.Double != a.as.Double);
+    case ARENA_LONG:
+        return Bool(b.as.Long != a.as.Long);
+    case ARENA_CHAR:
+        return Bool(b.as.Char != a.as.Char);
+    case ARENA_STR:
+        return Bool(strcmp(b.as.String, a.as.String) != 0);
+    case ARENA_NULL:
+        return Bool(false);
+    case ARENA_BOOL:
+        return Bool(b.as.Bool != a.as.Bool);
     }
     return b;
 }

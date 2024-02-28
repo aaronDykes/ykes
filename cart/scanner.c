@@ -9,6 +9,7 @@ static token number();
 static token id();
 static token character();
 static token skip_comment();
+static token strict_toke(int t);
 
 void init_scanner(const char *src)
 {
@@ -50,7 +51,7 @@ token scan_token()
     case ':':
         return make_token(TOKEN_CH_COLON);
     case '/':
-        if (next() == '/' || next() == '*')
+        if (check('/') || check('*'))
             return skip_comment();
         return make_token(TOKEN_OP_DIV);
     case '*':
@@ -61,14 +62,22 @@ token scan_token()
         return make_token(TOKEN_OP_ADD);
     case '%':
         return make_token(TOKEN_OP_MOD);
+    case '&':
+        return make_token(match('&') ? TOKEN_SC_AND : TOKEN_LG_AND);
+    case '|':
+        return make_token(match('|') ? TOKEN_SC_OR : TOKEN_LG_OR);
     case '!':
+        if (check('=') && check_peek(1, '='))
+            return strict_toke(TOKEN_OP_SNE);
         return make_token(match('=') ? TOKEN_OP_NE : TOKEN_OP_BANG);
     case '=':
+        if (check('=') && check_peek(1, '='))
+            return strict_toke(TOKEN_OP_SEQ);
         return make_token(match('=') ? TOKEN_OP_EQ : TOKEN_OP_ASSIGN);
     case '>':
-        return make_token(match('=') ? TOKEN_OP_GT : TOKEN_OP_GE);
+        return make_token(match('=') ? TOKEN_OP_GE : TOKEN_OP_GT);
     case '<':
-        return make_token(match('=') ? TOKEN_OP_LT : TOKEN_OP_LE);
+        return make_token(match('=') ? TOKEN_OP_LE : TOKEN_OP_LT);
     case '\'':
         return character();
     case '"':
@@ -139,8 +148,14 @@ static token id()
 }
 static token character()
 {
-    nskip(3);
+    nskip(2);
     return make_token(TOKEN_CHAR);
+}
+
+static token strict_toke(int t)
+{
+    nskip(2);
+    return make_token(t);
 }
 
 static int id_type()
@@ -241,6 +256,15 @@ static bool is_space()
            next() == '\t' ||
            next() == '\r' ||
            next() == '\n';
+}
+
+static bool check_peek(int n, char expected)
+{
+    return peek(n) == expected;
+}
+static bool check(char expected)
+{
+    return next() == expected;
 }
 static bool match(char expected)
 {

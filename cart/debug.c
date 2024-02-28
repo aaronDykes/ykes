@@ -25,6 +25,19 @@ static int constant_instruction(const char *name, Chunk c, int offset)
     return offset + 2;
 }
 
+static int jump_instruction(const char *name, int sign,
+                            Chunk chunk, int offset)
+{
+    uint16_t jump = (uint16_t)((chunk->op_codes.as.Bytes[offset + 1] << 8) |
+                               (chunk->op_codes.as.Bytes[offset + 2]));
+
+    printf("%-16s %4d -> %d\n",
+           name, offset,
+           offset + 3 + sign * jump);
+
+    return offset + 3;
+}
+
 void disassemble_chunk(Chunk c, const char *name)
 {
 
@@ -87,9 +100,11 @@ int disassemble_instruction(Chunk c, int offset)
     case OP_GLOBAL_DEF:
         return simple_instruction("OP_GLOBAL_DEF", offset);
     case OP_JMPF:
-        return simple_instruction("OP_JMPF", offset);
+        return jump_instruction("OP_JMPF", 1, c, offset);
     case OP_JMP:
-        return simple_instruction("OP_JMP", offset);
+        return jump_instruction("OP_JMP", 1, c, offset);
+    case OP_LOOP:
+        return jump_instruction("OP_LOOP", -1, c, offset);
     case OP_POPN:
         return simple_instruction("OP_POPN", offset);
     case OP_POP:

@@ -84,8 +84,12 @@ static void block(Compiler *c);
 
 static void comment(Compiler *c);
 
+static void emit_loop(Compiler *c, int byte);
 static int emit_jump(Chunk ch, int byte);
 static void patch_jump(Compiler *c, int byte);
+
+static void for_statement(Compiler *c);
+static void while_statement(Compiler *c);
 static void if_statement(Compiler *c);
 static void default_expression(Compiler *c);
 static void expression(Compiler *c);
@@ -97,6 +101,9 @@ static bool is_comment(Parser *parser);
 static void grouping(Compiler *c);
 static PRule *get_rule(int t);
 static void parse_precedence(Precedence precedence, Compiler *c);
+
+static void _and(Compiler *c);
+static void _or(Compiler *c);
 
 static void binary(Compiler *c);
 static void unary(Compiler *c);
@@ -145,12 +152,18 @@ static PRule rules[] = {
 
     [TOKEN_OP_ASSIGN] = {NULL, NULL, PREC_ASSIGNMENT},
     [TOKEN_OP_BANG] = {unary, NULL, PREC_TERM},
+    [TOKEN_OP_SNE] = {NULL, binary, PREC_EQUALITY},
+    [TOKEN_OP_SEQ] = {NULL, binary, PREC_EQUALITY},
     [TOKEN_OP_NE] = {NULL, binary, PREC_EQUALITY},
     [TOKEN_OP_EQ] = {NULL, binary, PREC_EQUALITY},
     [TOKEN_OP_GT] = {NULL, binary, PREC_COMPARISON},
     [TOKEN_OP_GE] = {NULL, binary, PREC_COMPARISON},
     [TOKEN_OP_LT] = {NULL, binary, PREC_COMPARISON},
     [TOKEN_OP_LE] = {NULL, binary, PREC_COMPARISON},
+
+    [TOKEN_SC_AND] = {NULL, _and, PREC_AND},
+    [TOKEN_SC_OR] = {NULL, _or, PREC_OR},
+
     [TOKEN_OP_AND] = {NULL, binary, PREC_AND},
     [TOKEN_OP_OR] = {NULL, binary, PREC_OR},
 

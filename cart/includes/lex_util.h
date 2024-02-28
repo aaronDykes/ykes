@@ -12,7 +12,10 @@ static void skip();
 static void nskip(int n);
 
 static bool is_space();
+static bool check_peek(int n, char expected);
+static bool check(char expected);
 static bool match(char expected);
+
 static bool end();
 static bool digit(char c);
 static bool alpha(char c);

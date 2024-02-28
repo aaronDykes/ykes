@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-static void log_err(const char *format, ...)
+void log_err(const char *format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -11,13 +11,13 @@ static void log_err(const char *format, ...)
     fputs("\n", stderr);
 }
 
-static void str_swap(char *from, char *to)
+void str_swap(char *from, char *to)
 {
     char tmp = *from;
     *from = *to;
     *to = tmp;
 }
-static void string_rev(char *c)
+void string_rev(char *c)
 {
     char *to = c + strlen(c) - 1;
     char *from = c;
@@ -26,7 +26,7 @@ static void string_rev(char *c)
         str_swap(from, to);
 }
 
-static int intlen(int n)
+int intlen(int n)
 {
     int count = 0;
     do
@@ -35,7 +35,7 @@ static int intlen(int n)
     } while (n /= 10);
     return count;
 }
-static int long_len(long long int n)
+int longlen(long long int n)
 {
     int count = 0;
     do
@@ -45,7 +45,7 @@ static int long_len(long long int n)
     return count;
 }
 
-static char *itoa(char *c, int n)
+char *itoa(char *c, int n)
 {
     int tmp = n;
     char *ch = c;
@@ -63,7 +63,7 @@ static char *itoa(char *c, int n)
     string_rev(c);
     return c;
 }
-static char *lltoa(char *c, long long int n)
+char *lltoa(char *c, long long int n)
 {
     long long tmp = n;
     char *ch = c;
@@ -105,7 +105,7 @@ arena prepend_char_to_str(arena s, arena a)
 }
 arena prepend_long_to_str(arena s, arena a)
 {
-    int len = long_len(s.as.Long);
+    int len = longlen(s.as.Long);
     long long int llint = s.as.Long;
     if (llint < 0)
         len++;
@@ -155,7 +155,7 @@ static arena append_char_to_str(arena s, arena c)
 }
 static arena append_long_to_str(arena s, arena i)
 {
-    int len = long_len(i.as.Long);
+    int len = longlen(i.as.Long);
     long long int llint = i.as.Long;
     int new = len + 1 + s.length;
 
@@ -187,14 +187,60 @@ arena append(arena s, arena ar)
     return ar;
 }
 
+arena ltoa_eqcmp(long long int llint, arena ar)
+{
+    arena a;
+    arena res;
+    int len = longlen(llint);
+    a = arena_alloc(sizeof(char) * len + 1, ARENA_STR);
+    res = Bool(strcmp(lltoa(a.as.String, llint), ar.as.String) == 0);
+    arena_free(&a);
+    return res;
+}
+arena ltoa_neqcmp(long long int llint, arena ar)
+{
+    arena a;
+    arena res;
+    int len = longlen(llint);
+    a = arena_alloc(sizeof(char) * len + 1, ARENA_STR);
+    res = Bool(strcmp(lltoa(a.as.String, llint), ar.as.String) != 0);
+    arena_free(&a);
+    return res;
+}
+arena itoa_eqcmp(int ival, arena ar)
+{
+    arena a;
+    arena res;
+    int len = intlen(ival);
+    a = arena_alloc(sizeof(char) * len + 1, ARENA_STR);
+    res = Bool(strcmp(itoa(a.as.String, ival), ar.as.String) == 0);
+    arena_free(&a);
+    return res;
+}
+arena itoa_neqcmp(int ival, arena ar)
+{
+    arena a;
+    arena res;
+    int len = intlen(ival);
+    a = arena_alloc(sizeof(char) * len + 1, ARENA_STR);
+    res = Bool(strcmp(itoa(a.as.String, ival), ar.as.String) != 0);
+    arena_free(&a);
+    return res;
+}
+
 arena string_eq(arena s, arena c)
 {
+
     switch (c.type)
     {
     case ARENA_NULL:
         return Bool(*s.as.String == '\0');
     case ARENA_STR:
         return Bool(strcmp(s.as.String, c.as.String) == 0);
+    case ARENA_INT:
+        return itoa_eqcmp(c.as.Int, s);
+    case ARENA_LONG:
+        return ltoa_eqcmp(c.as.Int, s);
     }
     return Bool(false);
 }
@@ -206,6 +252,10 @@ arena string_ne(arena s, arena c)
         return Bool(*s.as.String != '\0');
     case ARENA_STR:
         return Bool(strcmp(s.as.String, c.as.String) != 0);
+    case ARENA_INT:
+        return itoa_eqcmp(c.as.Int, s);
+    case ARENA_LONG:
+        return ltoa_eqcmp(c.as.Int, s);
     }
     return Bool(true);
 }

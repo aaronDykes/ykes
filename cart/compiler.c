@@ -105,6 +105,10 @@ static void statement(Compiler *c)
         print_statement(c);
     else if (match(TOKEN_IF, &c->parser))
         if_statement(c);
+    else if (match(TOKEN_WHILE, &c->parser))
+        while_statement(c);
+    else if (match(TOKEN_FOR, &c->parser))
+        for_statement(c);
     else if (match(TOKEN_CH_LCURL, &c->parser))
         block(c);
     else if (is_comment(&c->parser))
@@ -125,17 +129,47 @@ static void comment(Compiler *c)
     emit_byte(c->ch, OP_NOOP);
 }
 
+static void for_statement(Compiler *c)
+{
+    begin_scope(c);
+    consume(TOKEN_CH_LPAREN, "Expect `(` after to 'for'.", &c->parser);
+    expression(c);
+    consume(TOKEN_CH_LPAREN, "Expect `)` after 'for' condition.", &c->parser);
+
+    end_scope(c);
+}
+
+static void while_statement(Compiler *c)
+{
+    int start = c->ch->count;
+
+    consume(TOKEN_CH_LPAREN, "Expect `(` after 'while'.", &c->parser);
+    expression(c);
+    consume(TOKEN_CH_RPAREN, "Expect `)` after 'while' condition.", &c->parser);
+
+    int exit_jmp = emit_jump(c->ch, OP_JMPF);
+    emit_byte(c->ch, OP_POP);
+
+    statement(c);
+    emit_loop(c, start);
+
+    patch_jump(c, exit_jmp);
+    emit_byte(c->ch, OP_POP);
+}
+
 static void if_statement(Compiler *c)
 {
     consume(TOKEN_CH_LPAREN, "Expect `(` prior to if statement.", &c->parser);
     expression(c);
     consume(TOKEN_CH_RPAREN, "Expect `)` after an if statement.", &c->parser);
 
-    int jump = emit_jump(c->ch, OP_JMPF);
+    int if_jump = emit_jump(c->ch, OP_JMPF);
     emit_byte(c->ch, OP_POP);
     statement(c);
+
     int else_jump = emit_jump(c->ch, OP_JMP);
-    patch_jump(c, jump);
+    patch_jump(c, if_jump);
+    emit_byte(c->ch, OP_POP);
 
     if (match(TOKEN_ELSE, &c->parser))
         statement(c);
@@ -144,6 +178,7 @@ static void if_statement(Compiler *c)
 
 static void patch_jump(Compiler *c, int offset)
 {
+
     int jump = c->ch->count - offset - 2;
 
     if (jump > INT16_MAX)
@@ -152,10 +187,23 @@ static void patch_jump(Compiler *c, int offset)
     c->ch->op_codes.as.Bytes[offset] = (jump >> 8) & 0xFF;
     c->ch->op_codes.as.Bytes[offset + 1] = jump & 0xFF;
 }
+
+static void emit_loop(Compiler *c, int byte)
+{
+    emit_byte(c->ch, OP_LOOP);
+
+    int offset = c->ch->count - byte + 2;
+
+    if (offset > UINT16_MAX)
+        error("ERROR: big boi loop", &c->parser);
+
+    emit_byte(c->ch, (offset >> 8) & 0xFF);
+    emit_byte(c->ch, offset & 0xFF);
+}
 static int emit_jump(Chunk ch, int byte)
 {
     emit_byte(ch, byte);
-    emit_byte(ch, 0xFF);
+    emit_byte(ch, 0xFF); /* Return this index */
     emit_byte(ch, 0xFF);
 
     return ch->count - 2;
@@ -248,6 +296,26 @@ static void parse_precedence(Precedence prec, Compiler *c)
         infix(c);
     }
 }
+static void _and(Compiler *c)
+{
+    int end = emit_jump(c->ch, OP_JMPF);
+
+    emit_byte(c->ch, OP_POP);
+    parse_precedence(PREC_AND, c);
+
+    patch_jump(c, end);
+}
+static void _or(Compiler *c)
+{
+    int else_jmp = emit_jump(c->ch, OP_JMPF);
+    int end_jmp = emit_jump(c->ch, OP_JMP);
+
+    patch_jump(c, else_jmp);
+    emit_byte(c->ch, OP_POP);
+
+    parse_precedence(PREC_OR, c);
+    patch_jump(c, end_jmp);
+}
 
 static void binary(Compiler *c)
 {
@@ -278,6 +346,12 @@ static void binary(Compiler *c)
         break;
     case TOKEN_OP_EQ:
         emit_byte(c->ch, OP_EQ);
+        break;
+    case TOKEN_OP_SNE:
+        emit_byte(c->ch, OP_SNE);
+        break;
+    case TOKEN_OP_SEQ:
+        emit_byte(c->ch, OP_SEQ);
         break;
     case TOKEN_OP_GT:
         emit_byte(c->ch, OP_GT);

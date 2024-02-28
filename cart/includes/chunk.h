@@ -27,25 +27,25 @@ typedef enum
     OP_MOD,
     OP_DIV,
 
+    OP_BIT_AND,
+    OP_BIT_OR,
+
+    OP_AND,
+    OP_OR,
+
+    OP_SEQ,
+    OP_SNE,
     OP_EQ,
+    OP_NE,
     OP_LT,
     OP_LE,
     OP_GT,
     OP_GE,
-    OP_NE,
 
     OP_JMPF,
     OP_JMP,
+    OP_LOOP,
 
-    OP_JEQ,
-    OP_JLT,
-    OP_JLE,
-    OP_JGT,
-    OP_JGE,
-    OP_JNE,
-
-    OP_AND,
-    OP_OR,
     OP_NOOP,
     OP_NULL,
 

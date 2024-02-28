@@ -24,14 +24,22 @@ enum
     TOKEN_OP_ASSIGN,
 
     TOKEN_OP_BANG,
+
+    TOKEN_OP_SEQ,
+    TOKEN_OP_SNE,
     TOKEN_OP_NE,
     TOKEN_OP_EQ,
     TOKEN_OP_GT,
     TOKEN_OP_GE,
     TOKEN_OP_LT,
     TOKEN_OP_LE,
+
     TOKEN_OP_AND,
     TOKEN_OP_OR,
+    TOKEN_SC_AND,
+    TOKEN_SC_OR,
+    TOKEN_LG_AND,
+    TOKEN_LG_OR,
 
     // Literals.
     TOKEN_ID,

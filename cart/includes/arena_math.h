@@ -10,6 +10,8 @@ arena _div(arena a, arena b);
 arena _mod(arena a, arena b);
 arena _eq(arena a, arena b);
 arena _ne(arena a, arena b);
+arena _seq(arena a, arena b);
+arena _sne(arena a, arena b);
 arena _lt(arena a, arena b);
 arena _le(arena a, arena b);
 arena _gt(arena a, arena b);
