@@ -57,15 +57,6 @@ struct Compiler
     vm *machine;
 };
 
-struct Elif
-{
-    arena jumps;
-    arena lengths;
-    int count;
-    int length;
-};
-
-typedef struct Elif Elif;
 typedef struct Compiler Compiler;
 
 typedef void (*parse_fn)(Compiler *);

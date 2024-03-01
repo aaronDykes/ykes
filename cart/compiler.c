@@ -220,12 +220,6 @@ static void switch_statement(Compiler *c)
 {
 }
 
-/**
- * TODO:
- * Only able to generate code for single elif statement
- * Bored and moving on.
- * Will revisit later
- */
 static void if_statement(Compiler *c)
 {
 
