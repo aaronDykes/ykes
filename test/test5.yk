@@ -1,10 +1,10 @@
 if (69 === "69")
     print "interpreter crafting 69420";
-elif (69 == 69)
+elif (69 != 69)
     print "It's working";
-elif (69 == 69)
+elif (69 != 69)
     print "foo bar baz";
-elif (69 == 69)
+elif (69 != 69)
     print "oops";
 elif (69 == 69)
 {

@@ -261,7 +261,7 @@ static void elif_statement(Compiler *c)
 static void patch_jump_end(Compiler *c, int current, int begin)
 {
 
-    int j1 = current - begin - 4;
+    int j1 = current - begin - 2;
 
     if (j1 >= INT16_MAX)
         error("To great a distance ", &c->parser);
