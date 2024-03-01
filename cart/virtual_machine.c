@@ -125,6 +125,12 @@ static int parse_ip_end(uint16_t offset)
     return 0;
 }
 
+static void init_runtime(Runtime *runtime)
+{
+    runtime->true_count = 0;
+    runtime->shorty = 0;
+}
+
 Interpretation run()
 {
 
@@ -137,16 +143,8 @@ Interpretation run()
     (--machine.current_size, *--machine.stack_top)
 #define LOCAL() (machine.stack[READ_BYTE()])
 
-    struct Runtime
-    {
-        arena ar;
-        int true_count;
-        uint16_t shorty;
-    };
-    typedef struct Runtime Runtime;
-
-    Runtime runtime;
-    runtime.true_count = 0;
+    static Runtime runtime;
+    init_runtime(&runtime);
 
     for (;;)
     {
@@ -224,10 +222,8 @@ Interpretation run()
             break;
         case OP_ELIF:
             runtime.shorty = READ_SHORT();
-
             if (FALSEY() || runtime.true_count >= 1)
                 break;
-
             machine.ip.as.Bytes += runtime.shorty;
             runtime.true_count++;
             break;

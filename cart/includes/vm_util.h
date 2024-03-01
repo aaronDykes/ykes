@@ -2,6 +2,14 @@
 #define _VM_UTIL_H
 #include "arena_math.h"
 
+struct Runtime
+{
+    arena ar;
+    int true_count;
+    uint16_t shorty;
+};
+typedef struct Runtime Runtime;
+
 static void check_stack_size();
 static void reset_stack();
 
