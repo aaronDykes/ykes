@@ -100,31 +100,6 @@ static Interpretation undefined_var(arena tmp)
     return INTERPRET_RUNTIME_ERR;
 }
 
-static int parse_ip(uint16_t offset)
-{
-    uint8_t *start = machine.ip.as.Bytes;
-    uint8_t *end = start + offset;
-
-    int i;
-    int res = 0;
-    int last = 0;
-    for (uint8_t *p = start, i = 0; p < end; p++, i++)
-        if (machine.ch->constants.vals[*p].type == ARENA_BOOL)
-            return res = i + 1;
-    return 0;
-}
-
-static int parse_ip_end(uint16_t offset)
-{
-    uint8_t *start = machine.ip.as.Bytes;
-    uint8_t *end = start + offset;
-
-    for (uint8_t *p = start, i = 0; p < end; p++, i++)
-        if (p[1] == OP_POP)
-            return i + 1;
-    return 0;
-}
-
 static void init_runtime(Runtime *runtime)
 {
     runtime->true_count = 0;
@@ -143,7 +118,7 @@ Interpretation run()
     (--machine.current_size, *--machine.stack_top)
 #define LOCAL() (machine.stack[READ_BYTE()])
 
-    static Runtime runtime;
+    Runtime runtime;
     init_runtime(&runtime);
 
     for (;;)
@@ -223,7 +198,10 @@ Interpretation run()
         case OP_ELIF:
             runtime.shorty = READ_SHORT();
             if (FALSEY() || runtime.true_count >= 1)
+            {
+                POP();
                 break;
+            }
             machine.ip.as.Bytes += runtime.shorty;
             runtime.true_count++;
             break;
