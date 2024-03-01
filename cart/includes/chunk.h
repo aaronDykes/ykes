@@ -42,7 +42,9 @@ typedef enum
     OP_GT,
     OP_GE,
 
+    OP_ELIF,
     OP_JMPF,
+    OP_JMPT,
     OP_JMP,
     OP_LOOP,
 

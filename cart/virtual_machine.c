@@ -55,6 +55,11 @@ static void push(arena ar)
     machine.current_size++;
     *machine.stack_top++ = ar;
 }
+static arena pop()
+{
+    machine.current_size--;
+    return *--machine.stack_top;
+}
 
 static void popn(arena n)
 {
@@ -94,9 +99,30 @@ static Interpretation undefined_var(arena tmp)
     runtime_error("Undefined variable `%s`.", tmp.as.String);
     return INTERPRET_RUNTIME_ERR;
 }
-static uint8_t falsey()
+
+static int parse_ip(uint16_t offset)
 {
-    return (!machine.stack_top[-1].as.Bool) ? 1 : 0;
+    uint8_t *start = machine.ip.as.Bytes;
+    uint8_t *end = start + offset;
+
+    int i;
+    int res = 0;
+    int last = 0;
+    for (uint8_t *p = start, i = 0; p < end; p++, i++)
+        if (machine.ch->constants.vals[*p].type == ARENA_BOOL)
+            return res = i + 1;
+    return 0;
+}
+
+static int parse_ip_end(uint16_t offset)
+{
+    uint8_t *start = machine.ip.as.Bytes;
+    uint8_t *end = start + offset;
+
+    for (uint8_t *p = start, i = 0; p < end; p++, i++)
+        if (p[1] == OP_POP)
+            return i + 1;
+    return 0;
 }
 
 Interpretation run()
@@ -105,12 +131,22 @@ Interpretation run()
 #define READ_BYTE() (*machine.ip.as.Bytes++)
 #define READ_SHORT() ((uint16_t)((READ_BYTE() << 8) | READ_BYTE()))
 #define READ_CONSTANT() (machine.ch->constants.vals[READ_BYTE()])
+#define PEEK() (machine.stack_top[-1])
+#define FALSEY() (!PEEK().as.Bool)
 #define POP() \
     (--machine.current_size, *--machine.stack_top)
 #define LOCAL() (machine.stack[READ_BYTE()])
 
-    uint8_t instruction;
-    arena tmp;
+    struct Runtime
+    {
+        arena ar;
+        int true_count;
+        uint16_t shorty;
+    };
+    typedef struct Runtime Runtime;
+
+    Runtime runtime;
+    runtime.true_count = 0;
 
     for (;;)
     {
@@ -121,7 +157,7 @@ Interpretation run()
                                 (int)(machine.ip.as.Bytes - machine.ch->op_codes.as.Bytes));
 #endif
 
-        switch (instruction = READ_BYTE())
+        switch (READ_BYTE())
         {
         case OP_CONSTANT:
             push(READ_CONSTANT());
@@ -184,7 +220,19 @@ Interpretation run()
             push(Null());
             break;
         case OP_JMPF:
-            machine.ip.as.Bytes += (READ_SHORT() * falsey());
+            machine.ip.as.Bytes += (READ_SHORT() * FALSEY());
+            break;
+        case OP_ELIF:
+            runtime.shorty = READ_SHORT();
+
+            if (FALSEY() || runtime.true_count >= 1)
+                break;
+
+            machine.ip.as.Bytes += runtime.shorty;
+            runtime.true_count++;
+            break;
+        case OP_JMPT:
+            machine.ip.as.Bytes += (READ_SHORT() * !FALSEY());
             break;
         case OP_JMP:
             machine.ip.as.Bytes += READ_SHORT();
@@ -196,14 +244,14 @@ Interpretation run()
             push(LOCAL());
             break;
         case OP_SET_LOCAL:
-            LOCAL() = machine.stack_top[-1];
+            LOCAL() = PEEK();
             break;
         case OP_SET_GLOBAL:
-            tmp = READ_CONSTANT();
-            if (!exists(tmp))
-                return undefined_var(tmp);
-            write_dict(&machine.glob, tmp, POP());
-            push(find(tmp));
+            runtime.ar = READ_CONSTANT();
+            if (!exists(runtime.ar))
+                return undefined_var(runtime.ar);
+            write_dict(&machine.glob, runtime.ar, POP());
+            push(find(runtime.ar));
             break;
         case OP_GET_GLOBAL:
             push(find(READ_CONSTANT()));
@@ -214,8 +262,7 @@ Interpretation run()
             write_dict(&machine.glob, READ_CONSTANT(), POP());
             break;
         case OP_PRINT:
-            tmp = POP();
-            print(tmp.type == ARENA_VAR ? find(tmp) : tmp);
+            print(POP());
             break;
         case OP_RETURN:
             return INTERPRET_SUCCESS;
@@ -224,6 +271,8 @@ Interpretation run()
 
 #undef LOCAL
 #undef POP
+#undef FALSEY
+#undef PEEK
 #undef READ_CONSTANT
 #undef READ_SHORT
 #undef READ_BYTE

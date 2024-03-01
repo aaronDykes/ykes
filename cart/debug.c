@@ -69,8 +69,6 @@ int disassemble_instruction(Chunk c, int offset)
         return simple_instruction("OP_DIVIDE", offset);
     case OP_MOD:
         return simple_instruction("OP_MOD", offset);
-    case OP_EQ:
-        return simple_instruction("OP_EQ", offset);
     case OP_LT:
         return simple_instruction("OP_LT", offset);
     case OP_LE:
@@ -79,8 +77,14 @@ int disassemble_instruction(Chunk c, int offset)
         return simple_instruction("OP_GT", offset);
     case OP_GE:
         return simple_instruction("OP_GE", offset);
+    case OP_EQ:
+        return simple_instruction("OP_EQ", offset);
     case OP_NE:
         return simple_instruction("OP_NE", offset);
+    case OP_SEQ:
+        return simple_instruction("OP_SEQ", offset);
+    case OP_SNE:
+        return simple_instruction("OP_SNE", offset);
     case OP_AND:
         return simple_instruction("OP_AND", offset);
     case OP_OR:
@@ -101,6 +105,10 @@ int disassemble_instruction(Chunk c, int offset)
         return simple_instruction("OP_GLOBAL_DEF", offset);
     case OP_JMPF:
         return jump_instruction("OP_JMPF", 1, c, offset);
+    case OP_JMPT:
+        return jump_instruction("OP_JMPT", 1, c, offset);
+    case OP_ELIF:
+        return jump_instruction("OP_ELIF", 1, c, offset);
     case OP_JMP:
         return jump_instruction("OP_JMP", 1, c, offset);
     case OP_LOOP:

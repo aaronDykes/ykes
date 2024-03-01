@@ -3,7 +3,9 @@
 #include "scanner.h"
 #include "chunk.h"
 
+#define MAX_ELIF 10
 #define LOCAL_COUNT 500
+#define PTR_SIZE(X) sizeof(X) / sizeof(X[0])
 
 struct Parser
 {
@@ -55,6 +57,15 @@ struct Compiler
     vm *machine;
 };
 
+struct Elif
+{
+    arena jumps;
+    arena lengths;
+    int count;
+    int length;
+};
+
+typedef struct Elif Elif;
 typedef struct Compiler Compiler;
 
 typedef void (*parse_fn)(Compiler *);
@@ -85,7 +96,9 @@ static void block(Compiler *c);
 static void comment(Compiler *c);
 
 static void emit_loop(Compiler *c, int byte);
+static int emit_jumps(Chunk ch, int byte);
 static int emit_jump(Chunk ch, int byte);
+static void patch_jump_end(Compiler *c, int current, int begin);
 static void patch_jump(Compiler *c, int byte);
 
 static void for_statement(Compiler *c);
@@ -94,8 +107,9 @@ static void while_statement(Compiler *c);
 static void consume_if(Compiler *c);
 static void consume_elif(Compiler *c);
 
+static void switch_statement(Compiler *c);
 static void if_statement(Compiler *c);
-static int elif_statement(Compiler *c, int fi);
+static void elif_statement(Compiler *c);
 
 static void default_expression(Compiler *c);
 static void expression(Compiler *c);
@@ -192,6 +206,7 @@ static PRule rules[] = {
     [TOKEN_NLINE_COMMENT] = {unary, NULL, PREC_NONE},
 
     [TOKEN_IF] = {NULL, NULL, PREC_NONE},
+    [TOKEN_ELIF] = {NULL, elif_statement, PREC_OR},
     [TOKEN_NULL] = {boolean, NULL, PREC_NONE},
     [TOKEN_PRINT] = {NULL, NULL, PREC_NONE},
     [TOKEN_RETURN] = {NULL, NULL, PREC_NONE},

@@ -1,7 +1,28 @@
-if (69 !== "69")
+if (69 === "69")
+{
     print "interpreter crafting 69420";
-else
-    print "crafting interpreters 42069";
+}
+elif (69 == 69)
+{
+    print "this is lame";
 
+    if (69 < 420) 
+        print "oh wow, nested fi's";
+}
+elif (69 != 69)
+{
+    print "It's working";
+}
+elif (69 != 69)
+{
+    print "foo bar baz";
+}
+elif (69 != 69)
+{
+    print "oops";
+}
+elif (true)
+{
+    print "makeshift else bro";
+}
 
- 

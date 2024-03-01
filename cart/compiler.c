@@ -109,6 +109,8 @@ static void statement(Compiler *c)
         while_statement(c);
     else if (match(TOKEN_FOR, &c->parser))
         for_statement(c);
+    else if (match(TOKEN_SWITCH, &c->parser))
+        switch_statement(c);
     else if (match(TOKEN_CH_LCURL, &c->parser))
         block(c);
     else if (is_comment(&c->parser))
@@ -133,8 +135,45 @@ static void for_statement(Compiler *c)
 {
     begin_scope(c);
     consume(TOKEN_CH_LPAREN, "Expect `(` after to 'for'.", &c->parser);
-    expression(c);
-    consume(TOKEN_CH_LPAREN, "Expect `)` after 'for' condition.", &c->parser);
+    if (!match(TOKEN_CH_SEMI, &c->parser))
+    {
+        if (match(TOKEN_VAR, &c->parser))
+            var_dec(c);
+        else
+            id(c);
+    }
+
+    int start = c->ch->count;
+    int exit = -1;
+    if (!match(TOKEN_CH_SEMI, &c->parser))
+    {
+        expression(c);
+        consume(TOKEN_CH_SEMI, "Expect `;` after 'for' condition.", &c->parser);
+        exit = emit_jump(c->ch, OP_JMPF);
+        emit_byte(c->ch, OP_POP);
+    }
+    if (!match(TOKEN_CH_RPAREN, &c->parser))
+    {
+        int body_jump = emit_jump(c->ch, OP_JMP);
+        int inc_start = c->ch->count;
+
+        expression(c);
+        emit_byte(c->ch, OP_POP);
+        consume(TOKEN_CH_RPAREN, "Expect `)` after 'for' statement.", &c->parser);
+
+        emit_loop(c, start);
+        start = inc_start;
+        patch_jump(c, body_jump);
+    }
+
+    statement(c);
+    emit_loop(c, start);
+
+    if (exit != -1)
+    {
+        patch_jump(c, exit);
+        emit_byte(c->ch, OP_POP);
+    }
 
     end_scope(c);
 }
@@ -173,53 +212,68 @@ static void consume_elif(Compiler *c)
     consume(TOKEN_CH_RPAREN, "Expect `)` after an 'elif' condtion.", &c->parser);
 }
 
+/**
+ * TODO:
+ *  Moving on... will revisit later
+ */
+static void switch_statement(Compiler *c)
+{
+}
+
+/**
+ * TODO:
+ * Only able to generate code for single elif statement
+ * Bored and moving on.
+ * Will revisit later
+ */
 static void if_statement(Compiler *c)
 {
 
     consume_if(c);
 
-    int if_jump = emit_jump(c->ch, OP_JMPF);
-    // If truthy, jump here
+    int fi = emit_jump(c->ch, OP_JMPF);
+    // If truthy, follow through
     emit_byte(c->ch, OP_POP);
     statement(c);
 
-    if (match(TOKEN_ELIF, &c->parser))
-    {
-        consume_elif(c);
+    int exit = emit_jump(c->ch, OP_JMP);
+    patch_jump(c, fi);
+    emit_byte(c->ch, OP_POP);
 
-        int elif = emit_jump(c->ch, OP_JMPF);
-        patch_jump(c, if_jump);
-        emit_byte(c->ch, OP_POP);
-
+    if (check(TOKEN_ELIF, &c->parser))
         while (match(TOKEN_ELIF, &c->parser))
-        {
-            consume_elif(c);
-            int tmp = elif;
-            elif = emit_jump(c->ch, OP_JMPF);
-            patch_jump(c, tmp);
-            emit_byte(c->ch, OP_POP);
-            statement(c);
-        }
-        patch_jump(c, elif);
-    }
-
-    int else_jump = emit_jump(c->ch, OP_JMP);
-    patch_jump(c, if_jump);
-    emit_byte(c->ch, OP_POP);
-
-    // if falsey, jump here
-    emit_byte(c->ch, OP_POP);
-
-    if (match(TOKEN_ELSE, &c->parser))
+            elif_statement(c);
+    else if (match(TOKEN_ELSE, &c->parser))
         statement(c);
-    patch_jump(c, else_jump);
+
+    patch_jump(c, exit);
 }
 
-static int elif_statement(Compiler *c, int fi)
+static void elif_statement(Compiler *c)
+{
+    consume_elif(c);
+    int tr = emit_jump(c->ch, OP_ELIF);
+    int elif = emit_jump(c->ch, OP_JMP);
+
+    int begin = c->ch->count;
+    emit_byte(c->ch, OP_POP);
+    statement(c);
+    patch_jump_end(c, begin, tr);
+
+    patch_jump(c, elif);
+    emit_byte(c->ch, OP_POP);
+}
+
+static void patch_jump_end(Compiler *c, int current, int begin)
 {
 
-    while (match(TOKEN_ELIF, &c->parser))
-        statement(c);
+    int j1 = current - begin - 4;
+
+    if (j1 >= INT16_MAX)
+        error("To great a distance ", &c->parser);
+
+    c->ch->op_codes.as.Bytes[begin] = (uint8_t)((j1 >> 8) & 0xFF);
+    c->ch->op_codes.as.Bytes[begin + 1] = (uint8_t)(j1 & 0xFF);
 }
 
 static void patch_jump(Compiler *c, int offset)
@@ -227,11 +281,11 @@ static void patch_jump(Compiler *c, int offset)
 
     int jump = c->ch->count - offset - 2;
 
-    if (jump > INT16_MAX)
+    if (jump >= INT16_MAX)
         error("To great a distance ", &c->parser);
 
-    c->ch->op_codes.as.Bytes[offset] = (jump >> 8) & 0xFF;
-    c->ch->op_codes.as.Bytes[offset + 1] = jump & 0xFF;
+    c->ch->op_codes.as.Bytes[offset] = (uint8_t)((jump >> 8) & 0xFF);
+    c->ch->op_codes.as.Bytes[offset + 1] = (uint8_t)(jump & 0xFF);
 }
 
 static void emit_loop(Compiler *c, int byte)
@@ -243,17 +297,24 @@ static void emit_loop(Compiler *c, int byte)
     if (offset > UINT16_MAX)
         error("ERROR: big boi loop", &c->parser);
 
-    emit_byte(c->ch, (offset >> 8) & 0xFF);
-    emit_byte(c->ch, offset & 0xFF);
+    emit_bytes(c->ch, (offset >> 8) & 0xFF, offset & 0xFF);
+}
+static int emit_jumps(Chunk ch, int byte)
+{
+    emit_byte(ch, byte);
+    emit_bytes(ch, 0xFF, 0xFF);
+    emit_bytes(ch, 0xFF, 0xFF);
+
+    return ch->count - 4;
 }
 static int emit_jump(Chunk ch, int byte)
 {
     emit_byte(ch, byte);
-    emit_byte(ch, 0xFF); /* Return this index */
-    emit_byte(ch, 0xFF);
+    emit_bytes(ch, 0xFF, 0xFF);
 
     return ch->count - 2;
 }
+
 static void default_expression(Compiler *c)
 {
     expression(c);
@@ -342,6 +403,7 @@ static void parse_precedence(Precedence prec, Compiler *c)
         infix(c);
     }
 }
+
 static void _and(Compiler *c)
 {
     int end = emit_jump(c->ch, OP_JMPF);
@@ -353,14 +415,12 @@ static void _and(Compiler *c)
 }
 static void _or(Compiler *c)
 {
-    int else_jmp = emit_jump(c->ch, OP_JMPF);
-    int end_jmp = emit_jump(c->ch, OP_JMP);
+    int else_jmp = emit_jump(c->ch, OP_JMPT);
+
+    emit_byte(c->ch, OP_POP);
+    parse_precedence(PREC_OR, c);
 
     patch_jump(c, else_jmp);
-    emit_byte(c->ch, OP_POP);
-
-    parse_precedence(PREC_OR, c);
-    patch_jump(c, end_jmp);
 }
 
 static void binary(Compiler *c)
