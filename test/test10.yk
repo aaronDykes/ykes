@@ -1,23 +1,26 @@
 
+var hello="str";
+
+
+for (var i = 0; i < 5; i++)
 {
-
-    var hello = "str";
-    for (var i = 0; i < 5; i++)
+    switch (hello)
     {
-        switch (hello)
+        case "false":
         {
-            case "str":
-                print "this actually works";
-            case "bitch face":
-                print "this is pretty lame bro";
-            case "right_on":
-                print "this is pretty lame bro";
-            default:
-                print hello + "ingy"; 
+            var h = "right on: ";
+            print h + "this is pretty lame bro";
+        }
+        case "str":
+        {
+            var v = "okay sure: ";
+            print v + "this is pretty lame bro";
         } 
-
-        print "Wow what a wonderful case"; 
-
+        default:
+            print "lame"; 
     } 
 
 }
+
+
+print "Wow what a wonderful case"; 

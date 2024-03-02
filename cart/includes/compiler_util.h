@@ -97,10 +97,10 @@ static void while_statement(Compiler *c);
 
 static void consume_if(Compiler *c);
 static void consume_elif(Compiler *c);
-static void consume_switch(Compiler *c);
+static arena consume_switch(Compiler *c);
 
 static void switch_statement(Compiler *c);
-static void case_statement(Compiler *c);
+static void case_statement(Compiler *c, arena ar);
 
 static void if_statement(Compiler *c);
 static void elif_statement(Compiler *c);
@@ -143,6 +143,7 @@ static int resolve_local(comp *c, arena *name);
 static arena parse_id(Compiler *c);
 static int parse_var(Compiler *c, arena ar);
 static void id(Compiler *c);
+static arena get_id(Compiler *c);
 
 static bool idcmp(arena a, arena b);
 static void declare_var(Compiler *c, arena ar);
@@ -203,7 +204,7 @@ static PRule rules[] = {
     [TOKEN_NLINE_COMMENT] = {unary, NULL, PREC_NONE},
 
     [TOKEN_IF] = {NULL, NULL, PREC_NONE},
-    [TOKEN_ELIF] = {NULL, elif_statement, PREC_OR},
+    [TOKEN_ELIF] = {NULL, NULL, PREC_OR},
     [TOKEN_NULL] = {boolean, NULL, PREC_NONE},
     [TOKEN_PRINT] = {NULL, NULL, PREC_NONE},
     [TOKEN_RETURN] = {NULL, NULL, PREC_NONE},

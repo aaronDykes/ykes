@@ -7,6 +7,7 @@ void init_chunk(Chunk c)
     c->op_codes = arena_alloc(STACK_SIZE * sizeof(uint8_t), ARENA_BYTE_PTR);
     c->cases = arena_alloc(STACK_SIZE * sizeof(int), ARENA_INT_PTR);
     c->case_count = 0;
+    c->cur_case = 0;
     c->line = 0;
     init_value_array(&c->constants);
 }

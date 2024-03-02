@@ -212,11 +212,12 @@ static void consume_elif(Compiler *c)
     consume(TOKEN_CH_RPAREN, "Expect `)` after an 'elif' condtion.", &c->parser);
 }
 
-static void consume_switch(Compiler *c)
+static arena consume_switch(Compiler *c)
 {
     consume(TOKEN_CH_LPAREN, "Expect `(` after a 'switch'.", &c->parser);
-    expression(c);
+    arena args = get_id(c);
     consume(TOKEN_CH_RPAREN, "Expect `)` after a 'switch' condtion.", &c->parser);
+    return args;
 }
 
 /**
@@ -225,10 +226,10 @@ static void consume_switch(Compiler *c)
  */
 static void switch_statement(Compiler *c)
 {
-    consume_switch(c);
+    arena args = consume_switch(c);
     consume(TOKEN_CH_LCURL, "Expect `{` prior to case statements.", &c->parser);
 
-    case_statement(c);
+    case_statement(c, args);
 
     if (match(TOKEN_DEFAULT, &c->parser))
     {
@@ -240,12 +241,16 @@ static void switch_statement(Compiler *c)
     c->ch->cases.as.Ints[c->ch->case_count++] = c->ch->count;
 }
 
-static void case_statement(Compiler *c)
+static void case_statement(Compiler *c, arena args)
 {
+    uint8_t get = args.as.Ints[1];
+    uint8_t arg = args.as.Ints[0];
+
     while (match(TOKEN_CASE, &c->parser))
     {
         expression(c);
         consume(TOKEN_CH_COLON, "Expect `:` prior to case body.", &c->parser);
+        emit_bytes(c->ch, get, (uint8_t)arg);
         emit_byte(c->ch, OP_SEQ);
 
         int tr = emit_jump_long(c->ch, OP_JMPL);
@@ -255,6 +260,8 @@ static void case_statement(Compiler *c)
         emit_byte(c->ch, OP_OFF_JMP);
         patch_jump_long(c, begin, tr);
     }
+
+    arena_free(&args);
 }
 
 static void if_statement(Compiler *c)
@@ -623,6 +630,66 @@ static arena parse_id(Compiler *c)
     char *ch = (char *)c->parser.pre.start;
     ch[c->parser.pre.size] = '\0';
     return Var(ch, c->machine->glob.capacity);
+}
+static arena get_id(Compiler *c)
+{
+    bool pre_inc = (c->parser.pre.type == TOKEN_OP_INC);
+    bool pre_dec = (c->parser.pre.type == TOKEN_OP_DEC);
+
+    if (match(TOKEN_ID, &c->parser))
+        ;
+    arena ar = parse_id(c);
+    uint8_t get, set;
+
+    arena args = arena_alloc(3, ARENA_INT_PTR);
+    int arg = resolve_local(&c->compiler, &ar);
+
+    if (arg != -1)
+    {
+        get = OP_GET_LOCAL;
+        set = OP_SET_LOCAL;
+    }
+    else
+    {
+        arg = add_constant(c->ch, ar);
+        get = OP_GET_GLOBAL;
+        set = OP_SET_GLOBAL;
+    }
+    args.as.Ints[0] = arg;
+    args.as.Ints[1] = get;
+
+    if (pre_inc)
+    {
+        emit_bytes(c->ch, get, (uint8_t)arg);
+        emit_byte(c->ch, OP_INC);
+        emit_bytes(c->ch, set, (uint8_t)arg);
+    }
+    else if (pre_dec)
+    {
+        emit_bytes(c->ch, get, (uint8_t)arg);
+        emit_byte(c->ch, OP_DEC);
+        emit_bytes(c->ch, set, (uint8_t)arg);
+    }
+    else if (match(TOKEN_OP_ASSIGN, &c->parser))
+    {
+        expression(c);
+        emit_bytes(c->ch, set, (uint8_t)arg);
+    }
+    else if (match(TOKEN_OP_DEC, &c->parser))
+    {
+        emit_bytes(c->ch, get, (uint8_t)arg);
+        emit_byte(c->ch, OP_DEC);
+        emit_bytes(c->ch, set, (uint8_t)arg);
+    }
+    else if (match(TOKEN_OP_INC, &c->parser))
+    {
+        emit_bytes(c->ch, get, (uint8_t)arg);
+        emit_byte(c->ch, OP_INC);
+        emit_bytes(c->ch, set, (uint8_t)arg);
+    }
+    else
+        emit_bytes(c->ch, get, (uint8_t)arg);
+    return args;
 }
 static void id(Compiler *c)
 {
