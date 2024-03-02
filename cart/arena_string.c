@@ -85,12 +85,11 @@ char *lltoa(char *c, long long int n)
 arena prepend_int_to_str(arena s, arena a)
 {
     int len = intlen(s.as.Int);
-    int ival = s.as.Int;
-    arena_free(&s);
-    s = arena_alloc(sizeof(char) * (len + 1 + a.length), ARENA_STR);
-    s.as.String = itoa(s.as.String, ival);
-    strcat(s.as.String, a.as.String);
-    arena_free(&a);
+    arena ar;
+    ar = arena_alloc(sizeof(char) * (len + 1 + a.length), ARENA_STR);
+    ar.as.String = itoa(ar.as.String, s.as.Int);
+    strcat(ar.as.String, a.as.String);
+    arena_free(&ar);
     return s;
 }
 arena prepend_char_to_str(arena s, arena a)
@@ -122,14 +121,15 @@ static arena append_int_to_str(arena s, arena i)
     int len = intlen(i.as.Int);
     int ival = i.as.Int;
     int new = len + 1 + s.length;
+    arena ar;
     if (ival < 0)
         ++len;
-    arena_free(&i);
-    i = arena_alloc(sizeof(char) * (len + 1), ARENA_STR);
-    i.as.String = itoa(i.as.String, ival);
+    // arena_free(&i);
+    ar = arena_alloc(sizeof(char) * (len + 1), ARENA_STR);
+    ar.as.String = itoa(ar.as.String, ival);
     s = arena_realloc(&s, new * sizeof(char));
-    strcat(s.as.String, i.as.String);
-    arena_free(&i);
+    strcat(s.as.String, ar.as.String);
+    arena_free(&ar);
     return s;
 }
 static arena append_str_to_str(arena s, arena str)

@@ -18,7 +18,7 @@ void write_chunk(Chunk c, uint8_t byte)
     {
         c->capacity = GROW_CAPACITY(c->capacity);
         c->op_codes = GROW_ARRAY(&c->op_codes, c->capacity * sizeof(uint8_t));
-        c->cases = GROW_ARRAY(&c->case_count, c->capacity * sizeof(int));
+        c->cases = GROW_ARRAY(&c->cases, c->capacity * sizeof(int));
     }
 
     c->op_codes.as.Bytes[c->count++] = byte;

@@ -61,10 +61,13 @@ struct chunk
 {
     int count;
     int case_count;
+    int jump_count;
     int capacity;
     int line;
+
     arena cases;
     arena op_codes;
+
     value constants;
 };
 

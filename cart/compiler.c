@@ -234,8 +234,7 @@ static void if_statement(Compiler *c)
     patch_jump(c, fi);
     emit_byte(c->ch, OP_POP);
 
-    while (match(TOKEN_ELIF, &c->parser))
-        elif_statement(c);
+    elif_statement(c);
 
     if (match(TOKEN_ELSE, &c->parser))
         statement(c);
@@ -247,14 +246,16 @@ static void if_statement(Compiler *c)
 
 static void elif_statement(Compiler *c)
 {
-    consume_elif(c);
-    int tr = emit_jump_long(c->ch, OP_JMPL);
-
-    int begin = c->ch->count;
-    emit_byte(c->ch, OP_POP);
-    statement(c);
-    emit_byte(c->ch, OP_OFF_JMP);
-    patch_jump_long(c, begin, tr);
+    while (match(TOKEN_ELIF, &c->parser))
+    {
+        consume_elif(c);
+        int tr = emit_jump_long(c->ch, OP_JMPL);
+        int begin = c->ch->count;
+        emit_byte(c->ch, OP_POP);
+        statement(c);
+        emit_byte(c->ch, OP_OFF_JMP);
+        patch_jump_long(c, begin, tr);
+    }
 }
 
 static void patch_jump_long(Compiler *c, int count, int offset)
@@ -613,7 +614,6 @@ static void id(Compiler *c)
 
     if (pre_inc)
     {
-        // if (gl)
         emit_bytes(c->ch, get, (uint8_t)arg);
         emit_byte(c->ch, OP_INC);
         emit_bytes(c->ch, set, (uint8_t)arg);
@@ -624,7 +624,6 @@ static void id(Compiler *c)
         emit_byte(c->ch, OP_DEC);
         emit_bytes(c->ch, set, (uint8_t)arg);
     }
-
     else if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
         expression(c);

@@ -210,8 +210,8 @@ Interpretation run()
 
             if (FALSEY())
             {
-                POP();
                 machine.ip.as.Bytes += jump;
+                POP();
                 break;
             }
             machine.ip.as.Bytes += offset;
@@ -224,6 +224,7 @@ Interpretation run()
             uint16_t index = READ_SHORT();
             int len = machine.ch->cases.as.Ints[index];
             machine.ip.as.Bytes = machine.ip_start + len;
+            machine.ch->case_count = 0;
         }
         break;
         case OP_JMPT:
@@ -233,7 +234,6 @@ Interpretation run()
             machine.ip.as.Bytes += READ_SHORT();
             break;
         case OP_LOOP:
-            POP();
             machine.ip.as.Bytes -= READ_SHORT();
             break;
         case OP_GET_LOCAL:
@@ -243,12 +243,14 @@ Interpretation run()
             LOCAL() = PEEK();
             break;
         case OP_SET_GLOBAL:
-            runtime.ar = READ_CONSTANT();
-            if (!exists(runtime.ar))
-                return undefined_var(runtime.ar);
-            write_dict(&machine.glob, runtime.ar, POP());
-            push(find(runtime.ar));
+        {
+            arena ar = READ_CONSTANT();
+            if (!exists(ar))
+                return undefined_var(ar);
+            write_dict(&machine.glob, ar, POP());
+            push(find(ar));
             break;
+        }
         case OP_GET_GLOBAL:
             push(find(READ_CONSTANT()));
             break;
