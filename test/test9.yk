@@ -1,15 +1,10 @@
-for (var j = 0; j < 2; j++)
-{
-
-    for (var i = 1; i < 50; i++)
-    
-        if ((i % 15) == 0)
-            print "FIZZBANG: " + i;
-        elif ((i % 5) == 0)
-            print "BANG: " + i;
-        elif ((i % 3) == 0)
-            print "FIZZ: " + i;
-        else 
-            print i; 
-}
+for (var i = 1; i < 1000000; i++)
+    if ((i % 15) == 0)
+        print "FIZZBANG: " + i;
+    elif ((i % 5) == 0)
+        print "BANG: " + i;
+    elif ((i % 3) == 0)
+        print "FIZZ: " + i;
+    else 
+        print i; 
         
