@@ -210,8 +210,8 @@ Interpretation run()
 
             if (FALSEY())
             {
-                machine.ip.as.Bytes += jump;
                 POP();
+                machine.ip.as.Bytes += jump;
                 break;
             }
             machine.ip.as.Bytes += offset;

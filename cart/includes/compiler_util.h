@@ -97,8 +97,11 @@ static void while_statement(Compiler *c);
 
 static void consume_if(Compiler *c);
 static void consume_elif(Compiler *c);
+static void consume_switch(Compiler *c);
 
 static void switch_statement(Compiler *c);
+static void case_statement(Compiler *c);
+
 static void if_statement(Compiler *c);
 static void elif_statement(Compiler *c);
 

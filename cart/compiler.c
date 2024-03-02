@@ -212,12 +212,49 @@ static void consume_elif(Compiler *c)
     consume(TOKEN_CH_RPAREN, "Expect `)` after an 'elif' condtion.", &c->parser);
 }
 
+static void consume_switch(Compiler *c)
+{
+    consume(TOKEN_CH_LPAREN, "Expect `(` after a 'switch'.", &c->parser);
+    expression(c);
+    consume(TOKEN_CH_RPAREN, "Expect `)` after a 'switch' condtion.", &c->parser);
+}
+
 /**
  * TODO:
  *  Moving on... will revisit later
  */
 static void switch_statement(Compiler *c)
 {
+    consume_switch(c);
+    consume(TOKEN_CH_LCURL, "Expect `{` prior to case statements.", &c->parser);
+
+    case_statement(c);
+
+    if (match(TOKEN_DEFAULT, &c->parser))
+    {
+        consume(TOKEN_CH_COLON, "Expect `:` prior to case body.", &c->parser);
+        statement(c);
+    }
+    consume(TOKEN_CH_RCURL, "Expect `}` after case statements.", &c->parser);
+
+    c->ch->cases.as.Ints[c->ch->case_count++] = c->ch->count;
+}
+
+static void case_statement(Compiler *c)
+{
+    while (match(TOKEN_CASE, &c->parser))
+    {
+        expression(c);
+        consume(TOKEN_CH_COLON, "Expect `:` prior to case body.", &c->parser);
+        emit_byte(c->ch, OP_SEQ);
+
+        int tr = emit_jump_long(c->ch, OP_JMPL);
+        int begin = c->ch->count;
+        emit_byte(c->ch, OP_POP);
+        statement(c);
+        emit_byte(c->ch, OP_OFF_JMP);
+        patch_jump_long(c, begin, tr);
+    }
 }
 
 static void if_statement(Compiler *c)
@@ -239,7 +276,6 @@ static void if_statement(Compiler *c)
     if (match(TOKEN_ELSE, &c->parser))
         statement(c);
 
-    int len = c->ch->count;
     c->ch->cases.as.Ints[c->ch->case_count++] = c->ch->count;
     patch_jump(c, exit);
 }

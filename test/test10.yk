@@ -1,3 +1,23 @@
-var hello=68;
-hello++;
-print hello;
+
+{
+
+    var hello = "str";
+    for (var i = 0; i < 5; i++)
+    {
+        switch (hello)
+        {
+            case "str":
+                print "this actually works";
+            case "bitch face":
+                print "this is pretty lame bro";
+            case "right_on":
+                print "this is pretty lame bro";
+            default:
+                print hello + "ingy"; 
+        } 
+
+        print "Wow what a wonderful case"; 
+
+    } 
+
+}

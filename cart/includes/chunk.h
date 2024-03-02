@@ -61,7 +61,6 @@ struct chunk
 {
     int count;
     int case_count;
-    int jump_count;
     int capacity;
     int line;
 
