@@ -188,7 +188,7 @@ static PRule rules[] = {
     [TOKEN_FALSE] = {boolean, NULL, PREC_NONE},
     [TOKEN_TRUE] = {boolean, NULL, PREC_NONE},
 
-    [TOKEN_ID] = {id, NULL, PREC_NONE},
+    [TOKEN_ID] = {id, id, PREC_NONE},
     [TOKEN_STR] = {cstr, NULL, PREC_NONE},
     [TOKEN_BTYE] = {NULL, NULL, PREC_NONE},
 

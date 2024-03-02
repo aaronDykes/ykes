@@ -3,10 +3,10 @@
     {
         if ((i % 15) == 0)
             print "FIZZBANG: " + i;
-        elif ((i % 3) == 0)
-            print "FIZZ: " + i;
         elif ((i % 5) == 0)
             print "BANG: " + i;
+        elif ((i % 3) == 0)
+            print "FIZZ: " + i;
         else 
             print i; 
         

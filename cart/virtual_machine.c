@@ -101,12 +101,6 @@ static Interpretation undefined_var(arena tmp)
     return INTERPRET_RUNTIME_ERR;
 }
 
-static void init_runtime(Runtime *runtime)
-{
-    runtime->true_count = 0;
-    runtime->shorty = 0;
-}
-
 Interpretation run()
 {
 
@@ -118,9 +112,6 @@ Interpretation run()
 #define POP() \
     (--machine.current_size, *--machine.stack_top)
 #define LOCAL() (machine.stack[READ_BYTE()])
-
-    static Runtime runtime;
-    init_runtime(&runtime);
 
     for (;;)
     {
