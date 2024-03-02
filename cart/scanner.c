@@ -165,7 +165,14 @@ static int id_type()
     case 'a':
         return check_keyword(1, 2, "nd", TOKEN_OP_AND);
     case 'b':
-        return check_keyword(1, 3, "yte", TOKEN_BTYE);
+        if (scan.current - scan.start > 1)
+            switch (scan.start[1])
+            {
+            case 'y':
+                return check_keyword(2, 3, "te", TOKEN_BTYE);
+            case 'r':
+                return check_keyword(2, 3, "eak", TOKEN_BREAK);
+            }
     case 'c':
 
         if (scan.current - scan.start > 1)

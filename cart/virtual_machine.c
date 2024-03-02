@@ -208,13 +208,8 @@ Interpretation run()
         }
         break;
         case OP_OFF_JMP:
-        {
-            uint16_t index = READ_SHORT();
-            int len = machine.ch->cases.as.Ints[index];
-            machine.ip.as.Bytes = machine.ip_start + len;
-            machine.ch->case_count = 0;
-        }
-        break;
+            machine.ip.as.Bytes = machine.ip_start + machine.ch->cases.as.Ints[READ_SHORT()];
+            break;
         case OP_JMPT:
             machine.ip.as.Bytes += (READ_SHORT() * !FALSEY());
             break;

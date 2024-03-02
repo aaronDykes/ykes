@@ -89,6 +89,7 @@ static void comment(Compiler *c);
 static void emit_loop(Compiler *c, int byte);
 static int emit_jump_long(Chunk ch, int byte);
 static int emit_jump(Chunk ch, int byte);
+
 static void patch_jump_long(Compiler *c, int begin, int byte);
 static void patch_jump(Compiler *c, int byte);
 

@@ -3,9 +3,7 @@ var hello="str";
 
 
 for (var i = 0; i < 5; i++)
-{
     switch (hello)
-    {
         case "false":
         {
             var h = "right on: ";
@@ -14,13 +12,10 @@ for (var i = 0; i < 5; i++)
         case "str":
         {
             var v = "okay sure: ";
-            print v + "this is pretty lame bro";
+            print v + "it actually works";
         } 
         default:
             print "lame"; 
-    } 
-
-}
 
 
 print "Wow what a wonderful case"; 

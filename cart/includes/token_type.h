@@ -63,6 +63,7 @@ enum
     TOKEN_IF,
     TOKEN_SWITCH,
     TOKEN_CASE,
+    TOKEN_BREAK,
     TOKEN_DEFAULT,
     TOKEN_ELIF,
     TOKEN_NULL,

@@ -136,12 +136,10 @@ static void for_statement(Compiler *c)
     begin_scope(c);
     consume(TOKEN_CH_LPAREN, "Expect `(` after to 'for'.", &c->parser);
     if (!match(TOKEN_CH_SEMI, &c->parser))
-    {
         if (match(TOKEN_VAR, &c->parser))
             var_dec(c);
         else
             id(c);
-    }
 
     int start = c->ch->count;
     int exit = -1;
@@ -227,7 +225,7 @@ static arena consume_switch(Compiler *c)
 static void switch_statement(Compiler *c)
 {
     arena args = consume_switch(c);
-    consume(TOKEN_CH_LCURL, "Expect `{` prior to case statements.", &c->parser);
+    match(TOKEN_CH_LCURL, &c->parser);
 
     case_statement(c, args);
 
@@ -236,7 +234,7 @@ static void switch_statement(Compiler *c)
         consume(TOKEN_CH_COLON, "Expect `:` prior to case body.", &c->parser);
         statement(c);
     }
-    consume(TOKEN_CH_RCURL, "Expect `}` after case statements.", &c->parser);
+    match(TOKEN_CH_RCURL, &c->parser);
 
     c->ch->cases.as.Ints[c->ch->case_count++] = c->ch->count;
 }
