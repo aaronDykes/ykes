@@ -306,8 +306,8 @@ static void elif_statement(Compiler *c)
 static void patch_jump_long(Compiler *c, int count, int offset)
 {
 
-    int j1 = count - offset - 6;
-    int j2 = (c->ch->count) - offset - 6;
+    int j1 = count - offset - 4;
+    int j2 = (c->ch->count) - offset - 4;
 
     if (j1 >= INT16_MAX)
         error("To great a distance ", &c->parser);
@@ -317,9 +317,6 @@ static void patch_jump_long(Compiler *c, int count, int offset)
 
     c->ch->op_codes.as.Bytes[offset + 2] = (uint8_t)((j2 >> 8) & 0xFF);
     c->ch->op_codes.as.Bytes[offset + 3] = (uint8_t)(j2 & 0xFF);
-
-    c->ch->op_codes.as.Bytes[offset + 4] = (uint8_t)((c->ch->case_count >> 8) & 0xFF);
-    c->ch->op_codes.as.Bytes[offset + 5] = (uint8_t)(c->ch->case_count & 0xFF);
 }
 
 static void patch_jump(Compiler *c, int offset)
@@ -350,9 +347,8 @@ static int emit_jump_long(Chunk ch, int byte)
     emit_byte(ch, byte);
     emit_bytes(ch, 0xFF, 0xFF);
     emit_bytes(ch, 0xFF, 0xFF);
-    emit_bytes(ch, 0xFF, 0xFF);
 
-    return ch->count - 6;
+    return ch->count - 4;
 }
 static int emit_jump(Chunk ch, int byte)
 {

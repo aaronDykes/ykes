@@ -197,7 +197,6 @@ Interpretation run()
         {
             uint16_t offset = READ_SHORT();
             uint16_t jump = READ_SHORT();
-            uint16_t index = READ_SHORT();
 
             if (FALSEY())
             {
