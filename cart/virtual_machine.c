@@ -206,8 +206,6 @@ Interpretation run()
                 break;
             }
             machine.ip.as.Bytes += offset;
-            *(machine.ip.as.Bytes + jump) = ((index >> 8) & 0xFF);
-            *(machine.ip.as.Bytes + jump + 1) = (index & 0xFF);
         }
         break;
         case OP_OFF_JMP:

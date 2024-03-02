@@ -258,6 +258,7 @@ static void case_statement(Compiler *c, arena args)
         emit_byte(c->ch, OP_POP);
         statement(c);
         emit_byte(c->ch, OP_OFF_JMP);
+        emit_bytes(c->ch, (c->ch->case_count >> 8) & 0xFF, (c->ch->case_count & 0xFF));
         patch_jump_long(c, begin, tr);
     }
 
@@ -297,6 +298,7 @@ static void elif_statement(Compiler *c)
         emit_byte(c->ch, OP_POP);
         statement(c);
         emit_byte(c->ch, OP_OFF_JMP);
+        emit_bytes(c->ch, (c->ch->case_count >> 8) & 0xFF, (c->ch->case_count & 0xFF));
         patch_jump_long(c, begin, tr);
     }
 }
