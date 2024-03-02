@@ -102,21 +102,21 @@ static void statement(Compiler *c)
 {
 
     if (match(TOKEN_PRINT, &c->parser))
-        print_statement(c);
+        return print_statement(c);
     else if (match(TOKEN_IF, &c->parser))
-        if_statement(c);
+        return if_statement(c);
     else if (match(TOKEN_WHILE, &c->parser))
-        while_statement(c);
+        return while_statement(c);
     else if (match(TOKEN_FOR, &c->parser))
-        for_statement(c);
+        return for_statement(c);
     else if (match(TOKEN_SWITCH, &c->parser))
-        switch_statement(c);
+        return switch_statement(c);
     else if (match(TOKEN_CH_LCURL, &c->parser))
-        block(c);
+        return block(c);
     else if (is_comment(&c->parser))
-        comment(c);
+        return comment(c);
     else
-        default_expression(c);
+        return default_expression(c);
 }
 
 static inline bool is_comment(Parser *parser)
@@ -234,40 +234,46 @@ static void if_statement(Compiler *c)
     patch_jump(c, fi);
     emit_byte(c->ch, OP_POP);
 
-    if (check(TOKEN_ELIF, &c->parser))
-        while (match(TOKEN_ELIF, &c->parser))
-            elif_statement(c);
-    else if (match(TOKEN_ELSE, &c->parser))
+    while (match(TOKEN_ELIF, &c->parser))
+        elif_statement(c);
+
+    if (match(TOKEN_ELSE, &c->parser))
         statement(c);
 
+    int len = c->ch->count;
+    c->ch->cases.as.Ints[c->ch->case_count++] = c->ch->count;
     patch_jump(c, exit);
 }
 
 static void elif_statement(Compiler *c)
 {
     consume_elif(c);
-    int tr = emit_jump(c->ch, OP_ELIF);
-    int elif = emit_jump(c->ch, OP_JMP);
+    int tr = emit_jump_long(c->ch, OP_JMPL);
 
     int begin = c->ch->count;
     emit_byte(c->ch, OP_POP);
     statement(c);
-    patch_jump_end(c, begin, tr);
-
-    patch_jump(c, elif);
-    emit_byte(c->ch, OP_POP);
+    emit_byte(c->ch, OP_OFF_JMP);
+    patch_jump_long(c, begin, tr);
 }
 
-static void patch_jump_end(Compiler *c, int current, int begin)
+static void patch_jump_long(Compiler *c, int count, int offset)
 {
 
-    int j1 = current - begin - 2;
+    int j1 = count - offset - 6;
+    int j2 = (c->ch->count) - offset - 6;
 
     if (j1 >= INT16_MAX)
         error("To great a distance ", &c->parser);
 
-    c->ch->op_codes.as.Bytes[begin] = (uint8_t)((j1 >> 8) & 0xFF);
-    c->ch->op_codes.as.Bytes[begin + 1] = (uint8_t)(j1 & 0xFF);
+    c->ch->op_codes.as.Bytes[offset] = (uint8_t)((j1 >> 8) & 0xFF);
+    c->ch->op_codes.as.Bytes[offset + 1] = (uint8_t)(j1 & 0xFF);
+
+    c->ch->op_codes.as.Bytes[offset + 2] = (uint8_t)((j2 >> 8) & 0xFF);
+    c->ch->op_codes.as.Bytes[offset + 3] = (uint8_t)(j2 & 0xFF);
+
+    c->ch->op_codes.as.Bytes[offset + 4] = (uint8_t)((c->ch->case_count >> 8) & 0xFF);
+    c->ch->op_codes.as.Bytes[offset + 5] = (uint8_t)(c->ch->case_count & 0xFF);
 }
 
 static void patch_jump(Compiler *c, int offset)
@@ -293,13 +299,14 @@ static void emit_loop(Compiler *c, int byte)
 
     emit_bytes(c->ch, (offset >> 8) & 0xFF, offset & 0xFF);
 }
-static int emit_jumps(Chunk ch, int byte)
+static int emit_jump_long(Chunk ch, int byte)
 {
     emit_byte(ch, byte);
     emit_bytes(ch, 0xFF, 0xFF);
     emit_bytes(ch, 0xFF, 0xFF);
+    emit_bytes(ch, 0xFF, 0xFF);
 
-    return ch->count - 4;
+    return ch->count - 6;
 }
 static int emit_jump(Chunk ch, int byte)
 {
@@ -483,6 +490,7 @@ static void unary(Compiler *c)
 
     switch (op)
     {
+
     case TOKEN_OP_SUB:
     case TOKEN_OP_BANG:
         emit_byte(c->ch, OP_NEG);
@@ -581,8 +589,11 @@ static arena parse_id(Compiler *c)
 }
 static void id(Compiler *c)
 {
+    bool pre_inc = (c->parser.pre.type == TOKEN_OP_INC);
+    bool pre_dec = (c->parser.pre.type == TOKEN_OP_DEC);
 
-    match(TOKEN_ID, &c->parser);
+    if (match(TOKEN_ID, &c->parser))
+        ;
     arena ar = parse_id(c);
     uint8_t get, set;
 
@@ -600,9 +611,35 @@ static void id(Compiler *c)
         set = OP_SET_GLOBAL;
     }
 
-    if (match(TOKEN_OP_ASSIGN, &c->parser))
+    if (pre_inc)
+    {
+        // if (gl)
+        emit_bytes(c->ch, get, (uint8_t)arg);
+        emit_byte(c->ch, OP_INC);
+        emit_bytes(c->ch, set, (uint8_t)arg);
+    }
+    else if (pre_dec)
+    {
+        emit_bytes(c->ch, get, (uint8_t)arg);
+        emit_byte(c->ch, OP_DEC);
+        emit_bytes(c->ch, set, (uint8_t)arg);
+    }
+
+    else if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
         expression(c);
+        emit_bytes(c->ch, set, (uint8_t)arg);
+    }
+    else if (match(TOKEN_OP_DEC, &c->parser))
+    {
+        emit_bytes(c->ch, get, (uint8_t)arg);
+        emit_byte(c->ch, OP_DEC);
+        emit_bytes(c->ch, set, (uint8_t)arg);
+    }
+    else if (match(TOKEN_OP_INC, &c->parser))
+    {
+        emit_bytes(c->ch, get, (uint8_t)arg);
+        emit_byte(c->ch, OP_INC);
         emit_bytes(c->ch, set, (uint8_t)arg);
     }
     else

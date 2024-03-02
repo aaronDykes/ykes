@@ -57,9 +57,9 @@ token scan_token()
     case '*':
         return make_token(TOKEN_OP_MUL);
     case '-':
-        return make_token(TOKEN_OP_SUB);
+        return make_token(match('-') ? TOKEN_OP_DEC : TOKEN_OP_SUB);
     case '+':
-        return make_token(TOKEN_OP_ADD);
+        return make_token(match('+') ? TOKEN_OP_INC : TOKEN_OP_ADD);
     case '%':
         return make_token(TOKEN_OP_MOD);
     case '&':

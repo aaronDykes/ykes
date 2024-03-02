@@ -33,6 +33,8 @@ enum
     TOKEN_OP_GE,
     TOKEN_OP_LT,
     TOKEN_OP_LE,
+    TOKEN_OP_INC,
+    TOKEN_OP_DEC,
 
     TOKEN_OP_AND,
     TOKEN_OP_OR,

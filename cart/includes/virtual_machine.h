@@ -16,6 +16,7 @@ struct vm
 {
     Chunk ch;
     arena ip;
+    uint8_t *ip_start;
     int max_size;
     int current_size;
     arena *stack;

@@ -863,6 +863,39 @@ arena _add(arena a, arena b)
     }
     return a;
 }
+arena _inc(arena b)
+{
+
+        switch (b.type)
+    {
+    case ARENA_CHAR:
+        return Char(b.as.Char + 1);
+    case ARENA_DOUBLE:
+        return Double(b.as.Double + 1);
+    case ARENA_INT:
+        return Int(b.as.Int + 1);
+    case ARENA_LONG:
+        return Long(b.as.Long + 1);
+    }
+    return b;
+}
+arena _dec(arena b)
+{
+
+    switch (b.type)
+    {
+    case ARENA_CHAR:
+        return Char(b.as.Char - 1);
+    case ARENA_DOUBLE:
+        return Double(b.as.Double - 1);
+    case ARENA_INT:
+        return Int(b.as.Int - 1);
+    case ARENA_LONG:
+        return Long(b.as.Long - 1);
+    }
+    return b;
+}
+
 arena _sub(arena a, arena b)
 {
 

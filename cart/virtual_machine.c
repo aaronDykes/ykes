@@ -80,6 +80,7 @@ Interpretation interpret(const char *src)
 
     machine.ch = &ch;
     machine.ip = ch.op_codes;
+    machine.ip_start = machine.ip.as.Bytes;
     Interpretation res = run();
 
     free_chunk(&ch);
@@ -118,7 +119,7 @@ Interpretation run()
     (--machine.current_size, *--machine.stack_top)
 #define LOCAL() (machine.stack[READ_BYTE()])
 
-    Runtime runtime;
+    static Runtime runtime;
     init_runtime(&runtime);
 
     for (;;)
@@ -137,6 +138,12 @@ Interpretation run()
             break;
         case OP_NEG:
             *--machine.stack_top = _neg(*machine.stack_top++);
+            break;
+        case OP_INC:
+            push(_inc(POP()));
+            break;
+        case OP_DEC:
+            push(_dec(POP()));
             break;
         case OP_ADD:
             push(_add(POP(), POP()));
@@ -195,16 +202,30 @@ Interpretation run()
         case OP_JMPF:
             machine.ip.as.Bytes += (READ_SHORT() * FALSEY());
             break;
-        case OP_ELIF:
-            runtime.shorty = READ_SHORT();
-            if (FALSEY() || runtime.true_count >= 1)
+        case OP_JMPL:
+        {
+            uint16_t offset = READ_SHORT();
+            uint16_t jump = READ_SHORT();
+            uint16_t index = READ_SHORT();
+
+            if (FALSEY())
             {
                 POP();
+                machine.ip.as.Bytes += jump;
                 break;
             }
-            machine.ip.as.Bytes += runtime.shorty;
-            runtime.true_count++;
-            break;
+            machine.ip.as.Bytes += offset;
+            *(machine.ip.as.Bytes + jump) = ((index >> 8) & 0xFF);
+            *(machine.ip.as.Bytes + jump + 1) = (index & 0xFF);
+        }
+        break;
+        case OP_OFF_JMP:
+        {
+            uint16_t index = READ_SHORT();
+            int len = machine.ch->cases.as.Ints[index];
+            machine.ip.as.Bytes = machine.ip_start + len;
+        }
+        break;
         case OP_JMPT:
             machine.ip.as.Bytes += (READ_SHORT() * !FALSEY());
             break;
@@ -212,6 +233,7 @@ Interpretation run()
             machine.ip.as.Bytes += READ_SHORT();
             break;
         case OP_LOOP:
+            POP();
             machine.ip.as.Bytes -= READ_SHORT();
             break;
         case OP_GET_LOCAL:

@@ -87,9 +87,9 @@ static void block(Compiler *c);
 static void comment(Compiler *c);
 
 static void emit_loop(Compiler *c, int byte);
-static int emit_jumps(Chunk ch, int byte);
+static int emit_jump_long(Chunk ch, int byte);
 static int emit_jump(Chunk ch, int byte);
-static void patch_jump_end(Compiler *c, int current, int begin);
+static void patch_jump_long(Compiler *c, int begin, int byte);
 static void patch_jump(Compiler *c, int byte);
 
 static void for_statement(Compiler *c);
@@ -153,6 +153,9 @@ static PRule rules[] = {
     [TOKEN_CH_COMMA] = {NULL, NULL, PREC_NONE},
     [TOKEN_CH_SEMI] = {NULL, NULL, PREC_NONE},
     [TOKEN_CH_DOT] = {NULL, NULL, PREC_NONE},
+
+    [TOKEN_OP_INC] = {id, NULL, PREC_TERM},
+    [TOKEN_OP_DEC] = {id, NULL, PREC_TERM},
 
     [TOKEN_OP_SUB] = {unary, binary, PREC_TERM},
     [TOKEN_OP_ADD] = {NULL, binary, PREC_TERM},

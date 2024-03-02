@@ -8,11 +8,13 @@ struct Runtime
     int true_count;
     uint16_t shorty;
 };
+
 typedef struct Runtime Runtime;
 
 static void check_stack_size();
 static void reset_stack();
 
+static void init_runtime(Runtime *runtime);
 static void push(arena ar);
 static void popn(arena n);
 

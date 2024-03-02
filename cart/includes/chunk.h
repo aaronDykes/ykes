@@ -21,6 +21,8 @@ typedef enum
 
     OP_ASSIGN,
     OP_NEG,
+    OP_INC,
+    OP_DEC,
     OP_ADD,
     OP_SUB,
     OP_MUL,
@@ -42,7 +44,8 @@ typedef enum
     OP_GT,
     OP_GE,
 
-    OP_ELIF,
+    OP_OFF_JMP,
+    OP_JMPL,
     OP_JMPF,
     OP_JMPT,
     OP_JMP,
@@ -57,8 +60,10 @@ typedef enum
 struct chunk
 {
     int count;
+    int case_count;
     int capacity;
     int line;
+    arena cases;
     arena op_codes;
     value constants;
 };

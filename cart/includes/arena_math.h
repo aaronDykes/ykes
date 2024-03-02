@@ -19,4 +19,7 @@ arena _ge(arena a, arena b);
 arena _or(arena a, arena b);
 arena _and(arena a, arena b);
 
+arena _inc(arena b);
+arena _dec(arena b);
+
 #endif

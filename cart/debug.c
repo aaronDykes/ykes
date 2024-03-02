@@ -59,6 +59,10 @@ int disassemble_instruction(Chunk c, int offset)
         return constant_instruction("OP_CONSTANT", c, offset);
     case OP_NEG:
         return simple_instruction("OP_NEGATE", offset);
+    case OP_DEC:
+        return simple_instruction("OP_DEC", offset);
+    case OP_INC:
+        return simple_instruction("OP_INC", offset);
     case OP_ADD:
         return simple_instruction("OP_ADD", offset);
     case OP_SUB:
@@ -107,8 +111,10 @@ int disassemble_instruction(Chunk c, int offset)
         return jump_instruction("OP_JMPF", 1, c, offset);
     case OP_JMPT:
         return jump_instruction("OP_JMPT", 1, c, offset);
-    case OP_ELIF:
-        return jump_instruction("OP_ELIF", 1, c, offset);
+    case OP_JMPL:
+        return jump_instruction("OP_JMPL", 1, c, offset);
+    case OP_OFF_JMP:
+        return jump_instruction("OP_OFF_JMP", 1, c, offset);
     case OP_JMP:
         return jump_instruction("OP_JMP", 1, c, offset);
     case OP_LOOP:
