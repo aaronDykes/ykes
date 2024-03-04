@@ -1,11 +1,16 @@
 var i = 'a';
 
-if (69 === 69 || 69 !== "69")
+if (69 === 69 && 69 !== "69")
+{
+    
+    
     while (i <= 'z')
     {
         i = i + 1;
         print i - 1; 
     }
+
+}
 
 else
     print "understand more better";

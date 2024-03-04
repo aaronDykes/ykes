@@ -865,8 +865,7 @@ arena _add(arena a, arena b)
 }
 arena _inc(arena b)
 {
-
-        switch (b.type)
+    switch (b.type)
     {
     case ARENA_CHAR:
         return Char(b.as.Char + 1);

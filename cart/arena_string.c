@@ -86,7 +86,7 @@ arena prepend_int_to_str(arena s, arena a)
 {
     int len = intlen(s.as.Int);
     arena ar;
-    ar = arena_alloc(sizeof(char) * (len + 1 + a.length), ARENA_STR);
+    ar = arena_alloc(sizeof(char) * (len + 1 + a.as.len), ARENA_STR);
     ar.as.String = itoa(ar.as.String, s.as.Int);
     strcat(ar.as.String, a.as.String);
     arena_free(&ar);
@@ -96,7 +96,7 @@ arena prepend_char_to_str(arena s, arena a)
 {
     char c = s.as.Char;
     arena_free(&s);
-    s = arena_alloc(sizeof(char) * (a.length + 1), ARENA_STR);
+    s = arena_alloc(sizeof(char) * (a.as.len + 1), ARENA_STR);
     s.as.String[0] = c;
     strcat(s.as.String, a.as.String);
     arena_free(&a);
@@ -109,7 +109,7 @@ arena prepend_long_to_str(arena s, arena a)
     if (llint < 0)
         len++;
     arena_free(&s);
-    s = arena_alloc(sizeof(char) * (len + 1 + a.length), ARENA_STR);
+    s = arena_alloc(sizeof(char) * (len + 1 + a.as.len), ARENA_STR);
     s.as.String = lltoa(s.as.String, llint);
     strcat(s.as.String, a.as.String);
     arena_free(&a);
@@ -120,7 +120,7 @@ static arena append_int_to_str(arena s, arena i)
 {
     int len = intlen(i.as.Int);
     int ival = i.as.Int;
-    int new = len + 1 + s.length;
+    int new = len + 1 + s.as.len;
     arena ar;
     if (ival < 0)
         ++len;
@@ -134,7 +134,7 @@ static arena append_int_to_str(arena s, arena i)
 }
 static arena append_str_to_str(arena s, arena str)
 {
-    int new = s.length + str.length + 1;
+    int new = s.as.len + str.as.len + 1;
     s = arena_realloc(&s, new * sizeof(char));
     strcat(s.as.String, str.as.String);
     s.as.String[new] = '\0';
@@ -148,7 +148,7 @@ static arena append_char_to_str(arena s, arena c)
     c = arena_alloc(sizeof(char) * 2, ARENA_STR);
     c.as.String[0] = ch;
     c.as.String[1] = '\0';
-    s = arena_realloc(&s, sizeof(char) * (s.length + 1));
+    s = arena_realloc(&s, sizeof(char) * (s.as.len + 1));
     strcat(s.as.String, c.as.String);
     arena_free(&c);
     return s;
@@ -157,7 +157,7 @@ static arena append_long_to_str(arena s, arena i)
 {
     int len = longlen(i.as.Long);
     long long int llint = i.as.Long;
-    int new = len + 1 + s.length;
+    int new = len + 1 + s.as.len;
 
     if (llint < 0)
         ++len;

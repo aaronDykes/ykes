@@ -1,0 +1,12 @@
+
+function hello ()
+{
+    print "fuck shit"; 
+    
+    function okay (fu, ptr, num)
+    {
+        print "wow so cool";
+    }
+}
+
+

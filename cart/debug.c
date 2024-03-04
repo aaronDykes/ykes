@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include "debug.h"
 
-static int byte_instruction(const char *name, Chunk chunk,
+static int byte_instruction(const char *name, Chunk *chunk,
                             int offset)
 {
-    uint8_t slot = chunk->op_codes.as.Bytes[offset + 1];
+    uint8_t slot = chunk->op_codes.listof.Bytes[offset + 1];
     printf("%-16s %4d\n", name, slot);
     return offset + 2;
 }
@@ -15,21 +15,21 @@ static int simple_instruction(const char *name, int offset)
     return ++offset;
 }
 
-static int constant_instruction(const char *name, Chunk c, int offset)
+static int constant_instruction(const char *name, Chunk *c, int offset)
 {
-    uint8_t constant = c->op_codes.as.Bytes[offset + 1];
+    uint8_t constant = c->op_codes.listof.Bytes[offset + 1];
 
     printf("%-16s %4d '", name, constant);
-    print(c->constants.vals[constant]);
+    print(c->constants[constant].as);
     printf("\n");
     return offset + 2;
 }
 
 static int jump_instruction(const char *name, int sign,
-                            Chunk chunk, int offset)
+                            Chunk *chunk, int offset)
 {
-    uint16_t jump = (uint16_t)((chunk->op_codes.as.Bytes[offset + 1] << 8) |
-                               (chunk->op_codes.as.Bytes[offset + 2]));
+    uint16_t jump = (uint16_t)((chunk->op_codes.listof.Bytes[offset + 1] << 8) |
+                               (chunk->op_codes.listof.Bytes[offset + 2]));
 
     printf("%-16s %4d -> %d\n",
            name, offset,
@@ -38,22 +38,22 @@ static int jump_instruction(const char *name, int sign,
     return offset + 3;
 }
 
-void disassemble_chunk(Chunk c, const char *name)
+void disassemble_chunk(Chunk *c, const char *name)
 {
 
     printf("==== chunk: `%s` ====\n", name);
 
     c->line = 1;
-    for (int i = 0; i < c->count;)
+    for (int i = 0; i < c->op_codes.listof.len;)
         i = disassemble_instruction(c, i);
 }
 
-int disassemble_instruction(Chunk c, int offset)
+int disassemble_instruction(Chunk *c, int offset)
 {
 
     printf("%d: %04d ", c->line++, offset);
 
-    switch (c->op_codes.as.Bytes[offset])
+    switch (c->op_codes.listof.Bytes[offset])
     {
     case OP_CONSTANT:
         return constant_instruction("OP_CONSTANT", c, offset);
@@ -113,8 +113,8 @@ int disassemble_instruction(Chunk c, int offset)
         return jump_instruction("OP_JMPT", 1, c, offset);
     case OP_JMPL:
         return jump_instruction("OP_JMPL", 1, c, offset);
-    case OP_OFF_JMP:
-        return jump_instruction("OP_OFF_JMP", 1, c, offset);
+    case OP_JMPC:
+        return jump_instruction("OP_JMPC", 1, c, offset);
     case OP_JMP:
         return jump_instruction("OP_JMP", 1, c, offset);
     case OP_LOOP:

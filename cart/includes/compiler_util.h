@@ -1,7 +1,6 @@
 #ifndef _COMPILER_UTIL_H
 #define _COMPILER_UTIL_H
 #include "scanner.h"
-#include "chunk.h"
 
 #define MAX_ELIF 10
 #define LOCAL_COUNT 500
@@ -38,23 +37,20 @@ struct Local
 };
 typedef struct Local Local;
 
-struct comp
-{
-    Local locals[LOCAL_COUNT];
-    int local_count;
-    int scope_depth;
-};
-
 typedef struct parse_rule PRule;
 typedef struct Parser Parser;
-typedef struct comp comp;
 
 struct Compiler
 {
-    comp compiler;
+    int local_count;
+    int scope_depth;
+
+    FT type;
+    Function *func;
+
+    struct Compiler *enclosing;
+    Local locals[LOCAL_COUNT];
     Parser parser;
-    Chunk ch;
-    vm *machine;
 };
 
 typedef struct Compiler Compiler;
@@ -72,13 +68,21 @@ static void consume(int t, const char *str, Parser *parser);
 static void advance_compiler(Parser *parser);
 
 static void declaration(Compiler *c);
+static void call(Compiler *c);
+
+static int argument_list(Compiler *c);
+
+static void func_declaration(Compiler *c);
+static void func_body(Compiler *c, FT type, arena ar);
+static void func_var(Compiler *c);
+
 static void var_dec(Compiler *c);
 static void synchronize(Parser *parser);
 
 static void statement(Compiler *c);
 static void print_statement(Compiler *c);
 
-static void begin_scope(comp *c);
+static void begin_scope(Compiler *c);
 static void end_scope(Compiler *c);
 
 static void parse_block(Compiler *c);
@@ -87,8 +91,8 @@ static void block(Compiler *c);
 static void comment(Compiler *c);
 
 static void emit_loop(Compiler *c, int byte);
-static int emit_jump_long(Chunk ch, int byte);
-static int emit_jump(Chunk ch, int byte);
+static int emit_jump_long(Chunk *ch, int byte);
+static int emit_jump(Chunk *ch, int byte);
 
 static void patch_jump_long(Compiler *c, int begin, int byte);
 static void patch_jump(Compiler *c, int byte);
@@ -127,10 +131,10 @@ static void current_err(const char *err, Parser *parser);
 static void error(const char *err, Parser *parser);
 static void error_at(Token t, Parser *parser, const char *err);
 
-static void emit_byte(Chunk ch, uint8_t byte);
-static void emit_bytes(Chunk ch, uint8_t b1, uint8_t b2);
-static void emit_constant(Chunk ch, arena ar);
-static void emit_return(Chunk ch);
+static void emit_byte(Chunk *ch, uint8_t byte);
+static void emit_bytes(Chunk *ch, uint8_t b1, uint8_t b2);
+static void emit_constant(Chunk *ch, arena ar);
+static void emit_return(Chunk *ch);
 
 static void dval(Compiler *c);
 static void ival(Compiler *c);
@@ -139,8 +143,9 @@ static void ch(Compiler *c);
 static void boolean(Compiler *c);
 static void cstr(Compiler *c);
 
-static int resolve_local(comp *c, arena *name);
+static int resolve_local(Compiler *c, arena *name);
 
+static arena parse_func_id(Compiler *c);
 static arena parse_id(Compiler *c);
 static int parse_var(Compiler *c, arena ar);
 static void id(Compiler *c);
@@ -151,7 +156,7 @@ static void declare_var(Compiler *c, arena ar);
 static void add_local(Compiler *c, arena *ar);
 
 static PRule rules[] = {
-    [TOKEN_CH_LPAREN] = {grouping, NULL, PREC_NONE},
+    [TOKEN_CH_LPAREN] = {grouping, call, PREC_NONE},
     [TOKEN_CH_RPAREN] = {NULL, NULL, PREC_NONE},
     [TOKEN_CH_LCURL] = {NULL, NULL, PREC_NONE},
     [TOKEN_CH_RCURL] = {NULL, NULL, PREC_NONE},
@@ -160,7 +165,7 @@ static PRule rules[] = {
     [TOKEN_CH_DOT] = {NULL, NULL, PREC_NONE},
 
     [TOKEN_OP_INC] = {id, NULL, PREC_TERM},
-    [TOKEN_OP_DEC] = {id, NULL, PREC_TERM},
+    [TOKEN_OP_DEC] = {NULL, NULL, PREC_TERM},
 
     [TOKEN_OP_SUB] = {unary, binary, PREC_TERM},
     [TOKEN_OP_ADD] = {NULL, binary, PREC_TERM},
@@ -189,7 +194,7 @@ static PRule rules[] = {
     [TOKEN_FALSE] = {boolean, NULL, PREC_NONE},
     [TOKEN_TRUE] = {boolean, NULL, PREC_NONE},
 
-    [TOKEN_ID] = {id, id, PREC_NONE},
+    [TOKEN_ID] = {id, NULL, PREC_NONE},
     [TOKEN_STR] = {cstr, NULL, PREC_NONE},
     [TOKEN_BTYE] = {NULL, NULL, PREC_NONE},
 
@@ -217,7 +222,7 @@ static PRule rules[] = {
     [TOKEN_EOF] = {NULL, NULL, PREC_NONE},
 };
 
-static void end_compile(Chunk ch);
-static void init_compiler(comp *compiler);
+static Function *end_compile(Compiler *compiler);
+static void init_compiler(Compiler *a, Compiler *b, FT type);
 
 #endif

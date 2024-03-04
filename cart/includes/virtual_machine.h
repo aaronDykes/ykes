@@ -3,6 +3,9 @@
 
 #include "debug.h"
 #include "table.h"
+#include "compiler.h"
+
+#define FRAMES_MAX 64
 
 typedef enum
 {
@@ -12,21 +15,26 @@ typedef enum
 
 } Interpretation;
 
+struct CallFrame
+{
+    Function *func;
+    uint8_t *ip;
+    uint8_t *ip_start;
+    Stack *slots;
+};
+typedef struct CallFrame CallFrame;
+
 struct vm
 {
-    Chunk ch;
-    arena ip;
-    uint8_t *ip_start;
-    int max_size;
-    int current_size;
-    arena *stack;
-    arena *stack_top;
-    dict d;
+    CallFrame frames[FRAMES_MAX];
+    int frame_count;
+
+    Stack *stack;
     dict glob;
 };
-
 typedef struct vm vm;
 typedef vm *Vm;
+
 static vm machine;
 
 void initVM();

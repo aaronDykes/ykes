@@ -1,6 +1,6 @@
 #ifndef _YKES_COMPILER_H
 #define _YKES_COMPILER_H
-#include "virtual_machine.h"
+#include "stack.h"
 
-bool compile(const char *src, Chunk ch, vm *machine);
+Function *compile(const char *src);
 #endif
