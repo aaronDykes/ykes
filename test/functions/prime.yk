@@ -17,4 +17,8 @@ function print_prime(n) {
 
 }
 
-print_prime(10000);
+var start = clock();
+
+print_prime(20000);
+
+print clock() - start;

@@ -2,6 +2,7 @@
 #include "vm_util.h"
 #include "common.h"
 #include <stdarg.h>
+#include <time.h>
 #include <stdio.h>
 
 void initVM()
@@ -10,6 +11,7 @@ void initVM()
     initialize_global_memory(PAGE);
     machine.stack = GROW_STACK(NULL, (size_t)ARENA_SIZE);
     init_dict(&machine.glob);
+    define_native(native_name("clock"), clock_native);
 }
 void freeVM()
 {
@@ -41,6 +43,19 @@ static void runtime_error(const char *format, ...)
         fprintf(stderr, "[line %d] in script\n", line);
     }
     reset_stack(machine.stack);
+}
+
+static void define_native(arena ar, NativeFn n)
+{
+    push(&machine.stack, Obj(ar));
+    ar.as.hash %= machine.glob.capacity;
+    insert_entry(&machine.glob.map, native_entry(ar, native(n, ar)));
+    pop();
+}
+
+static Element clock_native(int argc, Stack *args)
+{
+    return Obj(Double(clock() / CLOCKS_PER_SEC));
 }
 
 static bool call(Function *f, uint8_t argc)
@@ -95,6 +110,11 @@ static Function *find_func(arena hash)
     hash.as.hash %= machine.glob.capacity;
     return find_func_entry(&machine.glob.map, &hash);
 }
+static Native *find_native(arena hash)
+{
+    hash.as.hash %= machine.glob.capacity;
+    return find_native_entry(&machine.glob.map, &hash);
+}
 
 static bool exists(arena tmp)
 {
@@ -125,6 +145,13 @@ static bool call_value(Element el, uint8_t argc)
     {
     case FUNC:
         return call(el.func, argc);
+    case NATIVE:
+    {
+        Element res = el.native->fn(argc, machine.stack->top - argc);
+        machine.stack->top -= (argc + 1);
+        push(&machine.stack, res);
+        return true;
+    }
     default:
         break;
     }
@@ -154,6 +181,7 @@ Interpretation run()
 #define OBJ(ar) (Obj(ar))
 #define PUSH(ar) (push(&machine.stack, ar))
 #define FIND_FUNC(ar) (find_func(ar))
+#define FIND_NATIVE(ar) (find_native(ar))
 #define WRITE_AR(a, b) (write_dict(&machine.glob, a, b, machine.glob.capacity))
 #define WRITE_FUNC(a, f) (write_func_dict(&machine.glob, a, f, machine.glob.capacity))
 
@@ -287,7 +315,6 @@ Interpretation run()
             break;
         case OP_CALL:
         {
-
             uint8_t argc = READ_BYTE();
             Element el = NPEEK(argc);
 
@@ -323,9 +350,7 @@ Interpretation run()
         {
             Element el = PEEK();
             if (el.type == FUNC)
-            {
                 WRITE_FUNC(el.func->name, el.func);
-            }
             else
                 LOCAL() = el;
             break;
@@ -355,6 +380,12 @@ Interpretation run()
                 if ((f = FIND_FUNC(el.arena)) != NULL)
                     PUSH(Func(f));
             }
+            else if (el.type == ARENA && el.arena.type == ARENA_NATIVE)
+            {
+                Native *native;
+                if ((native = FIND_NATIVE(el.arena)) != NULL)
+                    PUSH(native_fn(native));
+            }
             else
                 PUSH(Obj(find(el.arena)));
         }
@@ -365,17 +396,13 @@ Interpretation run()
         {
             Element el = READ_CONSTANT();
             if (el.type == FUNC)
-            {
-                pop();
                 WRITE_FUNC(el.func->name, el.func);
-            }
             else
                 WRITE_AR(el.arena, pop().arena);
             break;
         }
         case OP_PRINT:
         {
-
             Element el = pop();
             if (el.type == FUNC)
             {
@@ -410,6 +437,7 @@ Interpretation run()
     }
 #undef WRITE_FUNC
 #undef WRITE_AR
+#undef FIND_NATIVE
 #undef FIND_FUNC
 #undef PUSH
 #undef OBJ

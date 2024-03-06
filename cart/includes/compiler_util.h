@@ -149,6 +149,7 @@ static void cstr(Compiler *c);
 static int resolve_local(Compiler *c, arena *name);
 
 static arena parse_func_id(Compiler *c);
+static arena parse_native_id(Compiler *c);
 static arena parse_id(Compiler *c);
 static int parse_var(Compiler *c, arena ar);
 static void id(Compiler *c);
@@ -215,6 +216,7 @@ static PRule rules[] = {
     [TOKEN_IF] = {NULL, NULL, PREC_NONE},
     [TOKEN_ELIF] = {NULL, NULL, PREC_OR},
     [TOKEN_NULL] = {boolean, NULL, PREC_NONE},
+    [TOKEN_CLOCK] = {parse_native_id, NULL, PREC_CALL},
     [TOKEN_PRINT] = {NULL, NULL, PREC_NONE},
     [TOKEN_RETURN] = {NULL, NULL, PREC_NONE},
     [TOKEN_SUPER] = {NULL, NULL, PREC_NONE},

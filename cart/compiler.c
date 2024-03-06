@@ -765,6 +765,18 @@ static void cstr(Compiler *c)
     emit_constant(&c->func->ch, String(ch));
 }
 
+static arena parse_native_id(Compiler *c)
+{
+    char *ch = (char *)c->parser.pre.start;
+    ch[c->parser.pre.size] = '\0';
+    int arg = add_constant(&c->func->ch, Obj(native_name(ch)));
+    emit_bytes(&c->func->ch, OP_GET_GLOBAL, (uint8_t)arg);
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to function call", &c->parser);
+    consume(TOKEN_CH_RPAREN, "Expect `)` prior to function call", &c->parser);
+    emit_bytes(&c->func->ch, OP_CALL, 0);
+    // parse_precedence(PREC_ASSIGNMENT, c);
+}
+
 static arena parse_func_id(Compiler *c)
 {
     char *ch = (char *)c->parser.pre.start;

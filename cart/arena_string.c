@@ -127,7 +127,7 @@ static arena append_int_to_str(arena s, arena i)
     // arena_free(&i);
     ar = arena_alloc(sizeof(char) * (len + 1), ARENA_STR);
     ar.as.String = itoa(ar.as.String, ival);
-    s = arena_realloc(&s, new * sizeof(char), ARENA_STR);
+    s = GROW_ARRAY(&s, new * sizeof(char), ARENA_STR);
     strcat(s.as.String, ar.as.String);
     arena_free(&ar);
     return s;
@@ -135,7 +135,7 @@ static arena append_int_to_str(arena s, arena i)
 static arena append_str_to_str(arena s, arena str)
 {
     int new = s.as.len + str.as.len + 1;
-    s = arena_realloc(&s, new * sizeof(char), ARENA_STR);
+    s = GROW_ARRAY(&s, new * sizeof(char), ARENA_STR);
     strcat(s.as.String, str.as.String);
     s.as.String[new] = '\0';
     arena_free(&str);
@@ -148,7 +148,7 @@ static arena append_char_to_str(arena s, arena c)
     c = arena_alloc(sizeof(char) * 2, ARENA_STR);
     c.as.String[0] = ch;
     c.as.String[1] = '\0';
-    s = arena_realloc(&s, sizeof(char) * (s.as.len + 1), ARENA_STR);
+    s = GROW_ARRAY(&s, sizeof(char) * (s.as.len + 1), ARENA_STR);
     strcat(s.as.String, c.as.String);
     arena_free(&c);
     return s;
@@ -165,7 +165,7 @@ static arena append_long_to_str(arena s, arena i)
     arena_free(&i);
     i = arena_alloc(sizeof(char) * (len + 1), ARENA_STR);
     i.as.String = lltoa(i.as.String, llint);
-    s = arena_realloc(&s, new * sizeof(char), ARENA_STR);
+    s = GROW_ARRAY(&s, new * sizeof(char), ARENA_STR);
     strcat(s.as.String, i.as.String);
     arena_free(&i);
     return s;

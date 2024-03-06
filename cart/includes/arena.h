@@ -15,6 +15,7 @@ enum
     ARENA_STR,
     ARENA_VAR,
     ARENA_FUNC,
+    ARENA_NATIVE,
     ARENA_BYTE,
     ARENA_INT,
     ARENA_DOUBLE,

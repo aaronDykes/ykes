@@ -47,7 +47,7 @@ void arena_free_table(Table t)
 
     for (size_t i = 0; i < size; i++)
     {
-        arena_free_entry(&t[i]);
+        FREE_TABLE_ENTRY(&t[i]);
         t[i].size = 0;
     }
 
@@ -59,11 +59,13 @@ void arena_free_table(Table t)
 void arena_free_entry(Table entry)
 {
     if (entry->type == ARENA_TABLE)
-        arena_free(&entry->val.a);
+        FREE_ARRAY(&entry->val.a);
+    else if (entry->type == ARENA_NATIVE)
+        FREE_NATIVE(entry->val.n);
     else
-        free_function(entry->val.f);
+        FREE_FUNCTION(entry->val.f);
 
-    arena_free(&entry->key);
+    FREE_ARRAY(&entry->key);
     entry->next = NULL;
     entry->prev = NULL;
     entry = NULL;
@@ -90,7 +92,7 @@ void insert_entry(Table *t, table entry)
 
     if (f.type == ARENA_NULL)
     {
-        alloc_entry(&tmp[entry.key.as.hash].next, entry);
+        ALLOC_ENTRY(&tmp[entry.key.as.hash].next, entry);
         return;
     }
     for (; ptr; ptr = ptr->next)
@@ -131,7 +133,7 @@ void delete_func_entry(Table *t, arena key)
     if (e.next && (strcmp(e.key.as.String, key.as.String) == 0))
     {
         Table t = a[index].next;
-        arena_free_entry(&a[index]);
+        FREE_TABLE_ENTRY(&a[index]);
         a[index] = func_entry(Null(), NULL);
         t->prev = NULL;
         a[index] = new_entry(*t);
@@ -140,7 +142,7 @@ void delete_func_entry(Table *t, arena key)
     }
     if (!e.next && (strcmp(e.key.as.String, key.as.String) == 0))
     {
-        arena_free_entry(&a[index]);
+        FREE_TABLE_ENTRY(&a[index]);
         a[index] = func_entry(Null(), NULL);
 
         return;
@@ -151,7 +153,7 @@ void delete_func_entry(Table *t, arena key)
 
     if (!tmp->next)
     {
-        arena_free_entry(tmp);
+        FREE_TABLE_ENTRY(tmp);
         return;
     }
 
@@ -202,13 +204,13 @@ DEL:
     del = tmp->prev;
     del->next = tmp->next;
     tmp->next->prev = del;
-    arena_free_entry(tmp);
+    FREE_TABLE_ENTRY(tmp);
     return;
 
 DEL_LAST:
     del = tmp->prev;
     del->next = NULL;
-    arena_free_entry(tmp);
+    FREE_TABLE_ENTRY(tmp);
 }
 
 void delete_arena_entry(Table *t, arena key)
@@ -223,7 +225,7 @@ void delete_arena_entry(Table *t, arena key)
     if (e.next && (strcmp(e.key.as.String, key.as.String) == 0))
     {
         Table t = a[index].next;
-        arena_free_entry(&a[index]);
+        FREE_TABLE_ENTRY(&a[index]);
         a[index] = arena_entry(Null(), Null());
         t->prev = NULL;
         a[index] = new_entry(*t);
@@ -232,7 +234,7 @@ void delete_arena_entry(Table *t, arena key)
     }
     if (!e.next && (strcmp(e.key.as.String, key.as.String) == 0))
     {
-        arena_free_entry(&a[index]);
+        FREE_TABLE_ENTRY(&a[index]);
         a[index] = arena_entry(Null(), Null());
 
         return;
@@ -243,7 +245,7 @@ void delete_arena_entry(Table *t, arena key)
 
     if (!tmp->next)
     {
-        arena_free_entry(tmp);
+        FREE_TABLE_ENTRY(tmp);
         return;
     }
 
@@ -294,13 +296,53 @@ DEL:
     del = tmp->prev;
     del->next = tmp->next;
     tmp->next->prev = del;
-    arena_free_entry(tmp);
+    FREE_TABLE_ENTRY(tmp);
     return;
 
 DEL_LAST:
     del = tmp->prev;
     del->next = NULL;
-    arena_free_entry(tmp);
+    FREE_TABLE_ENTRY(tmp);
+}
+
+Native *find_native_entry(Table *t, arena *hash)
+{
+    Table a = *t;
+    size_t index = hash->as.hash;
+    table entry = a[index];
+
+    if (entry.key.type == ARENA_NULL)
+        return NULL;
+
+    if (strcmp(entry.key.as.String, hash->as.String) == 0)
+        return entry.val.n;
+
+    Table tmp = entry.next;
+
+    for (; tmp; tmp = tmp->next)
+        switch (tmp->key.type)
+        {
+        case ARENA_VAR:
+        case ARENA_FUNC:
+        case ARENA_STR:
+            if (strcmp(tmp->key.as.String, hash->as.String) == 0)
+                return tmp->val.n;
+            break;
+        case ARENA_INT:
+            if (tmp->key.as.Int == hash->as.Int)
+                return tmp->val.n;
+            break;
+        case ARENA_DOUBLE:
+            if (tmp->key.as.Double == hash->as.Double)
+                return tmp->val.n;
+            break;
+        case ARENA_CHAR:
+            if (tmp->key.as.Char == hash->as.Char)
+                return tmp->val.n;
+            break;
+        }
+
+    return NULL;
 }
 
 Function *find_func_entry(Table *t, arena *hash)
@@ -389,13 +431,13 @@ void alloc_entry(Table *e, table el)
 
     if (!tmp)
     {
-        *e = alloc_ptr(sizeof(table));
+        *e = ALLOC(sizeof(table));
         **e = el;
         return;
     }
     for (; tmp->next; tmp = tmp->next)
         ;
-    tmp->next = alloc_ptr(sizeof(table));
+    tmp->next = ALLOC(sizeof(table));
     *tmp->next = el;
     tmp->next->prev = tmp;
 }
@@ -433,11 +475,22 @@ table func_entry(arena key, Function *func)
     el.type = FUNC_TABLE;
     return el;
 }
+table native_entry(arena key, Native *func)
+{
+    table el;
+    el.key = key;
+    el.val.n = func;
+    el.next = NULL;
+    el.prev = NULL;
+    el.size = key.size;
+    el.type = FUNC_TABLE;
+    return el;
+}
 
 arena Var(const char *str)
 {
     size_t size = strlen(str);
-    arena ar = arena_alloc(size, ARENA_VAR);
+    arena ar = GROW_ARRAY(NULL, size, ARENA_VAR);
     memcpy(ar.as.String, str, size);
     ar.as.String[size] = '\0';
     size_t h = hash(ar);
@@ -448,12 +501,23 @@ arena Var(const char *str)
 arena func_name(const char *str)
 {
     size_t size = strlen(str);
-    arena ar = arena_alloc(size, ARENA_FUNC);
+    arena ar = GROW_ARRAY(NULL, size, ARENA_FUNC);
     memcpy(ar.as.String, str, size);
     ar.as.String[size] = '\0';
     size_t h = hash(ar);
     ar.as.hash = h;
     ar.type = ARENA_FUNC;
+    return ar;
+}
+arena native_name(const char *str)
+{
+    size_t size = strlen(str);
+    arena ar = GROW_ARRAY(NULL, size, ARENA_NATIVE);
+    memcpy(ar.as.String, str, size);
+    ar.as.String[size] = '\0';
+    size_t h = hash(ar);
+    ar.as.hash = h;
+    ar.type = ARENA_NATIVE;
     return ar;
 }
 

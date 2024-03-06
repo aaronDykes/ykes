@@ -7,7 +7,7 @@ void free_function(Function *f);
 Stack *stack(size_t size)
 {
     Stack *s = NULL;
-    s = alloc_ptr((size * sizeof(Stack)) + sizeof(Stack));
+    s = ALLOC((size * sizeof(Stack)) + sizeof(Stack));
     s->size = size;
     (s + 1)->len = (int)size;
     (s + 1)->count = 0;
@@ -36,6 +36,9 @@ Stack *realloc_stack(Stack *st, size_t size)
         case FUNC:
             s[i].as = Func(st[i].as.func);
             break;
+        case NATIVE:
+            s[i].as = native_fn(st[i].as.native);
+            break;
         }
     free_stack(st);
     return s;
@@ -48,10 +51,13 @@ void free_stack(Stack *stack)
         switch (stack[i].as.type)
         {
         case ARENA:
-            arena_free(&stack[i].as.arena);
+            FREE_ARRAY(&stack[i].as.arena);
             break;
         case FUNC:
-            free_function(stack[i].as.func);
+            FREE_FUNCTION(stack[i].as.func);
+            break;
+        case NATIVE:
+            FREE_NATIVE(stack[i].as.native);
             break;
         }
     stack = NULL;
@@ -72,22 +78,48 @@ Element Func(Function *f)
     return s;
 }
 
+Element native_fn(Native *native)
+{
+    Element s;
+
+    s.native = native;
+    s.type = NATIVE;
+    return s;
+}
+
 Function *function()
 {
-    Function *func = alloc_ptr(sizeof(Function));
+    Function *func = ALLOC(sizeof(Function));
     func->arity = 0;
     init_chunk(&func->ch);
     return func;
 }
-
 void free_function(Function *func)
 {
     if (!func)
         return;
     if (func->name.type != ARENA_NULL)
-        FREE_ARRAY(&func->name, ARENA_FUNC);
+        FREE_ARRAY(&func->name);
     free_chunk(&func->ch);
     func = NULL;
+}
+
+Native *native(NativeFn func, arena ar)
+{
+    Native *native = ALLOC(sizeof(Native));
+    native->fn = func;
+    native->obj = ar;
+    return native;
+}
+
+void free_native(Native *native)
+{
+
+    if (!native)
+        return;
+    native->fn = NULL;
+
+    FREE_ARRAY(&native->obj);
 }
 
 void init_chunk(Chunk *c)
@@ -133,9 +165,9 @@ void free_chunk(Chunk *c)
         return;
     }
     if (c->op_codes.listof.Bytes)
-        FREE_ARRAY(&c->op_codes, ARENA_BYTE_PTR);
+        FREE_ARRAY(&c->op_codes);
     if (c->cases.listof.Ints)
-        FREE_ARRAY(&c->cases, ARENA_BYTE_PTR);
+        FREE_ARRAY(&c->cases);
     if (c->constants)
         FREE_STACK(c->constants);
     init_chunk(c);
@@ -191,6 +223,11 @@ void print(Element ar)
     if (ar.type == FUNC && ar.func)
     {
         printf("<fn %s>\n", ar.func->name.as.String ? ar.func->name.as.String : "<fn NULL>");
+        return;
+    }
+    else if (ar.type == NATIVE && ar.func)
+    {
+        printf("<fn native>\n");
         return;
     }
     switch (a.type)

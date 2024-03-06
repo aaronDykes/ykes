@@ -181,7 +181,15 @@ static int id_type()
             case 'a':
                 return check_keyword(2, 2, "se", TOKEN_CASE);
             case 'l':
-                return check_keyword(2, 3, "ass", TOKEN_CLASS);
+
+                if (scan.current - scan.start > 1)
+                    switch (scan.start[2])
+                    {
+                    case 'o':
+                        return check_keyword(3, 2, "ck", TOKEN_CLOCK);
+                    case 's':
+                        return check_keyword(3, 2, "ss", TOKEN_CLASS);
+                    }
             }
     case 'd':
         return check_keyword(1, 6, "efault", TOKEN_DEFAULT);

@@ -23,6 +23,7 @@ arena arena_init(void *data, size_t size, int type)
     case ARENA_FUNC:
     case ARENA_VAR:
     case ARENA_STR:
+    case ARENA_NATIVE:
         ar.as.String = data;
         ar.as.len = (int)size;
         break;
@@ -96,7 +97,7 @@ void *alloc_ptr(size_t size)
 }
 Arena arena_alloc_arena(size_t size)
 {
-    Arena p = alloc_ptr((size * sizeof(arena)) + sizeof(arena));
+    Arena p = ALLOC((size * sizeof(arena)) + sizeof(arena));
 
     size_t n = size + 1;
     p->size = size;
@@ -160,13 +161,13 @@ void arena_free_arena(Arena ar)
 arena arena_alloc(size_t size, int type)
 {
 
-    void *ptr = alloc_ptr(size);
+    void *ptr = ALLOC(size);
     return arena_init(ptr, size, type);
 }
 
 arena arena_realloc(Arena ar, size_t size, int type)
 {
-    void *ptr = alloc_ptr(size);
+    void *ptr = ALLOC(size);
     if (!ar && size != 0)
     {
         return arena_init(ptr, size, type);
@@ -188,6 +189,7 @@ arena arena_realloc(Arena ar, size_t size, int type)
     case ARENA_STR:
     case ARENA_VAR:
     case ARENA_FUNC:
+    case ARENA_NATIVE:
         if (!ar->as.String)
             return arena_init(ptr, size, type);
         memcpy(ptr, ar->as.String, ar->size);

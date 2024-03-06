@@ -6,8 +6,14 @@
 #define GROW_TABLE(ar, size) \
     arena_realloc_table(ar, size)
 
+#define ALLOC_ENTRY(a, b) \
+    alloc_entry(a, b)
+
 #define FREE_TABLE(ar) \
     arena_realloc_table(ar, 0)
+
+#define FREE_TABLE_ENTRY(ar) \
+    arena_free_entry(ar)
 
 #define HASH_SIZE(X) \
     (250 * sizeof(X))
@@ -15,6 +21,7 @@
 typedef enum
 {
     ARENA_TABLE,
+    NATIVE_TABLE,
     FUNC_TABLE
 } TableType;
 
@@ -25,6 +32,7 @@ struct hash_arena
     TableType type;
     union
     {
+        Native *n;
         Function *f;
         arena a;
     } val;
@@ -42,9 +50,11 @@ void delete_func_entry(Table *t, arena key);
 
 arena find_arena_entry(Table *t, arena *key);
 Function *find_func_entry(Table *t, arena *key);
+Native *find_native_entry(Table *t, arena *key);
 
 table arena_entry(arena key, arena val);
 table func_entry(arena key, Function *f);
+table native_entry(arena key, Native *func);
 table new_entry(table t);
 
 Table arena_alloc_table(size_t size);
@@ -56,6 +66,7 @@ void arena_free_entry(Table entry);
 
 arena Var(const char *str);
 arena func_name(const char *str);
+arena native_name(const char *str);
 size_t hash(arena key);
 
 #endif

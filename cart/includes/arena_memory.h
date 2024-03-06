@@ -22,11 +22,14 @@
 #define GROW_ARENA(ar, size) \
     arena_realloc_arena(ar, size)
 
+#define ALLOC(size) \
+    alloc_ptr(size);
+
 #define FREE_ARENA(ar) \
     arena_realloc_arena(ar, 0)
 
-#define FREE_ARRAY(ar, type) \
-    arena_realloc(ar, 0, type)
+#define FREE_ARRAY(ar) \
+    arena_realloc(ar, 0, ARENA_NULL)
 
 struct memory
 {

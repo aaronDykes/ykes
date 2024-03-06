@@ -7,6 +7,10 @@
     realloc_stack(st, size)
 #define FREE_STACK(st) \
     realloc_stack(st, 0)
+#define FREE_FUNCTION(func) \
+    free_function(func)
+#define FREE_NATIVE(native) \
+    free_native(native)
 
 typedef enum
 {
@@ -74,12 +78,14 @@ typedef enum
 typedef enum
 {
     FUNCTION,
+    NATIVE_FN,
     SCRIPT
 } FT;
 
 typedef enum
 {
     ARENA,
+    NATIVE,
     FUNC
 } T;
 
@@ -104,6 +110,8 @@ struct Function
 };
 typedef struct Function Function;
 
+typedef struct Native Native;
+
 struct Element
 {
     T type;
@@ -112,6 +120,7 @@ struct Element
     {
         arena arena;
         Function *func;
+        Native *native;
     };
 };
 
@@ -129,6 +138,14 @@ struct Stack
 
 typedef struct Stack Stack;
 
+typedef Element (*NativeFn)(int argc, Stack *argv);
+
+struct Native
+{
+    arena obj;
+    NativeFn fn;
+};
+
 void init_chunk(Chunk *c);
 void write_chunk(Chunk *c, uint8_t byte);
 int add_constant(Chunk *c, Element ar);
@@ -140,9 +157,13 @@ void free_stack(Stack *stack);
 
 Element Obj(arena ar);
 Element Func(Function *f);
+Element native_fn(Native *native);
 
-void free_function(Function *func);
 Function *function();
+void free_function(Function *func);
+
+Native *native(NativeFn native, arena ar);
+void free_native(Native *native);
 
 void print(Element ar);
 void push(Stack **s, Element e);
