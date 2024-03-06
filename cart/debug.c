@@ -44,7 +44,7 @@ void disassemble_chunk(Chunk *c, const char *name)
     printf("==== chunk: `%s` ====\n", name);
 
     c->line = 1;
-    for (int i = 0; i < c->op_codes.listof.len;)
+    for (int i = 0; i < c->op_codes.len;)
         i = disassemble_instruction(c, i);
 }
 
@@ -123,6 +123,8 @@ int disassemble_instruction(Chunk *c, int offset)
         return simple_instruction("OP_POPN", offset);
     case OP_POP:
         return simple_instruction("OP_POP", offset);
+    case OP_CALL:
+        return byte_instruction("OP_CALL", c, offset);
     case OP_PRINT:
         return simple_instruction("OP_PRINT", offset);
     case OP_RETURN:

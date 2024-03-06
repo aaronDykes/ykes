@@ -93,7 +93,6 @@ typedef struct Chunk Chunk;
 struct Function
 {
     int arity;
-    arena *obj;
     arena name;
     Chunk ch;
 };
@@ -138,7 +137,6 @@ Element Func(Function *f);
 
 void free_function(Function *func);
 Function *function();
-arena *take_string(const char *str, int len);
 
 void print(Element ar);
 void push(Stack **s, Element e);

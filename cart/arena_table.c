@@ -309,7 +309,7 @@ Function *find_func_entry(Table *t, arena *hash)
     size_t index = hash->as.hash;
     table entry = a[index];
 
-    if (entry.key.type == ARENA_NULL || hash->type != ARENA_VAR)
+    if (entry.key.type == ARENA_NULL)
         return NULL;
 
     if (strcmp(entry.key.as.String, hash->as.String) == 0)

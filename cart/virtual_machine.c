@@ -25,11 +25,46 @@ static void runtime_error(const char *format, ...)
     vfprintf(stderr, format, args);
     va_end(args);
     fputs("\n", stderr);
-    CallFrame *frame = &machine.frames[machine.frame_count - 1];
-    size_t instruction = frame->ip - frame->func->ch.op_codes.listof.Bytes - 1;
-    int line = frame->func->ch.line;
-    fprintf(stderr, "[line %d] in script\n", line);
+
+    for (int i = machine.frame_count - 1; i >= 0; i--)
+    {
+
+        CallFrame *frame = &machine.frames[i];
+        Function *func = frame->func;
+        size_t instruction = frame->ip - frame->func->ch.op_codes.listof.Bytes - 1;
+        int line = frame->func->ch.line;
+
+        if (!func->name.as.String)
+            fprintf(stderr, "script\n");
+        else
+            fprintf(stderr, "%s()\n", func->name.as.String);
+        fprintf(stderr, "[line %d] in script\n", line);
+    }
     reset_stack(machine.stack);
+}
+
+static bool call(Function *f, uint8_t argc)
+{
+
+    if (f->arity != argc)
+    {
+
+        runtime_error("Expected `%d` args, but got `%d`.", f->arity, argc);
+        return false;
+    }
+
+    if (machine.frame_count == FRAMES_MAX)
+    {
+        runtime_error("Stack overflow.");
+        return false;
+    }
+
+    CallFrame *frame = &machine.frames[machine.frame_count++];
+    frame->func = f;
+    frame->ip = f->ch.op_codes.listof.Bytes;
+    frame->ip_start = frame->ip;
+    frame->slots = machine.stack->top - argc - 1;
+    return true;
 }
 
 Interpretation interpret(const char *src)
@@ -43,14 +78,9 @@ Interpretation interpret(const char *src)
     }
 
     push(&machine.stack, Func(func));
-    CallFrame *frame = &machine.frames[machine.frame_count++];
-    frame->func = func;
-    frame->ip = func->ch.op_codes.listof.Bytes;
-    frame->ip_start = func->ch.op_codes.listof.Bytes;
-    frame->slots = machine.stack;
+    call(func, 0);
 
     Interpretation res = run();
-    free_function(func);
     return res;
 }
 
@@ -60,27 +90,41 @@ static arena find(arena tmp)
     return find_arena_entry(&machine.glob.map, &tmp);
 }
 
+static Function *find_func(arena hash)
+{
+    hash.as.hash %= machine.glob.capacity;
+    return find_func_entry(&machine.glob.map, &hash);
+}
+
 static bool exists(arena tmp)
 {
     tmp.as.hash %= machine.glob.capacity;
     return find_arena_entry(&machine.glob.map, &tmp).type != ARENA_NULL;
 }
+
+static Function *func_exists(arena ar)
+{
+    ar.as.hash %= machine.glob.capacity;
+    return find_func_entry(&machine.glob.map, &ar);
+}
+
 static Interpretation undefined_var(arena tmp)
 {
     runtime_error("Undefined variable `%s`.", tmp.as.String);
     return INTERPRET_RUNTIME_ERR;
 }
-
-static bool call(Function *f, uint8_t argc)
+static Interpretation duplicate_func(arena tmp)
 {
+    runtime_error("Duplicate function `%s`.", tmp.as.String);
+    return INTERPRET_RUNTIME_ERR;
 }
 
-static bool call_value(Function *f, uint8_t argc)
+static bool call_value(Element el, uint8_t argc)
 {
-    switch (f->name.type)
+    switch (el.type)
     {
-    case ARENA_FUNC:
-        return call(f, argc);
+    case FUNC:
+        return call(el.func, argc);
     default:
         break;
     }
@@ -102,17 +146,21 @@ Interpretation run()
 #define READ_SHORT() ((uint16_t)((READ_BYTE() << 8) | READ_BYTE()))
 #define READ_CONSTANT() (frame->func->ch.constants[READ_BYTE()].as)
 #define PEEK() (machine.stack->top[-1].as)
-#define NPEEK(N) (machine.stack->top[N].as)
-#define FALSEY() (PEEK().arena)
-#define POP() \
-    (--machine.stack->count, (*--machine.stack->top).as)
+#define NPEEK(N) (machine.stack->top[(-1 - N)].as)
+#define FALSEY() (!PEEK().arena.as.Bool)
+#define POPN(n) (popn(&machine.stack, n))
 #define LOCAL() (frame->slots[READ_BYTE()].as)
 #define JUMP() (frame->func->ch.cases.listof.Ints[READ_SHORT()])
+#define OBJ(ar) (Obj(ar))
+#define PUSH(ar) (push(&machine.stack, ar))
+#define FIND_FUNC(ar) (find_func(ar))
+#define WRITE_AR(a, b) (write_dict(&machine.glob, a, b, machine.glob.capacity))
+#define WRITE_FUNC(a, f) (write_func_dict(&machine.glob, a, f, machine.glob.capacity))
 
     for (;;)
     {
 #ifdef DEBUG_TRACE_EXECUTION
-        for (Stack *v = machine.stack + 1; v < machine.stack->top; v++)
+        for (Stack *v = machine.stack; v < machine.stack->top; v++)
             print(v->as);
         disassemble_instruction(&frame->func->ch,
                                 (int)(frame->ip - frame->func->ch.op_codes.listof.Bytes));
@@ -121,85 +169,79 @@ Interpretation run()
         switch (READ_BYTE())
         {
         case OP_CONSTANT:
-            push(&machine.stack, READ_CONSTANT());
+            PUSH(READ_CONSTANT());
             break;
         case OP_NEG:
-            (*--machine.stack->top).as = Obj(_neg((*machine.stack++).as.arena));
+            PUSH(Obj(_neg(pop().arena)));
             break;
         case OP_INC:
-            push(&machine.stack, Obj(_inc(pop().arena)));
+            PUSH(Obj(_inc(pop().arena)));
             break;
         case OP_DEC:
-            push(&machine.stack, Obj(_dec(pop().arena)));
+            PUSH(Obj(_dec(pop().arena)));
             break;
         case OP_ADD:
-            push(&machine.stack, Obj(_add(pop().arena, pop().arena)));
+            PUSH(Obj(_add(pop().arena, pop().arena)));
             break;
         case OP_POPN:
-            popn(&machine.stack, READ_CONSTANT().arena.as.Int);
+            POPN(READ_CONSTANT().arena.as.Int);
             break;
         case OP_POP:
             pop();
             break;
         case OP_SUB:
-            push(&machine.stack, Obj(_sub(pop().arena, pop().arena)));
+            PUSH(Obj(_sub(pop().arena, pop().arena)));
             break;
         case OP_MUL:
-            push(&machine.stack, Obj(_mul(pop().arena, pop().arena)));
+            PUSH(Obj(_mul(pop().arena, pop().arena)));
             break;
         case OP_MOD:
-            push(&machine.stack, Obj(_mod(pop().arena, pop().arena)));
+            PUSH(Obj(_mod(pop().arena, pop().arena)));
             break;
         case OP_DIV:
-            push(&machine.stack, Obj(_div(pop().arena, pop().arena)));
+            PUSH(Obj(_div(pop().arena, pop().arena)));
             break;
         case OP_EQ:
-            push(&machine.stack, Obj(_eq(pop().arena, pop().arena)));
+            PUSH(Obj(_eq(pop().arena, pop().arena)));
             break;
         case OP_NE:
-            push(&machine.stack, Obj(_ne(pop().arena, pop().arena)));
+            PUSH(Obj(_ne(pop().arena, pop().arena)));
             break;
         case OP_SEQ:
-            push(&machine.stack, Obj(_seq(pop().arena, pop().arena)));
+            PUSH(Obj(_seq(pop().arena, pop().arena)));
             break;
         case OP_SNE:
-            push(&machine.stack, Obj(_sne(pop().arena, pop().arena)));
+            PUSH(Obj(_sne(pop().arena, pop().arena)));
             break;
         case OP_LT:
-            push(&machine.stack, Obj(_lt(pop().arena, pop().arena)));
+            PUSH(Obj(_lt(pop().arena, pop().arena)));
             break;
         case OP_LE:
-            push(&machine.stack, Obj(_le(pop().arena, pop().arena)));
+            PUSH(Obj(_le(pop().arena, pop().arena)));
             break;
         case OP_GT:
-            push(&machine.stack, Obj(_gt(pop().arena, pop().arena)));
+            PUSH(Obj(_gt(pop().arena, pop().arena)));
             break;
         case OP_GE:
-            push(&machine.stack, Obj(_ge(pop().arena, pop().arena)));
+            PUSH(Obj(_ge(pop().arena, pop().arena)));
             break;
         case OP_OR:
-            push(&machine.stack, Obj(_or(pop().arena, pop().arena)));
+            PUSH(Obj(_or(pop().arena, pop().arena)));
             break;
         case OP_AND:
-            push(&machine.stack, Obj(_and(pop().arena, pop().arena)));
+            PUSH(Obj(_and(pop().arena, pop().arena)));
             break;
         case OP_NULL:
-            push(&machine.stack, Obj(Null()));
+            PUSH(Obj(Null()));
             break;
         case OP_JMPF:
-        {
-
-            arena ar = FALSEY();
-            uint16_t offset = READ_SHORT();
-            frame->ip += (offset * !ar.as.Bool);
+            frame->ip += (READ_SHORT() * FALSEY());
             break;
-        }
         case OP_JMPC:
         {
-            arena ar = FALSEY();
             uint16_t jump = READ_SHORT(), offset = READ_SHORT();
 
-            if (!ar.as.Bool)
+            if (FALSEY())
             {
                 pop();
                 frame->ip += jump;
@@ -213,19 +255,19 @@ Interpretation run()
             break;
         case OP_CALL:
         {
+
             uint8_t argc = READ_BYTE();
-            if (!call_value(NPEEK(argc).func, argc))
+            Element el = NPEEK(argc);
+
+            if (!call_value(el, argc))
                 return INTERPRET_RUNTIME_ERR;
+
             frame = &machine.frames[machine.frame_count - 1];
         }
         break;
         case OP_JMPT:
-        {
-            arena ar = FALSEY();
-
-            frame->ip += (READ_SHORT() * !ar.as.Bool);
+            frame->ip += (READ_SHORT() * FALSEY());
             break;
-        }
         case OP_JMP:
             frame->ip += READ_SHORT();
             break;
@@ -233,67 +275,120 @@ Interpretation run()
             frame->ip -= READ_SHORT();
             break;
         case OP_GET_LOCAL:
-            push(&machine.stack, LOCAL());
+        {
+            Element el = LOCAL();
+            if (el.type == ARENA && el.arena.type == ARENA_FUNC)
+            {
+                Function *f;
+                if ((f = FIND_FUNC(el.func->name)) != NULL)
+                    PUSH(Func(f));
+            }
+            else
+            {
+
+                PUSH(el);
+            }
             break;
+        }
         case OP_SET_LOCAL:
-            LOCAL() = PEEK();
+        {
+            Element el = PEEK();
+            if (el.type == FUNC)
+            {
+                WRITE_FUNC(el.func->name, el.func);
+            }
+            else
+                LOCAL() = el;
             break;
+        }
         case OP_SET_GLOBAL:
         {
             Element el = READ_CONSTANT();
-            // if (el.type == ARENA)
-            // {
-            if (!exists(el.arena))
-                return undefined_var(el.arena);
-            write_dict(
-                &machine.glob,
-                el.arena,
-                pop().arena,
-                machine.glob.capacity);
+            if (el.type == ARENA)
+            {
+                if (!exists(el.arena))
+                    return undefined_var(el.arena);
+                WRITE_AR(el.arena, pop().arena);
 
-            push(&machine.stack, Obj(find(el.arena)));
-            // }
-            // else
-            // push(&machine.stack, el);
-            break;
+                PUSH(Obj(find(el.arena)));
+            }
+            else if (el.type == FUNC)
+            {
+                WRITE_FUNC(el.func->name, el.func);
+            }
         }
+        break;
         case OP_GET_GLOBAL:
         {
+            Element el = READ_CONSTANT();
 
-            // Element el = READ_CONSTANT();
-            // if (el.type == ARENA)
-            push(&machine.stack, Obj(find(READ_CONSTANT().arena)));
-            // else
-            // push(&machine.stack, el);
+            if (el.type == ARENA && el.arena.type == ARENA_FUNC)
+            {
+                Function *f;
+                if ((f = FIND_FUNC(el.arena)) != NULL)
+                    PUSH(Func(f));
+            }
+            else
+                PUSH(Obj(find(el.arena)));
         }
         break;
         case OP_NOOP:
             break;
         case OP_GLOBAL_DEF:
         {
-            // Element el = READ_CONSTANT();
-            // if (el.type == ARENA && el.arena.type == ARENA_FUNC)
-            //     write_func_dict(
-            //         &machine.glob,
-            //         el.arena,
-            //         READ_CONSTANT().func,
-            //         machine.glob.capacity);
-            write_dict(
-                &machine.glob,
-                READ_CONSTANT().arena,
-                pop().arena,
-                machine.glob.capacity);
-        }
-        break;
-        case OP_PRINT:
-            print(pop());
+            Element el = READ_CONSTANT();
+            if (el.type == FUNC)
+            {
+                pop();
+                WRITE_FUNC(el.func->name, el.func);
+            }
+            else
+                WRITE_AR(el.arena, pop().arena);
             break;
+        }
+        case OP_PRINT:
+        {
+
+            Element el = pop();
+            if (el.type == FUNC)
+            {
+                PUSH(el);
+                break;
+            }
+            print(el);
+            break;
+        }
         case OP_RETURN:
-            return INTERPRET_SUCCESS;
+        {
+
+            Element el = pop();
+            --machine.frame_count;
+
+            if (machine.frame_count == 0)
+            {
+                pop();
+                return INTERPRET_SUCCESS;
+            }
+
+            for (Stack *s = machine.stack; s < frame->slots; s++)
+                pop();
+
+            machine.stack->top = frame->slots;
+            PUSH(el);
+
+            frame = &machine.frames[machine.frame_count - 1];
+            break;
+        }
         }
     }
+#undef WRITE_FUNC
+#undef WRITE_AR
+#undef FIND_FUNC
+#undef PUSH
+#undef OBJ
 #undef JUMP
 #undef LOCAL
+#undef POPN
 #undef POP
 #undef FALSEY
 #undef NPEEK

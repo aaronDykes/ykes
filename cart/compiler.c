@@ -7,25 +7,33 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static void init_compiler(Compiler *a, Compiler *b, FT type)
+static void init_compiler(Compiler *a, Compiler *b, FT type, arena name)
 {
 
-    b->enclosing = a;
-    b->func = NULL;
-    b->func = function();
-    b->type = type;
-    b->local_count = 0;
-    b->scope_depth = 0;
-    Local *local = NULL;
-
-    if (a)
+    if (b)
     {
-        b->parser = a->parser;
-        a = b;
-        local = &a->locals[a->local_count++];
+        a->parser = b->parser;
+        a->enclosing = b;
     }
     else
+    {
+        a->enclosing = NULL;
+    }
+    a->func = NULL;
+    a->func = function();
+    a->func->name = name;
+    a->type = type;
+    a->local_count = 0;
+    a->scope_depth = 0;
+
+    Local *local = NULL;
+
+    if (b)
+    {
         local = &b->locals[b->local_count++];
+    }
+    else
+        local = &a->locals[a->local_count++];
 
     local->depth = 0;
     local->name = Null();
@@ -78,11 +86,14 @@ static int argument_list(Compiler *c)
 {
     uint8_t argc = 0;
 
+    if (match(TOKEN_CH_RPAREN, &c->parser))
+        return 0;
     do
     {
         expression(c);
-        if (argc++ == 255)
+        if (argc == 255)
             current_err("Cannot pass more than 255 function parameters", &c->parser);
+        argc++;
 
     } while (match(TOKEN_CH_COMMA, &c->parser));
     consume(TOKEN_CH_RPAREN, "Expect `)` after function args", &c->parser);
@@ -93,7 +104,7 @@ static void func_declaration(Compiler *c)
 {
     consume(TOKEN_ID, "Expect function name.", &c->parser);
     arena ar = parse_func_id(c);
-    int arg = parse_var(c, ar);
+    // parse_var(c, ar);
 
     func_body(c, FUNCTION, ar);
 }
@@ -101,10 +112,9 @@ static void func_declaration(Compiler *c)
 static void func_body(Compiler *c, FT type, arena ar)
 {
     Compiler co;
-    init_compiler(c, &co, type);
-    if (type != SCRIPT)
-        co.func->name = ar;
-
+    init_compiler(&co, c, type, ar);
+    c = &co;
+    begin_scope(c);
     consume(TOKEN_CH_LPAREN, "Expect `(` after function name.", &c->parser);
     if (!check(TOKEN_CH_RPAREN, &c->parser))
         do
@@ -118,16 +128,16 @@ static void func_body(Compiler *c, FT type, arena ar)
     consume(TOKEN_CH_RPAREN, "Expect `)` after function parameters.", &c->parser);
     consume(TOKEN_CH_LCURL, "Expect `{` prior to function body.", &c->parser);
 
-    int exit = emit_jump(&c->func->ch, OP_JMP);
     block(c);
 
-    if (!match(TOKEN_CH_LPAREN, &c->parser))
-        patch_jump(c, exit);
-    else
-        call(c);
-
     Function *f = end_compile(c);
-    emit_bytes(&c->func->ch, OP_CONSTANT, add_constant(&c->func->ch, Obj(f->name)));
+
+    end_scope(c);
+    int arg = resolve_local(c, &f->name);
+
+    if (c->enclosing)
+        c = c->enclosing;
+    emit_bytes(&c->func->ch, (arg == -1 ? OP_SET_LOCAL : OP_GLOBAL_DEF), add_constant(&c->func->ch, Func(f)));
     emit_bytes(&c->func->ch, OP_CONSTANT, add_constant(&c->func->ch, Func(f)));
 }
 
@@ -137,8 +147,8 @@ static void func_var(Compiler *c)
 
     arena ar = parse_id(c);
     int glob = parse_var(c, ar);
-
     uint8_t set = 0;
+
     if (glob == -1)
     {
         glob = resolve_local(c, &ar);
@@ -148,12 +158,8 @@ static void func_var(Compiler *c)
         set = OP_GLOBAL_DEF;
 
     if (match(TOKEN_OP_ASSIGN, &c->parser))
-    {
         expression(c);
-        emit_bytes(&c->func->ch, set, (uint8_t)glob);
-    }
-    else
-        emit_byte(&c->func->ch, OP_NULL);
+    emit_bytes(&c->func->ch, set, (uint8_t)glob);
 }
 
 static void var_dec(Compiler *c)
@@ -222,6 +228,8 @@ static void statement(Compiler *c)
         switch_statement(c);
     else if (match(TOKEN_CH_LCURL, &c->parser))
         block(c);
+    else if (match(TOKEN_RETURN, &c->parser))
+        return_statement(c);
     else if (is_comment(&c->parser))
         comment(c);
     else
@@ -252,7 +260,7 @@ static void for_statement(Compiler *c)
             id(c);
     }
 
-    int start = c->func->ch.op_codes.listof.count;
+    int start = c->func->ch.op_codes.count;
     int exit = -1;
     if (!match(TOKEN_CH_SEMI, &c->parser))
     {
@@ -264,7 +272,7 @@ static void for_statement(Compiler *c)
     if (!match(TOKEN_CH_RPAREN, &c->parser))
     {
         int body_jump = emit_jump(&c->func->ch, OP_JMP);
-        int inc_start = c->func->ch.op_codes.listof.count;
+        int inc_start = c->func->ch.op_codes.count;
 
         expression(c);
         emit_byte(&c->func->ch, OP_POP);
@@ -289,7 +297,7 @@ static void for_statement(Compiler *c)
 
 static void while_statement(Compiler *c)
 {
-    int start = c->func->ch.op_codes.listof.count;
+    int start = c->func->ch.op_codes.count;
 
     consume(TOKEN_CH_LPAREN, "Expect `(` after 'while'.", &c->parser);
     expression(c);
@@ -348,7 +356,7 @@ static void switch_statement(Compiler *c)
     if (expect)
         consume(TOKEN_CH_RCURL, "Expect `}` after switch body", &c->parser);
 
-    c->func->ch.cases.listof.Ints[c->func->ch.cases.listof.count++] = c->func->ch.op_codes.listof.count;
+    c->func->ch.cases.listof.Ints[c->func->ch.cases.count++] = c->func->ch.op_codes.count;
 }
 
 static void case_statement(Compiler *c, arena args)
@@ -364,14 +372,14 @@ static void case_statement(Compiler *c, arena args)
         emit_byte(&c->func->ch, OP_SEQ);
 
         int tr = emit_jump_long(&c->func->ch, OP_JMPC);
-        int begin = c->func->ch.op_codes.listof.count;
+        int begin = c->func->ch.op_codes.count;
         emit_byte(&c->func->ch, OP_POP);
         statement(c);
         emit_byte(&c->func->ch, OP_JMPL);
         emit_bytes(
             &c->func->ch,
-            (c->func->ch.cases.listof.count >> 8) & 0xFF,
-            (c->func->ch.cases.listof.count & 0xFF));
+            (c->func->ch.cases.count >> 8) & 0xFF,
+            (c->func->ch.cases.count & 0xFF));
         patch_jump_long(c, begin, tr);
     }
 
@@ -397,7 +405,7 @@ static void if_statement(Compiler *c)
     if (match(TOKEN_ELSE, &c->parser))
         statement(c);
 
-    c->func->ch.cases.listof.Ints[c->func->ch.cases.listof.count++] = c->func->ch.op_codes.listof.count;
+    c->func->ch.cases.listof.Ints[c->func->ch.cases.count++] = c->func->ch.op_codes.count;
     patch_jump(c, exit);
 }
 
@@ -407,15 +415,32 @@ static void elif_statement(Compiler *c)
     {
         consume_elif(c);
         int tr = emit_jump_long(&c->func->ch, OP_JMPC);
-        int begin = c->func->ch.op_codes.listof.count;
+        int begin = c->func->ch.op_codes.count;
         emit_byte(&c->func->ch, OP_POP);
         statement(c);
         emit_byte(&c->func->ch, OP_JMPL);
         emit_bytes(
             &c->func->ch,
-            (c->func->ch.cases.listof.count >> 8) & 0xFF,
-            (c->func->ch.cases.listof.count & 0xFF));
+            (c->func->ch.cases.count >> 8) & 0xFF,
+            (c->func->ch.cases.count & 0xFF));
         patch_jump_long(c, begin, tr);
+    }
+}
+
+static void return_statement(Compiler *c)
+{
+    if (c->type == SCRIPT)
+    {
+        error("Unable to return from top of script.", &c->parser);
+    }
+
+    else if (match(TOKEN_CH_SEMI, &c->parser))
+        emit_return(&c->func->ch);
+    else
+    {
+        expression(c);
+        consume(TOKEN_CH_SEMI, "Expect semi colon after return statement.", &c->parser);
+        emit_byte(&c->func->ch, OP_RETURN);
     }
 }
 
@@ -423,7 +448,7 @@ static void patch_jump_long(Compiler *c, int count, int offset)
 {
 
     int j1 = count - offset - 4;
-    int j2 = (c->func->ch.op_codes.listof.count) - offset - 4;
+    int j2 = (c->func->ch.op_codes.count) - offset - 4;
 
     if (j1 >= INT16_MAX)
         error("To great a distance ", &c->parser);
@@ -438,7 +463,7 @@ static void patch_jump_long(Compiler *c, int count, int offset)
 static void patch_jump(Compiler *c, int offset)
 {
 
-    int jump = c->func->ch.op_codes.listof.count - offset - 2;
+    int jump = c->func->ch.op_codes.count - offset - 2;
 
     if (jump >= INT16_MAX)
         error("To great a distance ", &c->parser);
@@ -451,7 +476,7 @@ static void emit_loop(Compiler *c, int byte)
 {
     emit_byte(&c->func->ch, OP_LOOP);
 
-    int offset = c->func->ch.op_codes.listof.count - byte + 2;
+    int offset = c->func->ch.op_codes.count - byte + 2;
 
     if (offset > UINT16_MAX)
         error("ERROR: big boi loop", &c->parser);
@@ -464,14 +489,14 @@ static int emit_jump_long(Chunk *ch, int byte)
     emit_bytes(ch, 0xFF, 0xFF);
     emit_bytes(ch, 0xFF, 0xFF);
 
-    return ch->op_codes.listof.count - 4;
+    return ch->op_codes.count - 4;
 }
 static int emit_jump(Chunk *ch, int byte)
 {
     emit_byte(ch, byte);
     emit_bytes(ch, 0xFF, 0xFF);
 
-    return ch->op_codes.listof.count - 2;
+    return ch->op_codes.count - 2;
 }
 
 static void default_expression(Compiler *c)
@@ -496,10 +521,10 @@ static void end_scope(Compiler *c)
 {
     c->scope_depth--;
 
-    if (c->local_count > 0 && c->locals[c->local_count - 1].depth > c->scope_depth)
-        emit_bytes(&c->func->ch, OP_POPN, add_constant(&c->func->ch, Obj(Int(c->local_count - 1))));
+    if (c->local_count > 0 && (c->locals[c->local_count - 1].depth >= c->scope_depth))
+        emit_bytes(&c->func->ch, OP_POPN, add_constant(&c->func->ch, Obj(Int(c->local_count))));
 
-    while (c->local_count > 0 && c->locals[c->local_count - 1].depth > c->scope_depth)
+    while (c->local_count > 0 && (c->locals[c->local_count - 1].depth > c->scope_depth))
         arena_free(&c->locals[--c->local_count].name);
 }
 
@@ -689,6 +714,7 @@ static void error_at(Token toke, Parser *parser, const char *err)
 
 static void emit_return(Chunk *ch)
 {
+    emit_byte(ch, OP_NULL);
     emit_byte(ch, OP_RETURN);
 }
 static void emit_byte(Chunk *ch, uint8_t byte)
@@ -758,7 +784,9 @@ static arena get_id(Compiler *c)
 
     if (match(TOKEN_ID, &c->parser))
         ;
+
     arena ar = parse_id(c);
+
     uint8_t get, set;
 
     arena args = arena_alloc(3, ARENA_INT_PTR);
@@ -819,7 +847,11 @@ static void id(Compiler *c)
 
     if (match(TOKEN_ID, &c->parser))
         ;
-    arena ar = parse_id(c);
+
+    arena ar = (check(TOKEN_CH_LPAREN, &c->parser))
+                   ? parse_func_id(c)
+                   : parse_id(c);
+
     uint8_t get, set;
 
     int arg = resolve_local(c, &ar);
@@ -848,6 +880,7 @@ static void id(Compiler *c)
         emit_byte(&c->func->ch, OP_DEC);
         emit_bytes(&c->func->ch, set, (uint8_t)arg);
     }
+
     else if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
         expression(c);
@@ -889,7 +922,11 @@ static int resolve_local(Compiler *c, arena *name)
 {
     for (int i = c->local_count - 1; i >= 0; i--)
         if (idcmp(*name, c->locals[i].name))
+        {
+            if (c->locals[i].depth != -1)
+                c->locals[i].depth = c->scope_depth;
             return i;
+        }
 
     return -1;
 }
@@ -902,10 +939,11 @@ static void declare_var(Compiler *c, arena ar)
     for (int i = c->local_count - 1; i >= 0; i--)
     {
         Local *local = &c->locals[i];
+
         if (local->depth != -1 && local->depth < c->scope_depth)
             break;
 
-        if (idcmp(ar, local->name))
+        else if (idcmp(ar, local->name))
             error("Duplicate variable identifiers in scope", &c->parser);
     }
 
@@ -923,27 +961,35 @@ static void add_local(Compiler *c, arena *ar)
     local->name = *ar;
     local->depth = c->scope_depth;
 }
-static Function *end_compile(Compiler *c)
+static Function *end_compile(Compiler *a)
 {
-    emit_return(&c->func->ch);
+    Function *f = a->func;
+
+    emit_return(&f->ch);
 #ifndef DEBUG_PRINT_CODE
     if (!c->parser.err)
         disassemble_chunk(
-            &c.fun & c->func->ch,
-            !c->func->name
+            &c->func->ch,
+            !c->func->name.as.String
                 ? "script"
-                : c->func->name);
+                : c->func->name.as.String);
 #endif
-    if (c->enclosing)
-        c = c->enclosing;
-    return c->func;
+    if (a->enclosing)
+    {
+
+        Parser tmp = a->parser;
+        a = a->enclosing;
+        a->parser = tmp;
+    }
+
+    return f;
 }
 Function *compile(const char *src)
 {
     Compiler c;
 
     init_scanner(src);
-    init_compiler(NULL, &c, SCRIPT);
+    init_compiler(&c, NULL, SCRIPT, func_name("SCRIPT"));
 
     c.parser.panic = false;
     c.parser.err = false;

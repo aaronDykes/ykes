@@ -17,8 +17,8 @@ arena arena_init(void *data, size_t size, int type)
     {
     case ARENA_BYTE_PTR:
         ar.listof.Bytes = data;
-        ar.listof.len = (int)size;
-        ar.listof.count = 0;
+        ar.len = (int)size;
+        ar.count = 0;
         break;
     case ARENA_FUNC:
     case ARENA_VAR:
@@ -28,18 +28,18 @@ arena arena_init(void *data, size_t size, int type)
         break;
     case ARENA_INT_PTR:
         ar.listof.Ints = data;
-        ar.listof.len = (int)(size / sizeof(int));
-        ar.listof.count = 0;
+        ar.len = (int)(size / sizeof(int));
+        ar.count = 0;
         break;
     case ARENA_DOUBLE_PTR:
         ar.listof.Doubles = data;
-        ar.listof.len = ((int)(size / sizeof(double)));
-        ar.listof.count = 0;
+        ar.len = ((int)(size / sizeof(double)));
+        ar.count = 0;
         break;
     case ARENA_LONG_PTR:
         ar.listof.Longs = data;
-        ar.listof.len = ((int)(size / sizeof(long long int)));
-        ar.listof.count = 0;
+        ar.len = ((int)(size / sizeof(long long int)));
+        ar.count = 0;
         break;
     }
     ar.size = size;
@@ -273,26 +273,26 @@ void print_arena(arena ar)
         printf("%c\n", ar.as.Char);
         break;
     case ARENA_BYTE_PTR:
-        printf("Byte ptr len: %d\n", ar.listof.len);
-        for (int i = 0; i < ar.listof.len; i++)
+        printf("Byte ptr len: %d\n", ar.len);
+        for (int i = 0; i < ar.len; i++)
             printf("%d ", ar.listof.Bytes[i]);
         printf("\n");
         break;
     case ARENA_INT_PTR:
-        printf("Int ptr len: %d\n", ar.listof.len);
-        for (int i = 0; i < ar.listof.len; i++)
+        printf("Int ptr len: %d\n", ar.len);
+        for (int i = 0; i < ar.len; i++)
             printf("%d ", ar.listof.Ints[i]);
         printf("\n");
         break;
     case ARENA_DOUBLE_PTR:
-        printf("Double ptr len: %d\n", ar.listof.len);
-        for (int i = 0; i < ar.listof.len; i++)
+        printf("Double ptr len: %d\n", ar.len);
+        for (int i = 0; i < ar.len; i++)
             printf("%f ", ar.listof.Doubles[i]);
         printf("\n");
         break;
     case ARENA_LONG_PTR:
-        printf("Llint ptr len: %d\n", ar.listof.len);
-        for (int i = 0; i < ar.listof.len; i++)
+        printf("Llint ptr len: %d\n", ar.len);
+        for (int i = 0; i < ar.len; i++)
             printf("%lld ", ar.listof.Longs[i]);
         printf("\n");
         break;

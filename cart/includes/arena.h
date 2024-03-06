@@ -15,7 +15,6 @@ enum
     ARENA_STR,
     ARENA_VAR,
     ARENA_FUNC,
-
     ARENA_BYTE,
     ARENA_INT,
     ARENA_DOUBLE,
@@ -26,22 +25,15 @@ enum
 
 };
 
-struct Array
+union Array
 {
-
-    int count;
-    int len;
-
-    union
-    {
-        uint8_t *Bytes;
-        int *Ints;
-        double *Doubles;
-        long long int *Longs;
-        bool *Bools;
-    };
+    uint8_t *Bytes;
+    int *Ints;
+    double *Doubles;
+    long long int *Longs;
+    bool *Bools;
 };
-typedef struct Array Array;
+typedef union Array Array;
 
 union Value
 {
@@ -72,7 +64,12 @@ struct arena_struct
 
     union
     {
-        Array listof;
+        struct
+        {
+            int len;
+            int count;
+            Array listof;
+        };
         Value as;
     };
 };

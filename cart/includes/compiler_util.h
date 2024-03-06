@@ -44,6 +44,7 @@ struct Compiler
 {
     int local_count;
     int scope_depth;
+    int call_depth;
 
     FT type;
     Function *func;
@@ -110,6 +111,8 @@ static void case_statement(Compiler *c, arena ar);
 static void if_statement(Compiler *c);
 static void elif_statement(Compiler *c);
 
+static void return_statement(Compiler *c);
+
 static void default_expression(Compiler *c);
 static void expression(Compiler *c);
 
@@ -156,7 +159,7 @@ static void declare_var(Compiler *c, arena ar);
 static void add_local(Compiler *c, arena *ar);
 
 static PRule rules[] = {
-    [TOKEN_CH_LPAREN] = {grouping, call, PREC_NONE},
+    [TOKEN_CH_LPAREN] = {grouping, call, PREC_CALL},
     [TOKEN_CH_RPAREN] = {NULL, NULL, PREC_NONE},
     [TOKEN_CH_LCURL] = {NULL, NULL, PREC_NONE},
     [TOKEN_CH_RCURL] = {NULL, NULL, PREC_NONE},
@@ -222,7 +225,7 @@ static PRule rules[] = {
     [TOKEN_EOF] = {NULL, NULL, PREC_NONE},
 };
 
-static Function *end_compile(Compiler *compiler);
-static void init_compiler(Compiler *a, Compiler *b, FT type);
+static Function *end_compile(Compiler *a);
+static void init_compiler(Compiler *a, Compiler *b, FT type, arena ar);
 
 #endif

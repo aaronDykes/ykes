@@ -66,6 +66,7 @@ Element Obj(arena ar)
 Element Func(Function *f)
 {
     Element s;
+
     s.func = f;
     s.type = FUNC;
     return s;
@@ -75,41 +76,28 @@ Function *function()
 {
     Function *func = alloc_ptr(sizeof(Function));
     func->arity = 0;
-    func->name = Null();
-    func->obj = NULL;
     init_chunk(&func->ch);
     return func;
 }
 
 void free_function(Function *func)
 {
+    if (!func)
+        return;
     if (func->name.type != ARENA_NULL)
         FREE_ARRAY(&func->name);
-    FREE_ARENA(func->obj);
     free_chunk(&func->ch);
     func = NULL;
-}
-
-static void print_function(Function *func)
-{
-    printf(
-        "<fn: %s>\n",
-        func->name.as.String
-            ? func->name.as.String
-            : "<script>");
-}
-arena *take_string(const char *str, int len)
-{
 }
 
 void init_chunk(Chunk *c)
 {
     c->op_codes = arena_alloc(STACK_SIZE * sizeof(uint8_t), ARENA_BYTE_PTR);
-    c->op_codes.listof.len = STACK_SIZE;
-    c->op_codes.listof.count = 0;
+    c->op_codes.len = STACK_SIZE;
+    c->op_codes.count = 0;
     c->cases = arena_alloc(STACK_SIZE * sizeof(int), ARENA_INT_PTR);
-    c->cases.listof.len = STACK_SIZE;
-    c->cases.listof.count = 0;
+    c->cases.len = STACK_SIZE;
+    c->cases.count = 0;
     c->line = 0;
     c->constants = GROW_STACK(c->constants, STACK_SIZE);
 }
@@ -117,18 +105,18 @@ void init_chunk(Chunk *c)
 void write_chunk(Chunk *c, uint8_t byte)
 {
 
-    if (c->op_codes.listof.len < c->op_codes.listof.count + 1)
+    if (c->op_codes.len < c->op_codes.count + 1)
     {
-        c->op_codes.listof.len *= INC;
-        c->op_codes = GROW_ARRAY(&c->op_codes, c->op_codes.listof.len * sizeof(uint8_t));
+        c->op_codes.len *= INC;
+        c->op_codes = GROW_ARRAY(&c->op_codes, c->op_codes.len * sizeof(uint8_t));
     }
-    else if (c->cases.listof.len < c->cases.listof.count + 1)
+    if (c->cases.len < c->cases.count + 1)
     {
-        c->cases.listof.len *= INC;
-        c->cases = GROW_ARRAY(&c->cases, c->cases.listof.len * sizeof(int));
+        c->cases.len *= INC;
+        c->cases = GROW_ARRAY(&c->cases, c->cases.len * sizeof(int));
     }
 
-    c->op_codes.listof.Bytes[c->op_codes.listof.count++] = byte;
+    c->op_codes.listof.Bytes[c->op_codes.count++] = byte;
 }
 
 int add_constant(Chunk *c, Element ar)
@@ -165,10 +153,6 @@ void popn(Stack **s, int ival)
         --(*s)->count, --(*s)->top;
 }
 
-static Stack as_(Element e)
-{
-}
-
 void push(Stack **s, Element e)
 {
 
@@ -178,12 +162,27 @@ void push(Stack **s, Element e)
     st->count++;
 }
 
+static void parse_str(const char *str)
+{
+    char *s = (char *)str;
+
+    for (; *s; s++)
+        if (*s == '\\' && s[1] == 'n')
+            printf("\n"), s++;
+        else if (*s == '\\' && s[1] == 't')
+            printf("\t"), s++;
+        else
+            printf("%c", *s);
+
+    printf("\n");
+}
+
 void print(Element ar)
 {
     arena a = ar.arena;
-    if (ar.type == FUNC)
+    if (ar.type == FUNC && ar.func)
     {
-        printf("<fn %s>\n", ar.func->name.as.String);
+        printf("<fn %s>\n", ar.func->name.as.String ? ar.func->name.as.String : "<fn NULL>");
         return;
     }
     switch (a.type)
@@ -207,12 +206,14 @@ void print(Element ar)
         printf("%s\n", (a.as.Bool == true) ? "true" : "false");
         break;
     case ARENA_STR:
-        printf("%s\n", a.as.String);
+    case ARENA_VAR:
+    case ARENA_FUNC:
+        parse_str(a.as.String);
         break;
     case ARENA_INT_PTR:
         printf("[ ");
-        for (int i = 0; i < a.listof.len; i++)
-            if (i == a.listof.len - 1)
+        for (int i = 0; i < a.len; i++)
+            if (i == a.len - 1)
                 printf("%d ]\n", a.listof.Ints[i]);
             else
                 printf("%d, ", a.listof.Ints[i]);
