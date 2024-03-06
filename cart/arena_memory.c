@@ -54,6 +54,8 @@ arena arena_init(void *data, size_t size, int type)
 
 void arena_free(Arena ar)
 {
+    if (!ar)
+        return;
     switch (ar->type)
     {
     case ARENA_BYTE_PTR:
@@ -162,19 +164,21 @@ arena arena_alloc(size_t size, int type)
     return arena_init(ptr, size, type);
 }
 
-arena arena_realloc(Arena ar, size_t size)
+arena arena_realloc(Arena ar, size_t size, int type)
 {
-    int type = ar->type;
+    void *ptr = alloc_ptr(size);
+    if (!ar && size != 0)
+    {
+        return arena_init(ptr, size, type);
+    }
 
     if (size == 0)
     {
         arena_free(ar);
-        return *ar;
+        return Null();
     }
 
-    void *ptr = alloc_ptr(size);
-
-    switch (ar->type)
+    switch (type)
     {
     case ARENA_BYTE_PTR:
         if (!ar->listof.Bytes)

@@ -8,7 +8,7 @@ void initVM()
 {
 
     initialize_global_memory(PAGE);
-    machine.stack = GROW_STACK(NULL, (size_t)STACK_SIZE);
+    machine.stack = GROW_STACK(NULL, (size_t)ARENA_SIZE);
     init_dict(&machine.glob);
 }
 void freeVM()
@@ -62,7 +62,7 @@ static bool call(Function *f, uint8_t argc)
     CallFrame *frame = &machine.frames[machine.frame_count++];
     frame->func = f;
     frame->ip = f->ch.op_codes.listof.Bytes;
-    frame->ip_start = frame->ip;
+    frame->ip_start = f->ch.op_codes.listof.Bytes;
     frame->slots = machine.stack->top - argc - 1;
     return true;
 }
@@ -172,13 +172,45 @@ Interpretation run()
             PUSH(READ_CONSTANT());
             break;
         case OP_NEG:
-            PUSH(Obj(_neg(pop().arena)));
+            (*--machine.stack->top).as = Obj(_neg((*machine.stack->top++).as.arena));
             break;
         case OP_INC:
-            PUSH(Obj(_inc(pop().arena)));
+            (*--machine.stack->top).as = Obj(_inc((*machine.stack->top++).as.arena));
             break;
+        case OP_INC_LOC:
+        {
+            uint8_t index = READ_BYTE();
+            Element el = Obj(_inc(frame->slots[index].as.arena));
+            frame->slots[index].as = el;
+            PUSH(el);
+            break;
+        }
+        case OP_INC_GLO:
+        {
+            Element key = READ_CONSTANT();
+            Element ar = Obj(_inc(find(key.arena)));
+            WRITE_AR(key.arena, ar.arena);
+            PUSH(ar);
+            break;
+        }
+        case OP_DEC_LOC:
+        {
+            uint8_t index = READ_BYTE();
+            Element el = Obj(_dec(frame->slots[index].as.arena));
+            frame->slots[index].as = el;
+            PUSH(el);
+            break;
+        }
+        case OP_DEC_GLO:
+        {
+            Element key = READ_CONSTANT();
+            Element ar = Obj(_dec(find(key.arena)));
+            WRITE_AR(key.arena, ar.arena);
+            PUSH(ar);
+            break;
+        }
         case OP_DEC:
-            PUSH(Obj(_dec(pop().arena)));
+            (*--machine.stack->top).as = Obj(_dec((*machine.stack->top++).as.arena));
             break;
         case OP_ADD:
             PUSH(Obj(_add(pop().arena, pop().arena)));
@@ -284,10 +316,7 @@ Interpretation run()
                     PUSH(Func(f));
             }
             else
-            {
-
                 PUSH(el);
-            }
             break;
         }
         case OP_SET_LOCAL:
@@ -304,18 +333,16 @@ Interpretation run()
         case OP_SET_GLOBAL:
         {
             Element el = READ_CONSTANT();
-            if (el.type == ARENA)
+            if (el.type != FUNC)
             {
                 if (!exists(el.arena))
                     return undefined_var(el.arena);
-                WRITE_AR(el.arena, pop().arena);
-
-                PUSH(Obj(find(el.arena)));
+                arena ar = pop().arena;
+                WRITE_AR(el.arena, ar);
+                PUSH(Obj(ar));
             }
-            else if (el.type == FUNC)
-            {
+            else
                 WRITE_FUNC(el.func->name, el.func);
-            }
         }
         break;
         case OP_GET_GLOBAL:

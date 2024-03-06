@@ -59,10 +59,18 @@ int disassemble_instruction(Chunk *c, int offset)
         return constant_instruction("OP_CONSTANT", c, offset);
     case OP_NEG:
         return simple_instruction("OP_NEG", offset);
+    case OP_INC:
+        return simple_instruction("OP_DEC", offset);
     case OP_DEC:
         return simple_instruction("OP_DEC", offset);
-    case OP_INC:
-        return simple_instruction("OP_INC", offset);
+    case OP_DEC_LOC:
+        return simple_instruction("OP_DEC_LOC", offset);
+    case OP_DEC_GLO:
+        return simple_instruction("OP_DEC_GLO", offset);
+    case OP_INC_LOC:
+        return simple_instruction("OP_INC_LOC", offset);
+    case OP_INC_GLO:
+        return simple_instruction("OP_INC_GLO", offset);
     case OP_ADD:
         return simple_instruction("OP_ADD", offset);
     case OP_SUB:

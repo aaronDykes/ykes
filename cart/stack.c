@@ -85,18 +85,18 @@ void free_function(Function *func)
     if (!func)
         return;
     if (func->name.type != ARENA_NULL)
-        FREE_ARRAY(&func->name);
+        FREE_ARRAY(&func->name, ARENA_FUNC);
     free_chunk(&func->ch);
     func = NULL;
 }
 
 void init_chunk(Chunk *c)
 {
-    c->op_codes = arena_alloc(STACK_SIZE * sizeof(uint8_t), ARENA_BYTE_PTR);
-    c->op_codes.len = STACK_SIZE;
+    c->op_codes = GROW_ARRAY(NULL, IP_SIZE, ARENA_BYTE_PTR);
+    c->op_codes.len = IP_SIZE;
     c->op_codes.count = 0;
-    c->cases = arena_alloc(STACK_SIZE * sizeof(int), ARENA_INT_PTR);
-    c->cases.len = STACK_SIZE;
+    c->cases = GROW_ARRAY(NULL, IP_SIZE, ARENA_INT_PTR);
+    c->cases.len = IP_SIZE;
     c->cases.count = 0;
     c->line = 0;
     c->constants = GROW_STACK(c->constants, STACK_SIZE);
@@ -107,13 +107,13 @@ void write_chunk(Chunk *c, uint8_t byte)
 
     if (c->op_codes.len < c->op_codes.count + 1)
     {
-        c->op_codes.len *= INC;
-        c->op_codes = GROW_ARRAY(&c->op_codes, c->op_codes.len * sizeof(uint8_t));
+        c->op_codes.len = GROW_CAPACITY(c->op_codes.len);
+        c->op_codes = GROW_ARRAY(&c->op_codes, c->op_codes.len * sizeof(uint8_t), ARENA_BYTE_PTR);
     }
     if (c->cases.len < c->cases.count + 1)
     {
-        c->cases.len *= INC;
-        c->cases = GROW_ARRAY(&c->cases, c->cases.len * sizeof(int));
+        c->cases.len = GROW_CAPACITY(c->cases.len);
+        c->cases = GROW_ARRAY(&c->cases, c->cases.len * sizeof(int), ARENA_INT_PTR);
     }
 
     c->op_codes.listof.Bytes[c->op_codes.count++] = byte;
@@ -127,9 +127,17 @@ int add_constant(Chunk *c, Element ar)
 
 void free_chunk(Chunk *c)
 {
-    FREE_ARRAY(&c->op_codes);
-    FREE_ARRAY(&c->cases);
-    FREE_STACK(c->constants);
+    if (!c)
+    {
+        init_chunk(c);
+        return;
+    }
+    if (c->op_codes.listof.Bytes)
+        FREE_ARRAY(&c->op_codes, ARENA_BYTE_PTR);
+    if (c->cases.listof.Ints)
+        FREE_ARRAY(&c->cases, ARENA_BYTE_PTR);
+    if (c->constants)
+        FREE_STACK(c->constants);
     init_chunk(c);
 }
 

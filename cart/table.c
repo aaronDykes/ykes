@@ -2,7 +2,7 @@
 
 void init_dict(Dict d)
 {
-    d->capacity = TABLE_SIZE;
+    d->capacity = IP_SIZE;
     d->count = 0;
     d->map = GROW_TABLE(NULL, d->capacity);
 }
@@ -13,7 +13,7 @@ void write_dict(Dict d, arena ar1, arena ar2, size_t size)
 
     if (load_capacity < d->count + 1)
     {
-        d->capacity = GROW_CAPACITY(d->capacity);
+        d->capacity *= INC;
         d->map = GROW_TABLE(d->map, d->capacity);
     }
     ar1.as.hash %= size;
@@ -27,7 +27,7 @@ void write_func_dict(Dict d, arena a, Function *func, size_t size)
 
     if (load_capacity < d->count + 1)
     {
-        d->capacity = GROW_CAPACITY(d->capacity);
+        d->capacity *= INC;
         d->map = GROW_TABLE(d->map, d->capacity);
     }
     a.as.hash %= size;

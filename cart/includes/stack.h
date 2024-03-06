@@ -26,6 +26,12 @@ typedef enum
 
     OP_ASSIGN,
     OP_NEG,
+
+    OP_INC_LOC,
+    OP_INC_GLO,
+    OP_DEC_LOC,
+    OP_DEC_GLO,
+
     OP_INC,
     OP_DEC,
     OP_ADD,

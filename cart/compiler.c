@@ -808,32 +808,16 @@ static arena get_id(Compiler *c)
     args.listof.Ints[1] = get;
 
     if (pre_inc)
-    {
-        emit_bytes(&c->func->ch, get, (uint8_t)arg);
-        emit_byte(&c->func->ch, OP_INC);
-        emit_bytes(&c->func->ch, set, (uint8_t)arg);
-    }
+        emit_bytes(&c->func->ch, get == OP_GET_LOCAL ? OP_INC_LOC : OP_INC_GLO, (uint8_t)arg);
     else if (pre_dec)
-    {
-        emit_bytes(&c->func->ch, get, (uint8_t)arg);
-        emit_byte(&c->func->ch, OP_DEC);
-        emit_bytes(&c->func->ch, set, (uint8_t)arg);
-    }
+        emit_bytes(&c->func->ch, get == OP_GET_LOCAL ? OP_DEC_LOC : OP_DEC_GLO, (uint8_t)arg);
+    else if (match(TOKEN_OP_DEC, &c->parser))
+        emit_bytes(&c->func->ch, get == OP_GET_LOCAL ? OP_DEC_LOC : OP_DEC_GLO, (uint8_t)arg);
+    else if (match(TOKEN_OP_INC, &c->parser))
+        emit_bytes(&c->func->ch, get == OP_GET_LOCAL ? OP_INC_LOC : OP_INC_GLO, (uint8_t)arg);
     else if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
         expression(c);
-        emit_bytes(&c->func->ch, set, (uint8_t)arg);
-    }
-    else if (match(TOKEN_OP_DEC, &c->parser))
-    {
-        emit_bytes(&c->func->ch, get, (uint8_t)arg);
-        emit_byte(&c->func->ch, OP_DEC);
-        emit_bytes(&c->func->ch, set, (uint8_t)arg);
-    }
-    else if (match(TOKEN_OP_INC, &c->parser))
-    {
-        emit_bytes(&c->func->ch, get, (uint8_t)arg);
-        emit_byte(&c->func->ch, OP_INC);
         emit_bytes(&c->func->ch, set, (uint8_t)arg);
     }
     else
@@ -869,33 +853,16 @@ static void id(Compiler *c)
     }
 
     if (pre_inc)
-    {
-        emit_bytes(&c->func->ch, get, (uint8_t)arg);
-        emit_byte(&c->func->ch, OP_INC);
-        emit_bytes(&c->func->ch, set, (uint8_t)arg);
-    }
+        emit_bytes(&c->func->ch, get == OP_GET_LOCAL ? OP_INC_LOC : OP_INC_GLO, (uint8_t)arg);
     else if (pre_dec)
-    {
-        emit_bytes(&c->func->ch, get, (uint8_t)arg);
-        emit_byte(&c->func->ch, OP_DEC);
-        emit_bytes(&c->func->ch, set, (uint8_t)arg);
-    }
-
+        emit_bytes(&c->func->ch, get == OP_GET_LOCAL ? OP_DEC_LOC : OP_DEC_GLO, (uint8_t)arg);
+    else if (match(TOKEN_OP_DEC, &c->parser))
+        emit_bytes(&c->func->ch, get == OP_GET_LOCAL ? OP_DEC_LOC : OP_DEC_GLO, (uint8_t)arg);
+    else if (match(TOKEN_OP_INC, &c->parser))
+        emit_bytes(&c->func->ch, get == OP_GET_LOCAL ? OP_INC_LOC : OP_INC_GLO, (uint8_t)arg);
     else if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
         expression(c);
-        emit_bytes(&c->func->ch, set, (uint8_t)arg);
-    }
-    else if (match(TOKEN_OP_DEC, &c->parser))
-    {
-        emit_bytes(&c->func->ch, get, (uint8_t)arg);
-        emit_byte(&c->func->ch, OP_DEC);
-        emit_bytes(&c->func->ch, set, (uint8_t)arg);
-    }
-    else if (match(TOKEN_OP_INC, &c->parser))
-    {
-        emit_bytes(&c->func->ch, get, (uint8_t)arg);
-        emit_byte(&c->func->ch, OP_INC);
         emit_bytes(&c->func->ch, set, (uint8_t)arg);
     }
     else

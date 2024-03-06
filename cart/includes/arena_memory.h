@@ -16,8 +16,8 @@
 #define GROW_CAPACITY(capacity) \
     ((capacity) < CAPACITY ? CAPACITY : CAPACITY * INC)
 
-#define GROW_ARRAY(ar, size) \
-    arena_realloc(ar, size)
+#define GROW_ARRAY(ar, size, type) \
+    arena_realloc(ar, size, type)
 
 #define GROW_ARENA(ar, size) \
     arena_realloc_arena(ar, size)
@@ -25,8 +25,8 @@
 #define FREE_ARENA(ar) \
     arena_realloc_arena(ar, 0)
 
-#define FREE_ARRAY(ar) \
-    arena_realloc(ar, 0)
+#define FREE_ARRAY(ar, type) \
+    arena_realloc(ar, 0, type)
 
 struct memory
 {
@@ -48,7 +48,7 @@ void *alloc_ptr(size_t size);
 
 arena arena_init(void *data, size_t size, int type);
 arena arena_alloc(size_t size, int type);
-arena arena_realloc(Arena ar, size_t size);
+arena arena_realloc(Arena ar, size_t size, int type);
 
 arena Char(char ch);
 arena Int(int ival);
