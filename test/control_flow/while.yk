@@ -7,13 +7,13 @@ if (69 === 69 && 69 !== "69")
     while (i <= 'z')
     {
         i = i + 1;
-        print i - 1; 
+        pout i - 1; 
     }
 
 }
 
 else
-    print "understand more better";
+    pout "understand more better";
 
 
 

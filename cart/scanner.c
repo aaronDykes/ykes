@@ -214,8 +214,6 @@ static int id_type()
                 return check_keyword(2, 1, "r", TOKEN_FOR);
             case 'a':
                 return check_keyword(2, 3, "lse", TOKEN_FALSE);
-            case 'u':
-                return check_keyword(2, 6, "nction", TOKEN_FUNC);
             }
     case 'i':
         return check_keyword(1, 1, "f", TOKEN_IF);
@@ -233,7 +231,7 @@ static int id_type()
     case 'o':
         return check_keyword(1, 1, "r", TOKEN_OP_OR);
     case 'p':
-        return check_keyword(1, 4, "rint", TOKEN_PRINT);
+        return check_keyword(1, 3, "out", TOKEN_PRINT);
     case 'r':
         return check_keyword(1, 5, "eturn", TOKEN_RETURN);
     case 's':
@@ -244,8 +242,11 @@ static int id_type()
                 return check_keyword(2, 4, "itch", TOKEN_SWITCH);
             case 'u':
                 return check_keyword(2, 3, "per", TOKEN_SUPER);
+            case 'q':
+                return check_keyword(2, 4, "uare", TOKEN_SQRT);
             }
 
+        return check_keyword(1, 1, "r", TOKEN_FUNC);
     case 't':
         if (scan.current - scan.start > 1)
             switch (scan.start[1])

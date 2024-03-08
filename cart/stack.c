@@ -16,13 +16,13 @@ Stack *stack(size_t size)
 }
 Stack *realloc_stack(Stack *st, size_t size)
 {
+
     if (size == 0)
     {
-        free_stack(st);
+        free_stack(&st);
         return NULL;
     }
-
-    Stack *s = stack(size);
+    Stack *s = NEW_STACK(size);
 
     if (!st)
         return s;
@@ -39,25 +39,31 @@ Stack *realloc_stack(Stack *st, size_t size)
         case NATIVE:
             s[i].as = native_fn(st[i].as.native);
             break;
+        case CLOSURE:
+            s[i].as = closure(st[i].as.closure);
+            break;
         }
-    free_stack(st);
+    free_stack(&st);
     return s;
 }
-void free_stack(Stack *stack)
+void free_stack(Stack **stack)
 {
-    if (!stack)
+    if (!(stack - 1))
         return;
-    for (size_t i = 0; i < (stack - 1)->size; i++)
-        switch (stack[i].as.type)
+    for (size_t i = 0; i < ((*stack) - 1)->size; i++)
+        switch ((*stack)[i].as.type)
         {
         case ARENA:
-            FREE_ARRAY(&stack[i].as.arena);
+            FREE_ARRAY(&(*stack)[i].as.arena);
             break;
         case FUNC:
-            FREE_FUNCTION(stack[i].as.func);
+            FREE_FUNCTION((*stack)[i].as.func);
             break;
         case NATIVE:
-            FREE_NATIVE(stack[i].as.native);
+            FREE_NATIVE((*stack)[i].as.native);
+            break;
+        case CLOSURE:
+            FREE_CLOSURE((*stack)[i].as.closure);
             break;
         }
     stack = NULL;
@@ -87,6 +93,13 @@ Element native_fn(Native *native)
     return s;
 }
 
+Element closure(Closure *closure)
+{
+    Element el;
+    el.closure = closure;
+    el.type = CLOSURE;
+    return el;
+}
 Function *function()
 {
     Function *func = ALLOC(sizeof(Function));
@@ -121,17 +134,28 @@ void free_native(Native *native)
 
     FREE_ARRAY(&native->obj);
 }
+Closure *new_closure(Function *func)
+{
+    Closure *closure = ALLOC(sizeof(Closure));
+    closure->func = func;
+    return closure;
+}
+
+void free_closure(Closure *closure)
+{
+    if (!closure)
+        return;
+    closure = NULL;
+}
 
 void init_chunk(Chunk *c)
 {
-    c->op_codes = GROW_ARRAY(NULL, IP_SIZE, ARENA_BYTE_PTR);
-    c->op_codes.len = IP_SIZE;
+    c->op_codes.len = 0;
     c->op_codes.count = 0;
-    c->cases = GROW_ARRAY(NULL, IP_SIZE, ARENA_INT_PTR);
-    c->cases.len = IP_SIZE;
+    c->cases.len = 0;
     c->cases.count = 0;
     c->line = 0;
-    c->constants = GROW_STACK(c->constants, STACK_SIZE);
+    c->constants = GROW_STACK(NULL, IP_SIZE);
 }
 
 void write_chunk(Chunk *c, uint8_t byte)
@@ -225,9 +249,14 @@ void print(Element ar)
         printf("<fn %s>\n", ar.func->name.as.String ? ar.func->name.as.String : "<fn NULL>");
         return;
     }
-    else if (ar.type == NATIVE && ar.func)
+    else if (ar.type == NATIVE && ar.native)
     {
         printf("<fn native>\n");
+        return;
+    }
+    else if (ar.type == CLOSURE && ar.closure)
+    {
+        printf("<fn %s>\n", ar.closure->func->name.as.String);
         return;
     }
     switch (a.type)

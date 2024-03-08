@@ -2,16 +2,16 @@ var foo=69*420+2198337 / 10;
 
 var bar=69420234;
 
-print bar + (69420 * 69);
-print bar + (69420 * 69);
-print bar + (69420 * 69);
-print bar + (69420 * 69);
-print bar + (69420 * 69);
+pout bar + (69420 * 69);
+pout bar + (69420 * 69);
+pout bar + (69420 * 69);
+pout bar + (69420 * 69);
+pout bar + (69420 * 69);
 
 
-print foo;
-print foo + 69;
+pout foo;
+pout foo + 69;
 foo = foo + 69;
-print foo + 69;
+pout foo + 69;
 
-print 6969;
+pout 6969;

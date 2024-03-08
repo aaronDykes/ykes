@@ -1,0 +1,12 @@
+var x = "global";
+
+sr outer() {
+  var x = "outer";
+
+    sr inner() {
+      pout x;
+  }
+  inner();
+}
+
+outer();

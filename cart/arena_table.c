@@ -75,7 +75,6 @@ void insert_entry(Table *t, table entry)
 {
     Table tmp = *t;
     table e = tmp[entry.key.as.hash];
-    arena f;
     Table ptr = e.next;
 
     if (e.key.type == ARENA_NULL)
@@ -90,33 +89,52 @@ void insert_entry(Table *t, table entry)
         return;
     }
 
-    if (f.type == ARENA_NULL)
+    if (entry.type == NATIVE_TABLE)
     {
-        ALLOC_ENTRY(&tmp[entry.key.as.hash].next, entry);
+        Native *n = find_native_entry(t, &entry.key);
+        if (!n)
+            ALLOC_ENTRY(&tmp[entry.key.as.hash].next, entry);
         return;
     }
-    for (; ptr; ptr = ptr->next)
-        switch (ptr->key.type)
-        {
-        case ARENA_VAR:
-        case ARENA_FUNC:
-        case ARENA_STR:
-            if (strcmp(ptr->key.as.String, entry.key.as.String) == 0)
-                goto END;
-            break;
-        case ARENA_INT:
-            if (ptr->key.as.Int == entry.key.as.Int)
-                goto END;
-            break;
-        case ARENA_DOUBLE:
-            if (ptr->key.as.Double == entry.key.as.Double)
-                goto END;
-            break;
-        case ARENA_CHAR:
-            if (ptr->key.as.Char == entry.key.as.Char)
-                goto END;
-            break;
-        }
+
+    else if (entry.type == FUNC_TABLE)
+    {
+        Function *f = find_func_entry(t, &entry.key);
+        if (!f)
+            ALLOC_ENTRY(&tmp[entry.key.as.hash].next, entry);
+        return;
+    }
+    else if (entry.type == ARENA_TABLE)
+    {
+        arena f = find_arena_entry(t, &entry.key);
+        if (f.type == ARENA_NULL)
+            ALLOC_ENTRY(&tmp[entry.key.as.hash].next, entry);
+    }
+    else
+
+        for (; ptr; ptr = ptr->next)
+            switch (ptr->key.type)
+            {
+            case ARENA_VAR:
+            case ARENA_FUNC:
+            case ARENA_NATIVE:
+            case ARENA_STR:
+                if (strcmp(ptr->key.as.String, entry.key.as.String) == 0)
+                    goto END;
+                break;
+            case ARENA_INT:
+                if (ptr->key.as.Int == entry.key.as.Int)
+                    goto END;
+                break;
+            case ARENA_DOUBLE:
+                if (ptr->key.as.Double == entry.key.as.Double)
+                    goto END;
+                break;
+            case ARENA_CHAR:
+                if (ptr->key.as.Char == entry.key.as.Char)
+                    goto END;
+                break;
+            }
     return;
 END:
     ptr->val = entry.val;
@@ -134,7 +152,7 @@ void delete_func_entry(Table *t, arena key)
     {
         Table t = a[index].next;
         FREE_TABLE_ENTRY(&a[index]);
-        a[index] = func_entry(Null(), NULL);
+        a[index] = func_entry(NULL);
         t->prev = NULL;
         a[index] = new_entry(*t);
 
@@ -143,7 +161,7 @@ void delete_func_entry(Table *t, arena key)
     if (!e.next && (strcmp(e.key.as.String, key.as.String) == 0))
     {
         FREE_TABLE_ENTRY(&a[index]);
-        a[index] = func_entry(Null(), NULL);
+        a[index] = func_entry(NULL);
 
         return;
     }
@@ -322,8 +340,7 @@ Native *find_native_entry(Table *t, arena *hash)
     for (; tmp; tmp = tmp->next)
         switch (tmp->key.type)
         {
-        case ARENA_VAR:
-        case ARENA_FUNC:
+        case ARENA_NATIVE:
         case ARENA_STR:
             if (strcmp(tmp->key.as.String, hash->as.String) == 0)
                 return tmp->val.n;
@@ -464,26 +481,26 @@ table arena_entry(arena key, arena val)
     el.type = ARENA_TABLE;
     return el;
 }
-table func_entry(arena key, Function *func)
+table func_entry(Function *func)
 {
     table el;
-    el.key = key;
+    el.key = func->name;
     el.val.f = func;
     el.next = NULL;
     el.prev = NULL;
-    el.size = key.size;
+    el.size = el.key.size;
     el.type = FUNC_TABLE;
     return el;
 }
-table native_entry(arena key, Native *func)
+table native_entry(Native *func)
 {
     table el;
-    el.key = key;
+    el.key = func->obj;
     el.val.n = func;
     el.next = NULL;
     el.prev = NULL;
-    el.size = key.size;
-    el.type = FUNC_TABLE;
+    el.size = el.key.size;
+    el.type = NATIVE_TABLE;
     return el;
 }
 

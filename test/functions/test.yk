@@ -1,16 +1,16 @@
 
 
-function hello(n)
+sr hello(n)
 {
     return n + 69; 
 }
 
-function okay()
+sr okay()
 {
     return hello(69) + 69; 
 }
 
 
 
-print okay();
+pout okay();
 

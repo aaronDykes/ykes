@@ -1,4 +1,4 @@
-function okay ()
+sr okay ()
 {
     if (69 === "69")
         return 69;
@@ -11,6 +11,6 @@ function okay ()
 }
 
 
-print okay();
+pout okay();
 
 

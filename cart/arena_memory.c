@@ -167,10 +167,9 @@ arena arena_alloc(size_t size, int type)
 
 arena arena_realloc(Arena ar, size_t size, int type)
 {
-    void *ptr = ALLOC(size);
     if (!ar && size != 0)
     {
-        return arena_init(ptr, size, type);
+        return arena_alloc(size, type);
     }
 
     if (size == 0)
@@ -178,6 +177,7 @@ arena arena_realloc(Arena ar, size_t size, int type)
         arena_free(ar);
         return Null();
     }
+    void *ptr = ALLOC(size);
 
     switch (type)
     {
@@ -200,8 +200,10 @@ arena arena_realloc(Arena ar, size_t size, int type)
         memcpy(ptr, ar->listof.Ints, ar->size);
         break;
     }
+    arena res = arena_init(ptr, size, type);
+    res.count = ar->count;
     arena_free(ar);
-    return arena_init(ptr, size, type);
+    return res;
 }
 arena Char(char Char)
 {

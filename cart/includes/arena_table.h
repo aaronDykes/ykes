@@ -53,8 +53,8 @@ Function *find_func_entry(Table *t, arena *key);
 Native *find_native_entry(Table *t, arena *key);
 
 table arena_entry(arena key, arena val);
-table func_entry(arena key, Function *f);
-table native_entry(arena key, Native *func);
+table func_entry(Function *f);
+table native_entry(Native *func);
 table new_entry(table t);
 
 Table arena_alloc_table(size_t size);

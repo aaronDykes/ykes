@@ -57,6 +57,14 @@ int disassemble_instruction(Chunk *c, int offset)
     {
     case OP_CONSTANT:
         return constant_instruction("OP_CONSTANT", c, offset);
+    case OP_CLOSURE:
+    {
+        offset++;
+        uint8_t constant = c->op_codes.listof.Bytes[offset++];
+        printf("%-16s %4d ", "OP_CLOSURE", constant);
+        print(c->constants[constant].as);
+        return offset;
+    }
     case OP_NEG:
         return simple_instruction("OP_NEG", offset);
     case OP_INC:

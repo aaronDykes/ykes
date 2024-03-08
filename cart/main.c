@@ -28,7 +28,7 @@ static void repl()
 {
 
     initVM();
-    arena ar = arena_alloc(1024 * sizeof(char), ARENA_STR);
+    arena ar = GROW_ARRAY(NULL, 1024 * sizeof(char), ARENA_STR);
 
     for (;;)
     {
@@ -44,7 +44,7 @@ static void repl()
 
         interpret(ar.as.String);
     }
-    arena_free(&ar);
+    FREE_ARRAY(&ar);
     freeVM();
 }
 

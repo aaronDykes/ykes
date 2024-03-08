@@ -9,12 +9,25 @@
     realloc_stack(st, 0)
 #define FREE_FUNCTION(func) \
     free_function(func)
-#define FREE_NATIVE(native) \
-    free_native(native)
+#define FREE_NATIVE(nat) \
+    free_native(nat)
+#define FREE_CLOSURE(clos) \
+    free_closure(clos)
+#define NEW_STACK(size) \
+    stack(size)
+#define OBJ(o) \
+    Obj(o)
+#define FUNC(ar) \
+    Func(ar)
+#define NATIVE(n) \
+    native_fn(n)
+#define CLOSURE(c) \
+    closure(c)
 
 typedef enum
 {
     OP_CONSTANT,
+    OP_CLOSURE,
     OP_PRINT,
 
     OP_POP,
@@ -77,6 +90,7 @@ typedef enum
 
 typedef enum
 {
+    FN_CLOSURE,
     FUNCTION,
     NATIVE_FN,
     SCRIPT
@@ -86,10 +100,18 @@ typedef enum
 {
     ARENA,
     NATIVE,
+    CLOSURE,
     FUNC
 } T;
 
+typedef struct Chunk Chunk;
+typedef struct Function Function;
+typedef struct Closure Closure;
+typedef struct Native Native;
+typedef struct Element Element;
 typedef struct Stack Stack;
+typedef Element (*NativeFn)(int argc, Stack *argv);
+
 struct Chunk
 {
 
@@ -100,7 +122,6 @@ struct Chunk
 
     Stack *constants;
 };
-typedef struct Chunk Chunk;
 
 struct Function
 {
@@ -108,9 +129,11 @@ struct Function
     arena name;
     Chunk ch;
 };
-typedef struct Function Function;
 
-typedef struct Native Native;
+struct Closure
+{
+    Function *func;
+};
 
 struct Element
 {
@@ -121,10 +144,9 @@ struct Element
         arena arena;
         Function *func;
         Native *native;
+        Closure *closure;
     };
 };
-
-typedef struct Element Element;
 
 struct Stack
 {
@@ -136,12 +158,9 @@ struct Stack
     struct Stack *top;
 };
 
-typedef struct Stack Stack;
-
-typedef Element (*NativeFn)(int argc, Stack *argv);
-
 struct Native
 {
+    int arity;
     arena obj;
     NativeFn fn;
 };
@@ -153,17 +172,21 @@ void free_chunk(Chunk *c);
 
 Stack *stack(size_t size);
 Stack *realloc_stack(Stack *stack, size_t size);
-void free_stack(Stack *stack);
+void free_stack(Stack **stack);
 
 Element Obj(arena ar);
 Element Func(Function *f);
 Element native_fn(Native *native);
+Element closure(Closure *clos);
 
 Function *function();
 void free_function(Function *func);
 
 Native *native(NativeFn native, arena ar);
 void free_native(Native *native);
+
+Closure *new_closure(Function *func);
+void free_closure(Closure *closure);
 
 void print(Element ar);
 void push(Stack **s, Element e);

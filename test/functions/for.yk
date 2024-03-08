@@ -1,16 +1,16 @@
-function nested (i)
+sr nested (i)
 {
     return i + 1;
         
 }
 
-function okay()
+sr okay()
 {
     for (var i = 0; i < 5; i++)
-        print nested(i);
+        pout nested(i);
 }
 
-function last()
+sr last()
 {
     for (var i = 0; i < 5; i++)
         okay();

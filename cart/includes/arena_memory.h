@@ -14,7 +14,7 @@
 #define MEM_OFFSET 1
 
 #define GROW_CAPACITY(capacity) \
-    ((capacity) < CAPACITY ? CAPACITY : CAPACITY * INC)
+    ((capacity < CAPACITY) ? CAPACITY : (capacity * INC))
 
 #define GROW_ARRAY(ar, size, type) \
     arena_realloc(ar, size, type)

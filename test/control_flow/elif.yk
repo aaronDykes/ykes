@@ -1,28 +1,28 @@
 if (69 == 69)
 {
     if (69 === "69")
-        print "interpreter crafting 69420";
+        pout "interpreter crafting 69420";
     elif (69 != 69)
-        print "It's working";
+        pout "It's working";
     elif (69 != 69)
-        print "foo bar baz";
+        pout "foo bar baz";
     elif (69 == 69)
     {
-        print "this is lame";
+        pout "this is lame";
 
         if (69 != 69)
         {
-            print "wow, it's nested";
+            pout "wow, it's nested";
         }
         elif (420 == 420) 
         {
-            print "wow, it's nested again";
+            pout "wow, it's nested again";
             if (69 == 69)
-                print "bing bong"; 
+                pout "bing bong"; 
         }
         
     }
     else
-        print " else bro";
+        pout " else bro";
 }
 

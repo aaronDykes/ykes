@@ -756,13 +756,13 @@ static arena double_lt(double dval, arena ar)
     switch (ar.type)
     {
     case ARENA_INT:
-        return Bool(dval < ar.as.Int);
+        return Bool((int)dval < ar.as.Int);
     case ARENA_CHAR:
-        return Bool(dval < ar.as.Char);
+        return Bool((int)dval < ar.as.Char);
     case ARENA_LONG:
-        return Bool(dval < ar.as.Long);
+        return Bool((int)dval < ar.as.Long);
     case ARENA_DOUBLE:
-        return Bool(dval < ar.as.Double);
+        return Bool((int)dval < ar.as.Double);
     default:
         log_err("ERROR: comparison type mismatch");
     }
@@ -773,13 +773,13 @@ static arena double_le(double dval, arena ar)
     switch (ar.type)
     {
     case ARENA_INT:
-        return Bool(dval <= ar.as.Int);
+        return Bool((int)dval <= ar.as.Int);
     case ARENA_CHAR:
-        return Bool(dval <= ar.as.Char);
+        return Bool((int)dval <= ar.as.Char);
     case ARENA_LONG:
-        return Bool(dval <= ar.as.Long);
+        return Bool((int)dval <= ar.as.Long);
     case ARENA_DOUBLE:
-        return Bool(dval <= ar.as.Double);
+        return Bool((int)dval <= ar.as.Double);
     default:
         log_err("ERROR: comparison type mismatch");
     }
@@ -790,13 +790,13 @@ static arena double_gt(double dval, arena ar)
     switch (ar.type)
     {
     case ARENA_INT:
-        return Bool(dval > ar.as.Int);
+        return Bool((int)dval > ar.as.Int);
     case ARENA_CHAR:
-        return Bool(dval > ar.as.Char);
+        return Bool((int)dval > ar.as.Char);
     case ARENA_LONG:
-        return Bool(dval > ar.as.Long);
+        return Bool((int)dval > ar.as.Long);
     case ARENA_DOUBLE:
-        return Bool(dval > ar.as.Double);
+        return Bool((int)dval > ar.as.Double);
     default:
         log_err("ERROR: comparison type mismatch");
     }
@@ -807,13 +807,13 @@ static arena double_ge(double dval, arena ar)
     switch (ar.type)
     {
     case ARENA_INT:
-        return Bool(dval >= ar.as.Int);
+        return Bool((int)dval >= ar.as.Int);
     case ARENA_CHAR:
-        return Bool(dval >= ar.as.Char);
+        return Bool((int)dval >= ar.as.Char);
     case ARENA_LONG:
-        return Bool(dval >= ar.as.Long);
+        return Bool((int)dval >= ar.as.Long);
     case ARENA_DOUBLE:
-        return Bool(dval >= ar.as.Double);
+        return Bool((int)dval >= ar.as.Double);
     default:
         log_err("ERROR: comparison type mismatch");
     }

@@ -16,9 +16,7 @@ static void init_compiler(Compiler *a, Compiler *b, FT type, arena name)
         a->enclosing = b;
     }
     else
-    {
         a->enclosing = NULL;
-    }
     a->func = NULL;
     a->func = function();
     a->func->name = name;
@@ -82,6 +80,14 @@ static void call(Compiler *c)
     emit_bytes(&c->func->ch, OP_CALL, argc);
 }
 
+static void call_expect_arity(Compiler *c, int arity)
+{
+    uint8_t argc = argument_list(c);
+    if ((int)argc != arity)
+        error("Incorrect number of args.", &c->parser);
+    emit_bytes(&c->func->ch, OP_CALL, argc);
+}
+
 static int argument_list(Compiler *c)
 {
     uint8_t argc = 0;
@@ -104,7 +110,6 @@ static void func_declaration(Compiler *c)
 {
     consume(TOKEN_ID, "Expect function name.", &c->parser);
     arena ar = parse_func_id(c);
-    // parse_var(c, ar);
 
     func_body(c, FUNCTION, ar);
 }
@@ -137,8 +142,9 @@ static void func_body(Compiler *c, FT type, arena ar)
 
     if (c->enclosing)
         c = c->enclosing;
-    emit_bytes(&c->func->ch, (arg == -1 ? OP_SET_LOCAL : OP_GLOBAL_DEF), add_constant(&c->func->ch, Func(f)));
-    emit_bytes(&c->func->ch, OP_CONSTANT, add_constant(&c->func->ch, Func(f)));
+    Element clos = CLOSURE(new_closure(f));
+    emit_bytes(&c->func->ch, (arg == -1) ? OP_SET_LOCAL : OP_GLOBAL_DEF, add_constant(&c->func->ch, clos));
+    emit_bytes(&c->func->ch, OP_CLOSURE, add_constant(&c->func->ch, clos));
 }
 
 static void func_var(Compiler *c)
@@ -383,7 +389,7 @@ static void case_statement(Compiler *c, arena args)
         patch_jump_long(c, begin, tr);
     }
 
-    arena_free(&args);
+    FREE_ARRAY(&args);
 }
 
 static void if_statement(Compiler *c)
@@ -765,16 +771,24 @@ static void cstr(Compiler *c)
     emit_constant(&c->func->ch, String(ch));
 }
 
-static arena parse_native_id(Compiler *c)
+static void parse_native_argc0(Compiler *c)
 {
     char *ch = (char *)c->parser.pre.start;
     ch[c->parser.pre.size] = '\0';
     int arg = add_constant(&c->func->ch, Obj(native_name(ch)));
     emit_bytes(&c->func->ch, OP_GET_GLOBAL, (uint8_t)arg);
     consume(TOKEN_CH_LPAREN, "Expect `(` prior to function call", &c->parser);
-    consume(TOKEN_CH_RPAREN, "Expect `)` prior to function call", &c->parser);
-    emit_bytes(&c->func->ch, OP_CALL, 0);
-    // parse_precedence(PREC_ASSIGNMENT, c);
+    call_expect_arity(c, 0);
+}
+
+static void parse_native_argc1(Compiler *c)
+{
+    char *ch = (char *)c->parser.pre.start;
+    ch[c->parser.pre.size] = '\0';
+    int arg = add_constant(&c->func->ch, Obj(native_name(ch)));
+    emit_bytes(&c->func->ch, OP_GET_GLOBAL, (uint8_t)arg);
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to function call", &c->parser);
+    call_expect_arity(c, 1);
 }
 
 static arena parse_func_id(Compiler *c)
@@ -801,7 +815,7 @@ static arena get_id(Compiler *c)
 
     uint8_t get, set;
 
-    arena args = arena_alloc(3, ARENA_INT_PTR);
+    arena args = GROW_ARRAY(NULL, 3 * sizeof(int), ARENA_INT_PTR);
     int arg = resolve_local(c, &ar);
 
     if (arg != -1)
@@ -901,12 +915,7 @@ static int resolve_local(Compiler *c, arena *name)
 {
     for (int i = c->local_count - 1; i >= 0; i--)
         if (idcmp(*name, c->locals[i].name))
-        {
-            if (c->locals[i].depth != -1)
-                c->locals[i].depth = c->scope_depth;
             return i;
-        }
-
     return -1;
 }
 

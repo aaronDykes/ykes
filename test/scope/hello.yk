@@ -3,13 +3,13 @@ var cp="Hello sir!";
 {
     var hello=6969;
     hello=hello + " is a number!"; 
-    print hello;
+    pout hello;
     
     {
         var hello=hello + " " + 6969;
-        print hello;
+        pout hello;
     } 
-    print hello; 
+    pout hello; 
 }
 
-print cp;
+pout cp;

@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <time.h>
 #include <stdio.h>
+#include <math.h>
 
 void initVM()
 {
@@ -12,6 +13,7 @@ void initVM()
     machine.stack = GROW_STACK(NULL, (size_t)ARENA_SIZE);
     init_dict(&machine.glob);
     define_native(native_name("clock"), clock_native);
+    define_native(native_name("square"), square_native);
 }
 void freeVM()
 {
@@ -32,9 +34,9 @@ static void runtime_error(const char *format, ...)
     {
 
         CallFrame *frame = &machine.frames[i];
-        Function *func = frame->func;
-        size_t instruction = frame->ip - frame->func->ch.op_codes.listof.Bytes - 1;
-        int line = frame->func->ch.line;
+        Function *func = frame->closure->func;
+        size_t instruction = frame->ip - frame->closure->func->ch.op_codes.listof.Bytes - 1;
+        int line = frame->closure->func->ch.line;
 
         if (!func->name.as.String)
             fprintf(stderr, "script\n");
@@ -47,24 +49,44 @@ static void runtime_error(const char *format, ...)
 
 static void define_native(arena ar, NativeFn n)
 {
-    push(&machine.stack, Obj(ar));
     ar.as.hash %= machine.glob.capacity;
-    insert_entry(&machine.glob.map, native_entry(ar, native(n, ar)));
-    pop();
+    insert_entry(&machine.glob.map, native_entry(native(n, ar)));
 }
 
 static Element clock_native(int argc, Stack *args)
 {
-    return Obj(Double(clock() / CLOCKS_PER_SEC));
+    return OBJ(Double(clock() / CLOCKS_PER_SEC));
 }
 
-static bool call(Function *f, uint8_t argc)
+static arena _sqr(arena a)
+{
+    switch (a.type)
+    {
+    case ARENA_INT:
+        return Int((int)sqrt(a.as.Int));
+    case ARENA_DOUBLE:
+        return Int((int)sqrt(a.as.Double));
+    case ARENA_LONG:
+        return Int((int)sqrt(a.as.Long));
+    case ARENA_BYTE:
+        return Int((int)sqrt(a.as.Byte));
+    case ARENA_CHAR:
+        return Int((int)sqrt(a.as.Char));
+    }
+}
+
+static Element square_native(int argc, Stack *args)
+{
+    return OBJ(_sqr(args->as.arena));
+}
+
+static bool call(Closure *c, uint8_t argc)
 {
 
-    if (f->arity != argc)
+    if (c->func->arity != argc)
     {
 
-        runtime_error("Expected `%d` args, but got `%d`.", f->arity, argc);
+        runtime_error("Expected `%d` args, but got `%d`.", c->func->arity, argc);
         return false;
     }
 
@@ -75,9 +97,9 @@ static bool call(Function *f, uint8_t argc)
     }
 
     CallFrame *frame = &machine.frames[machine.frame_count++];
-    frame->func = f;
-    frame->ip = f->ch.op_codes.listof.Bytes;
-    frame->ip_start = f->ch.op_codes.listof.Bytes;
+    frame->closure = c;
+    frame->ip = c->func->ch.op_codes.listof.Bytes;
+    frame->ip_start = frame->ip;
     frame->slots = machine.stack->top - argc - 1;
     return true;
 }
@@ -92,8 +114,9 @@ Interpretation interpret(const char *src)
         return INTERPRET_COMPILE_ERR;
     }
 
-    push(&machine.stack, Func(func));
-    call(func, 0);
+    Closure *clos = new_closure(func);
+    call(clos, 0);
+    push(&machine.stack, closure(clos));
 
     Interpretation res = run();
     return res;
@@ -143,11 +166,12 @@ static bool call_value(Element el, uint8_t argc)
 {
     switch (el.type)
     {
-    case FUNC:
-        return call(el.func, argc);
+    case CLOSURE:
+        return call(el.closure, argc);
     case NATIVE:
     {
         Element res = el.native->fn(argc, machine.stack->top - argc);
+        machine.stack->count -= (argc + 1);
         machine.stack->top -= (argc + 1);
         push(&machine.stack, res);
         return true;
@@ -169,29 +193,31 @@ Interpretation run()
 {
 
     CallFrame *frame = &machine.frames[machine.frame_count - 1];
+
 #define READ_BYTE() (*frame->ip++)
-#define READ_SHORT() ((uint16_t)((READ_BYTE() << 8) | READ_BYTE()))
-#define READ_CONSTANT() (frame->func->ch.constants[READ_BYTE()].as)
+#define READ_SHORT() (((READ_BYTE() << 8) & 0xFF) | READ_BYTE() & 0xFF)
+#define READ_CONSTANT() (frame->closure->func->ch.constants[READ_BYTE()].as)
 #define PEEK() (machine.stack->top[-1].as)
 #define NPEEK(N) (machine.stack->top[(-1 - N)].as)
 #define FALSEY() (!PEEK().arena.as.Bool)
 #define POPN(n) (popn(&machine.stack, n))
 #define LOCAL() (frame->slots[READ_BYTE()].as)
-#define JUMP() (frame->func->ch.cases.listof.Ints[READ_SHORT()])
-#define OBJ(ar) (Obj(ar))
+#define JUMP() (frame->closure->func->ch.cases.listof.Ints[READ_SHORT()])
 #define PUSH(ar) (push(&machine.stack, ar))
 #define FIND_FUNC(ar) (find_func(ar))
 #define FIND_NATIVE(ar) (find_native(ar))
 #define WRITE_AR(a, b) (write_dict(&machine.glob, a, b, machine.glob.capacity))
-#define WRITE_FUNC(a, f) (write_func_dict(&machine.glob, a, f, machine.glob.capacity))
+#define WRITE_FUNC(f) (write_func_dict(&machine.glob, f, machine.glob.capacity))
+#define POP() \
+    (--machine.stack->count, (*--machine.stack->top).as)
 
     for (;;)
     {
 #ifdef DEBUG_TRACE_EXECUTION
         for (Stack *v = machine.stack; v < machine.stack->top; v++)
             print(v->as);
-        disassemble_instruction(&frame->func->ch,
-                                (int)(frame->ip - frame->func->ch.op_codes.listof.Bytes));
+        disassemble_instruction(&frame->closure->func->ch,
+                                (int)(frame->ip - frame->closure->func->ch.op_codes.listof.Bytes));
 #endif
 
         switch (READ_BYTE())
@@ -199,16 +225,19 @@ Interpretation run()
         case OP_CONSTANT:
             PUSH(READ_CONSTANT());
             break;
+        case OP_CLOSURE:
+            PUSH(READ_CONSTANT());
+            break;
         case OP_NEG:
-            (*--machine.stack->top).as = Obj(_neg((*machine.stack->top++).as.arena));
+            (*--machine.stack->top).as = OBJ(_neg((*machine.stack->top++).as.arena));
             break;
         case OP_INC:
-            (*--machine.stack->top).as = Obj(_inc((*machine.stack->top++).as.arena));
+            (*--machine.stack->top).as = OBJ(_inc((*machine.stack->top++).as.arena));
             break;
         case OP_INC_LOC:
         {
             uint8_t index = READ_BYTE();
-            Element el = Obj(_inc(frame->slots[index].as.arena));
+            Element el = OBJ(_inc(frame->slots[index].as.arena));
             frame->slots[index].as = el;
             PUSH(el);
             break;
@@ -216,7 +245,7 @@ Interpretation run()
         case OP_INC_GLO:
         {
             Element key = READ_CONSTANT();
-            Element ar = Obj(_inc(find(key.arena)));
+            Element ar = OBJ(_inc(find(key.arena)));
             WRITE_AR(key.arena, ar.arena);
             PUSH(ar);
             break;
@@ -224,7 +253,7 @@ Interpretation run()
         case OP_DEC_LOC:
         {
             uint8_t index = READ_BYTE();
-            Element el = Obj(_dec(frame->slots[index].as.arena));
+            Element el = OBJ(_dec(frame->slots[index].as.arena));
             frame->slots[index].as = el;
             PUSH(el);
             break;
@@ -232,16 +261,16 @@ Interpretation run()
         case OP_DEC_GLO:
         {
             Element key = READ_CONSTANT();
-            Element ar = Obj(_dec(find(key.arena)));
+            Element ar = OBJ(_dec(find(key.arena)));
             WRITE_AR(key.arena, ar.arena);
             PUSH(ar);
             break;
         }
         case OP_DEC:
-            (*--machine.stack->top).as = Obj(_dec((*machine.stack->top++).as.arena));
+            (*--machine.stack->top).as = OBJ(_dec((*machine.stack->top++).as.arena));
             break;
         case OP_ADD:
-            PUSH(Obj(_add(pop().arena, pop().arena)));
+            PUSH(OBJ(_add(POP().arena, POP().arena)));
             break;
         case OP_POPN:
             POPN(READ_CONSTANT().arena.as.Int);
@@ -250,60 +279,61 @@ Interpretation run()
             pop();
             break;
         case OP_SUB:
-            PUSH(Obj(_sub(pop().arena, pop().arena)));
+            PUSH(OBJ(_sub(POP().arena, POP().arena)));
             break;
         case OP_MUL:
-            PUSH(Obj(_mul(pop().arena, pop().arena)));
+            PUSH(OBJ(_mul(POP().arena, POP().arena)));
             break;
         case OP_MOD:
-            PUSH(Obj(_mod(pop().arena, pop().arena)));
+            PUSH(OBJ(_mod(POP().arena, POP().arena)));
             break;
         case OP_DIV:
-            PUSH(Obj(_div(pop().arena, pop().arena)));
+            PUSH(OBJ(_div(POP().arena, POP().arena)));
             break;
         case OP_EQ:
-            PUSH(Obj(_eq(pop().arena, pop().arena)));
+            PUSH(OBJ(_eq(POP().arena, POP().arena)));
             break;
         case OP_NE:
-            PUSH(Obj(_ne(pop().arena, pop().arena)));
+            PUSH(OBJ(_ne(POP().arena, POP().arena)));
             break;
         case OP_SEQ:
-            PUSH(Obj(_seq(pop().arena, pop().arena)));
+            PUSH(OBJ(_seq(POP().arena, POP().arena)));
             break;
         case OP_SNE:
-            PUSH(Obj(_sne(pop().arena, pop().arena)));
+            PUSH(OBJ(_sne(POP().arena, POP().arena)));
             break;
         case OP_LT:
-            PUSH(Obj(_lt(pop().arena, pop().arena)));
+            PUSH(OBJ(_lt(POP().arena, POP().arena)));
             break;
         case OP_LE:
-            PUSH(Obj(_le(pop().arena, pop().arena)));
+            PUSH(OBJ(_le(POP().arena, POP().arena)));
             break;
         case OP_GT:
-            PUSH(Obj(_gt(pop().arena, pop().arena)));
+            PUSH(OBJ(_gt(POP().arena, POP().arena)));
             break;
         case OP_GE:
-            PUSH(Obj(_ge(pop().arena, pop().arena)));
+            PUSH(OBJ(_ge(POP().arena, POP().arena)));
             break;
         case OP_OR:
-            PUSH(Obj(_or(pop().arena, pop().arena)));
+            PUSH(OBJ(_or(POP().arena, POP().arena)));
             break;
         case OP_AND:
-            PUSH(Obj(_and(pop().arena, pop().arena)));
+            PUSH(OBJ(_and(POP().arena, POP().arena)));
             break;
         case OP_NULL:
-            PUSH(Obj(Null()));
+            PUSH(OBJ(Null()));
             break;
         case OP_JMPF:
             frame->ip += (READ_SHORT() * FALSEY());
             break;
         case OP_JMPC:
         {
-            uint16_t jump = READ_SHORT(), offset = READ_SHORT();
+            uint16_t jump = READ_SHORT();
+            uint16_t offset = READ_SHORT();
 
             if (FALSEY())
             {
-                pop();
+                POP();
                 frame->ip += jump;
                 break;
             }
@@ -315,6 +345,7 @@ Interpretation run()
             break;
         case OP_CALL:
         {
+
             uint8_t argc = READ_BYTE();
             Element el = NPEEK(argc);
 
@@ -325,7 +356,7 @@ Interpretation run()
         }
         break;
         case OP_JMPT:
-            frame->ip += (READ_SHORT() * FALSEY());
+            frame->ip += (READ_SHORT() * !FALSEY());
             break;
         case OP_JMP:
             frame->ip += READ_SHORT();
@@ -340,7 +371,13 @@ Interpretation run()
             {
                 Function *f;
                 if ((f = FIND_FUNC(el.func->name)) != NULL)
-                    PUSH(Func(f));
+                    PUSH(CLOSURE(new_closure(f)));
+            }
+            else if (el.type == ARENA && el.arena.type == ARENA_NATIVE)
+            {
+                Native *n;
+                if ((n = FIND_NATIVE(el.native->obj)) != NULL)
+                    PUSH(NATIVE(n));
             }
             else
                 PUSH(el);
@@ -349,25 +386,25 @@ Interpretation run()
         case OP_SET_LOCAL:
         {
             Element el = PEEK();
-            if (el.type == FUNC)
-                WRITE_FUNC(el.func->name, el.func);
-            else
-                LOCAL() = el;
+            if (el.type == CLOSURE)
+                WRITE_FUNC(el.closure->func);
+            // else
+            LOCAL() = el;
             break;
         }
         case OP_SET_GLOBAL:
         {
             Element el = READ_CONSTANT();
-            if (el.type != FUNC)
+            if (el.type != CLOSURE)
             {
                 if (!exists(el.arena))
                     return undefined_var(el.arena);
-                arena ar = pop().arena;
+                arena ar = POP().arena;
                 WRITE_AR(el.arena, ar);
-                PUSH(Obj(ar));
+                PUSH(OBJ(ar));
             }
             else
-                WRITE_FUNC(el.func->name, el.func);
+                WRITE_FUNC(el.closure->func);
         }
         break;
         case OP_GET_GLOBAL:
@@ -378,16 +415,16 @@ Interpretation run()
             {
                 Function *f;
                 if ((f = FIND_FUNC(el.arena)) != NULL)
-                    PUSH(Func(f));
+                    PUSH(CLOSURE(new_closure(f)));
             }
             else if (el.type == ARENA && el.arena.type == ARENA_NATIVE)
             {
                 Native *native;
                 if ((native = FIND_NATIVE(el.arena)) != NULL)
-                    PUSH(native_fn(native));
+                    PUSH(NATIVE(native));
             }
             else
-                PUSH(Obj(find(el.arena)));
+                PUSH(OBJ(find(el.arena)));
         }
         break;
         case OP_NOOP:
@@ -395,15 +432,15 @@ Interpretation run()
         case OP_GLOBAL_DEF:
         {
             Element el = READ_CONSTANT();
-            if (el.type == FUNC)
-                WRITE_FUNC(el.func->name, el.func);
+            if (el.type == CLOSURE)
+                WRITE_FUNC(el.closure->func);
             else
-                WRITE_AR(el.arena, pop().arena);
+                WRITE_AR(el.arena, POP().arena);
             break;
         }
         case OP_PRINT:
         {
-            Element el = pop();
+            Element el = POP();
             if (el.type == FUNC)
             {
                 PUSH(el);
@@ -415,17 +452,17 @@ Interpretation run()
         case OP_RETURN:
         {
 
-            Element el = pop();
+            Element el = POP();
             --machine.frame_count;
 
             if (machine.frame_count == 0)
             {
-                pop();
+                POP();
                 return INTERPRET_SUCCESS;
             }
 
             for (Stack *s = machine.stack; s < frame->slots; s++)
-                pop();
+                POP();
 
             machine.stack->top = frame->slots;
             PUSH(el);
@@ -435,12 +472,12 @@ Interpretation run()
         }
         }
     }
+#undef POP
 #undef WRITE_FUNC
 #undef WRITE_AR
 #undef FIND_NATIVE
 #undef FIND_FUNC
 #undef PUSH
-#undef OBJ
 #undef JUMP
 #undef LOCAL
 #undef POPN

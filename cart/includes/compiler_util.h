@@ -70,6 +70,7 @@ static void advance_compiler(Parser *parser);
 
 static void declaration(Compiler *c);
 static void call(Compiler *c);
+static void call_expect_arity(Compiler *c, int arity);
 
 static int argument_list(Compiler *c);
 
@@ -149,7 +150,8 @@ static void cstr(Compiler *c);
 static int resolve_local(Compiler *c, arena *name);
 
 static arena parse_func_id(Compiler *c);
-static arena parse_native_id(Compiler *c);
+static void parse_native_argc0(Compiler *c);
+static void parse_native_argc1(Compiler *c);
 static arena parse_id(Compiler *c);
 static int parse_var(Compiler *c, arena ar);
 static void id(Compiler *c);
@@ -216,7 +218,8 @@ static PRule rules[] = {
     [TOKEN_IF] = {NULL, NULL, PREC_NONE},
     [TOKEN_ELIF] = {NULL, NULL, PREC_OR},
     [TOKEN_NULL] = {boolean, NULL, PREC_NONE},
-    [TOKEN_CLOCK] = {parse_native_id, NULL, PREC_CALL},
+    [TOKEN_CLOCK] = {parse_native_argc0, NULL, PREC_CALL},
+    [TOKEN_SQRT] = {parse_native_argc1, NULL, PREC_CALL},
     [TOKEN_PRINT] = {NULL, NULL, PREC_NONE},
     [TOKEN_RETURN] = {NULL, NULL, PREC_NONE},
     [TOKEN_SUPER] = {NULL, NULL, PREC_NONE},
