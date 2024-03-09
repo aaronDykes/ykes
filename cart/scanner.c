@@ -231,7 +231,14 @@ static int id_type()
     case 'o':
         return check_keyword(1, 1, "r", TOKEN_OP_OR);
     case 'p':
-        return check_keyword(1, 3, "out", TOKEN_PRINT);
+        if (scan.current - scan.start > 1)
+            switch (scan.start[1])
+            {
+            case 'r':
+                return check_keyword(2, 3, "ime", TOKEN_PRIME);
+            case 'o':
+                return check_keyword(2, 2, "ut", TOKEN_PRINT);
+            }
     case 'r':
         return check_keyword(1, 5, "eturn", TOKEN_RETURN);
     case 's':

@@ -31,43 +31,74 @@ Stack *realloc_stack(Stack *st, size_t size)
         switch (st[i].as.type)
         {
         case ARENA:
-            s[i].as = Obj(st[i].as.arena);
+            s[i].as = OBJ(st[i].as.arena);
             break;
         case FUNC:
-            s[i].as = Func(st[i].as.func);
+            s[i].as = FUNC(st[i].as.func);
             break;
         case NATIVE:
-            s[i].as = native_fn(st[i].as.native);
+            s[i].as = NATIVE(st[i].as.native);
             break;
         case CLOSURE:
-            s[i].as = closure(st[i].as.closure);
+            s[i].as = CLOSURE(st[i].as.closure);
+            break;
+        case UPVAL:
+            s[i].as = UPVAL(st[i].as.upval);
             break;
         }
+    s->count = st->count;
+    s->top += s->count;
     free_stack(&st);
     return s;
 }
 void free_stack(Stack **stack)
 {
+    Stack *tmp = *stack;
     if (!(stack - 1))
         return;
-    for (size_t i = 0; i < ((*stack) - 1)->size; i++)
-        switch ((*stack)[i].as.type)
+    for (size_t i = 0; i < (tmp - 1)->size; i++)
+        switch (tmp[i].as.type)
         {
         case ARENA:
-            FREE_ARRAY(&(*stack)[i].as.arena);
+            FREE_ARRAY(&tmp[i].as.arena);
             break;
         case FUNC:
-            FREE_FUNCTION((*stack)[i].as.func);
+            FREE_FUNCTION(tmp[i].as.func);
             break;
         case NATIVE:
-            FREE_NATIVE((*stack)[i].as.native);
+            FREE_NATIVE(tmp[i].as.native);
             break;
         case CLOSURE:
-            FREE_CLOSURE((*stack)[i].as.closure);
+            FREE_CLOSURE(tmp[i].as.closure);
+            break;
+        case UPVAL:
+            FREE_UPVAL(tmp[i].as.upval);
             break;
         }
-    stack = NULL;
+    tmp = NULL;
 }
+
+Upval *indices(size_t size)
+{
+    Upval *up = ALLOC((sizeof(Upval) * size) + sizeof(Upval));
+
+    up->size = size;
+    for (size_t i = 1; i < size; i++)
+        up[i].index = NULL;
+
+    (up + 1)->len = (int)size;
+    (up + 1)->count = 0;
+    return up + 1;
+}
+
+void free_indices(Upval *up)
+{
+    for (size_t i = 0; i < (up - 1)->size; i++)
+        up[i].index = NULL;
+
+    up = NULL;
+}
+
 Element Obj(arena ar)
 {
     Element s;
@@ -93,6 +124,14 @@ Element native_fn(Native *native)
     return s;
 }
 
+Element up_val(Upval *index)
+{
+    Element el;
+    el.upval = index;
+    el.type = UPVAL;
+    return el;
+}
+
 Element closure(Closure *closure)
 {
     Element el;
@@ -100,10 +139,12 @@ Element closure(Closure *closure)
     el.type = CLOSURE;
     return el;
 }
+
 Function *function()
 {
     Function *func = ALLOC(sizeof(Function));
     func->arity = 0;
+    func->upvalue_count = 0;
     init_chunk(&func->ch);
     return func;
 }
@@ -138,6 +179,7 @@ Closure *new_closure(Function *func)
 {
     Closure *closure = ALLOC(sizeof(Closure));
     closure->func = func;
+    closure->upvals = indices(func->upvalue_count);
     return closure;
 }
 
@@ -148,6 +190,19 @@ void free_closure(Closure *closure)
     closure = NULL;
 }
 
+Upval upval(Stack *index)
+{
+    Upval up;
+    up.index = index;
+    return up;
+}
+void free_upval(Upval *up)
+{
+    if (!up)
+        return;
+    up->index = NULL;
+}
+
 void init_chunk(Chunk *c)
 {
     c->op_codes.len = 0;
@@ -155,7 +210,7 @@ void init_chunk(Chunk *c)
     c->cases.len = 0;
     c->cases.count = 0;
     c->line = 0;
-    c->constants = GROW_STACK(NULL, IP_SIZE);
+    c->constants = GROW_STACK(NULL, STACK_SIZE);
 }
 
 void write_chunk(Chunk *c, uint8_t byte)
@@ -192,8 +247,7 @@ void free_chunk(Chunk *c)
         FREE_ARRAY(&c->op_codes);
     if (c->cases.listof.Ints)
         FREE_ARRAY(&c->cases);
-    if (c->constants)
-        FREE_STACK(c->constants);
+    c->constants = NULL;
     init_chunk(c);
 }
 
@@ -205,7 +259,7 @@ void check_stack_size(Stack *s)
 {
     if (s->count + 1 > s->len)
     {
-        s->len *= INC;
+        s->len = GROW_CAPACITY(s->len);
         s = GROW_STACK(s, s->len);
         reset_stack(s);
     }
@@ -244,17 +298,17 @@ static void parse_str(const char *str)
 void print(Element ar)
 {
     arena a = ar.arena;
-    if (ar.type == FUNC && ar.func)
+    if (ar.type == FUNC)
     {
         printf("<fn %s>\n", ar.func->name.as.String ? ar.func->name.as.String : "<fn NULL>");
         return;
     }
-    else if (ar.type == NATIVE && ar.native)
+    else if (ar.type == NATIVE)
     {
         printf("<fn native>\n");
         return;
     }
-    else if (ar.type == CLOSURE && ar.closure)
+    else if (ar.type == CLOSURE)
     {
         printf("<fn %s>\n", ar.closure->func->name.as.String);
         return;

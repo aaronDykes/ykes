@@ -63,8 +63,22 @@ int disassemble_instruction(Chunk *c, int offset)
         uint8_t constant = c->op_codes.listof.Bytes[offset++];
         printf("%-16s %4d ", "OP_CLOSURE", constant);
         print(c->constants[constant].as);
+
+        Function *func = c->constants[constant].as.func;
+        for (int j = 0; j < func->upvalue_count; j++)
+        {
+            int isLocal = c->op_codes.listof.Bytes[offset++];
+            int index = c->op_codes.listof.Bytes[offset++];
+            printf("%04d      |                     %s %d\n",
+                   offset - 2, isLocal ? "local" : "upvalue", index);
+        }
+
         return offset;
     }
+    case OP_GET_UPVALUE:
+        return byte_instruction("OP_GET_UPVALUE", c, offset);
+    case OP_SET_UPVALUE:
+        return byte_instruction("OP_SET_UPVALUE", c, offset);
     case OP_NEG:
         return simple_instruction("OP_NEG", offset);
     case OP_INC:

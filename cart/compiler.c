@@ -17,7 +17,6 @@ static void init_compiler(Compiler *a, Compiler *b, FT type, arena name)
     }
     else
         a->enclosing = NULL;
-    a->func = NULL;
     a->func = function();
     a->func->name = name;
     a->type = type;
@@ -27,9 +26,7 @@ static void init_compiler(Compiler *a, Compiler *b, FT type, arena name)
     Local *local = NULL;
 
     if (b)
-    {
         local = &b->locals[b->local_count++];
-    }
     else
         local = &a->locals[a->local_count++];
 
@@ -138,13 +135,16 @@ static void func_body(Compiler *c, FT type, arena ar)
     Function *f = end_compile(c);
 
     end_scope(c);
-    int arg = resolve_local(c, &f->name);
 
-    if (c->enclosing)
-        c = c->enclosing;
+    c = c->enclosing;
     Element clos = CLOSURE(new_closure(f));
-    emit_bytes(&c->func->ch, (arg == -1) ? OP_SET_LOCAL : OP_GLOBAL_DEF, add_constant(&c->func->ch, clos));
     emit_bytes(&c->func->ch, OP_CLOSURE, add_constant(&c->func->ch, clos));
+
+    for (int i = 0; i < f->upvalue_count; i++)
+    {
+        emit_byte(&c->func->ch, c->upvalues[i].islocal ? 1 : 0);
+        emit_byte(&c->func->ch, c->upvalues[i].index);
+    }
 }
 
 static void func_var(Compiler *c)
@@ -528,7 +528,7 @@ static void end_scope(Compiler *c)
     c->scope_depth--;
 
     if (c->local_count > 0 && (c->locals[c->local_count - 1].depth >= c->scope_depth))
-        emit_bytes(&c->func->ch, OP_POPN, add_constant(&c->func->ch, Obj(Int(c->local_count))));
+        emit_bytes(&c->func->ch, OP_POPN, add_constant(&c->func->ch, OBJ(Int(c->local_count))));
 
     while (c->local_count > 0 && (c->locals[c->local_count - 1].depth > c->scope_depth))
         arena_free(&c->locals[--c->local_count].name);
@@ -734,7 +734,7 @@ static void emit_bytes(Chunk *ch, uint8_t b1, uint8_t b2)
 }
 static void emit_constant(Chunk *ch, arena ar)
 {
-    emit_bytes(ch, OP_CONSTANT, add_constant(ch, Obj(ar)));
+    emit_bytes(ch, OP_CONSTANT, add_constant(ch, OBJ(ar)));
 }
 
 static void dval(Compiler *c)
@@ -775,7 +775,7 @@ static void parse_native_argc0(Compiler *c)
 {
     char *ch = (char *)c->parser.pre.start;
     ch[c->parser.pre.size] = '\0';
-    int arg = add_constant(&c->func->ch, Obj(native_name(ch)));
+    int arg = add_constant(&c->func->ch, OBJ(native_name(ch)));
     emit_bytes(&c->func->ch, OP_GET_GLOBAL, (uint8_t)arg);
     consume(TOKEN_CH_LPAREN, "Expect `(` prior to function call", &c->parser);
     call_expect_arity(c, 0);
@@ -783,9 +783,10 @@ static void parse_native_argc0(Compiler *c)
 
 static void parse_native_argc1(Compiler *c)
 {
+
     char *ch = (char *)c->parser.pre.start;
     ch[c->parser.pre.size] = '\0';
-    int arg = add_constant(&c->func->ch, Obj(native_name(ch)));
+    int arg = add_constant(&c->func->ch, OBJ(native_name(ch)));
     emit_bytes(&c->func->ch, OP_GET_GLOBAL, (uint8_t)arg);
     consume(TOKEN_CH_LPAREN, "Expect `(` prior to function call", &c->parser);
     call_expect_arity(c, 1);
@@ -823,10 +824,14 @@ static arena get_id(Compiler *c)
         get = OP_GET_LOCAL;
         set = OP_SET_LOCAL;
     }
+    else if ((arg = resolve_upvalue(c, &ar)) != -1)
+    {
+        get = OP_GET_UPVALUE;
+        set = OP_SET_UPVALUE;
+    }
     else
     {
-        arg = add_constant(&c->func->ch, Obj(ar));
-
+        arg = add_constant(&c->func->ch, OBJ(ar));
         get = OP_GET_GLOBAL;
         set = OP_SET_GLOBAL;
     }
@@ -858,9 +863,10 @@ static void id(Compiler *c)
     if (match(TOKEN_ID, &c->parser))
         ;
 
-    arena ar = (check(TOKEN_CH_LPAREN, &c->parser))
-                   ? parse_func_id(c)
-                   : parse_id(c);
+    arena ar =
+        (check(TOKEN_CH_LPAREN, &c->parser))
+            ? parse_func_id(c)
+            : parse_id(c);
 
     uint8_t get, set;
 
@@ -871,9 +877,14 @@ static void id(Compiler *c)
         get = OP_GET_LOCAL;
         set = OP_SET_LOCAL;
     }
+    else if ((arg = resolve_upvalue(c, &ar)) != -1)
+    {
+        get = OP_GET_UPVALUE;
+        set = OP_SET_UPVALUE;
+    }
     else
     {
-        arg = add_constant(&c->func->ch, Obj(ar));
+        arg = add_constant(&c->func->ch, OBJ(ar));
         get = OP_GET_GLOBAL;
         set = OP_SET_GLOBAL;
     }
@@ -900,7 +911,7 @@ static int parse_var(Compiler *c, arena ar)
     declare_var(c, ar);
     if (c->scope_depth > 0)
         return -1;
-    return add_constant(&c->func->ch, Obj(ar));
+    return add_constant(&c->func->ch, OBJ(ar));
 }
 
 static bool idcmp(arena a, arena b)
@@ -917,6 +928,45 @@ static int resolve_local(Compiler *c, arena *name)
         if (idcmp(*name, c->locals[i].name))
             return i;
     return -1;
+}
+static int resolve_upvalue(Compiler *c, arena *name)
+{
+    if (!c->enclosing)
+        return -1;
+
+    int local = resolve_local(c, name);
+
+    if (local == -1)
+        return add_upvalue(c, local, true);
+
+    int upvalue = resolve_upvalue(c->enclosing, name);
+    if (upvalue == -1)
+        return add_upvalue(c, upvalue, false);
+
+    return -1;
+}
+
+static int add_upvalue(Compiler *c, int index, bool isupvalue)
+{
+    int count = c->upvalue_count;
+
+    for (int i = 0; i < count; i++)
+    {
+        Upvalue *upval = &c->upvalues[i];
+
+        if (upval->index == index && upval->islocal == isupvalue)
+            return i;
+    }
+
+    if (count > LOCAL_COUNT)
+    {
+        error("To many closure variables in function.", &c->parser);
+        return 0;
+    }
+
+    c->upvalues[c->upvalue_count].islocal = isupvalue;
+    c->upvalues[c->upvalue_count].index = index;
+    return c->func->upvalue_count++;
 }
 
 static void declare_var(Compiler *c, arena ar)
@@ -988,7 +1038,5 @@ Function *compile(const char *src)
         declaration(&c);
     consume(TOKEN_EOF, "Expect end of expression", &c.parser);
 
-    Function *func = end_compile(&c);
-
-    return c.parser.err ? NULL : func;
+    return c.parser.err ? NULL : c.func;
 }

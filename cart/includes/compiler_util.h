@@ -30,33 +30,39 @@ typedef enum
 
 } Precedence;
 
+typedef struct Local Local;
+typedef struct Upvalue Upvalue;
+typedef struct parse_rule PRule;
+typedef struct Parser Parser;
+typedef struct Compiler Compiler;
+typedef void (*parse_fn)(Compiler *);
+
 struct Local
 {
     arena name;
     int depth;
 };
-typedef struct Local Local;
 
-typedef struct parse_rule PRule;
-typedef struct Parser Parser;
+struct Upvalue
+{
+    int index;
+    bool islocal;
+};
 
 struct Compiler
 {
     int local_count;
     int scope_depth;
-    int call_depth;
+    int upvalue_count;
 
     FT type;
     Function *func;
 
     struct Compiler *enclosing;
     Local locals[LOCAL_COUNT];
+    Upvalue upvalues[LOCAL_COUNT];
     Parser parser;
 };
-
-typedef struct Compiler Compiler;
-
-typedef void (*parse_fn)(Compiler *);
 
 struct parse_rule
 {
@@ -148,10 +154,14 @@ static void boolean(Compiler *c);
 static void cstr(Compiler *c);
 
 static int resolve_local(Compiler *c, arena *name);
+static int resolve_upvalue(Compiler *c, arena *name);
+static int add_upvalue(Compiler *c, int upvalue, bool t);
 
 static arena parse_func_id(Compiler *c);
+
 static void parse_native_argc0(Compiler *c);
 static void parse_native_argc1(Compiler *c);
+
 static arena parse_id(Compiler *c);
 static int parse_var(Compiler *c, arena ar);
 static void id(Compiler *c);
@@ -218,8 +228,11 @@ static PRule rules[] = {
     [TOKEN_IF] = {NULL, NULL, PREC_NONE},
     [TOKEN_ELIF] = {NULL, NULL, PREC_OR},
     [TOKEN_NULL] = {boolean, NULL, PREC_NONE},
+
     [TOKEN_CLOCK] = {parse_native_argc0, NULL, PREC_CALL},
     [TOKEN_SQRT] = {parse_native_argc1, NULL, PREC_CALL},
+    [TOKEN_PRIME] = {parse_native_argc1, NULL, PREC_CALL},
+
     [TOKEN_PRINT] = {NULL, NULL, PREC_NONE},
     [TOKEN_RETURN] = {NULL, NULL, PREC_NONE},
     [TOKEN_SUPER] = {NULL, NULL, PREC_NONE},

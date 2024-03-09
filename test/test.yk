@@ -1,12 +1,13 @@
 var x = "global";
 
 sr outer() {
-  var x = "outer";
 
-    sr inner() {
-      pout x;
+  sr inner() {
+      pout "hello";
   }
-  inner();
+  return inner();
 }
 
-outer();
+var hello = outer();
+
+hello();

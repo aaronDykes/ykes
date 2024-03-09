@@ -1,6 +1,7 @@
 #ifndef _ARENA_MATH_H
 #define _ARENA_MATH_H
 #include "arena_memory.h"
+#include <math.h>
 
 arena _neg(arena n);
 arena _add(arena a, arena b);
@@ -21,5 +22,8 @@ arena _and(arena a, arena b);
 
 arena _inc(arena b);
 arena _dec(arena b);
+
+arena _sqr(arena a);
+arena _prime(arena a);
 
 #endif

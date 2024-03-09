@@ -168,9 +168,9 @@ arena arena_alloc(size_t size, int type)
 arena arena_realloc(Arena ar, size_t size, int type)
 {
     if (!ar && size != 0)
-    {
         return arena_alloc(size, type);
-    }
+    if (ar && size != 0 && ar->count == 0)
+        return arena_alloc(size, type);
 
     if (size == 0)
     {

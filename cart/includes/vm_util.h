@@ -7,5 +7,6 @@ static bool exists(arena tmp);
 static void define_native(arena ar, NativeFn native);
 static Element clock_native(int argc, Stack *args);
 static Element square_native(int argc, Stack *args);
+static Element prime_native(int argc, Stack *args);
 static Element pop();
 #endif

@@ -1166,3 +1166,61 @@ arena _and(arena a, arena b)
 {
     return Bool(b.as.Bool && a.as.Bool);
 }
+
+arena _sqr(arena a)
+{
+    switch (a.type)
+    {
+    case ARENA_INT:
+        return Int((int)sqrt(a.as.Int));
+    case ARENA_DOUBLE:
+        return Int((int)sqrt(a.as.Double));
+    case ARENA_LONG:
+        return Int((int)sqrt(a.as.Long));
+    case ARENA_BYTE:
+        return Int((int)sqrt(a.as.Byte));
+    case ARENA_CHAR:
+        return Int((int)sqrt(a.as.Char));
+    }
+    return Int(0);
+}
+
+arena _prime(arena a)
+{
+    double max = 0;
+    switch (a.type)
+    {
+    case ARENA_INT:
+        max = sqrt(a.as.Int);
+        for (int i = 2; i < max; i++)
+            if (a.as.Int % i == 0)
+                return Bool(false);
+        break;
+    case ARENA_DOUBLE:
+        max = sqrt(a.as.Double);
+        for (int i = 2; i < max; i++)
+            if ((int)a.as.Double % i == 0)
+                return Bool(false);
+        break;
+    case ARENA_LONG:
+        max = sqrt(a.as.Long);
+        for (int i = 2; i < max; i++)
+            if (a.as.Long % i == 0)
+                return Bool(false);
+        break;
+    case ARENA_BYTE:
+        max = sqrt(a.as.Long);
+        for (int i = 2; i < max; i++)
+            if (a.as.Byte % i == 0)
+                return Bool(false);
+        break;
+    case ARENA_CHAR:
+        max = sqrt(a.as.Long);
+        for (int i = 2; i < max; i++)
+            if (a.as.Char % i == 0)
+                return Bool(false);
+        break;
+    }
+
+    return Bool(true);
+}

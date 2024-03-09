@@ -13,6 +13,8 @@
     free_native(nat)
 #define FREE_CLOSURE(clos) \
     free_closure(clos)
+#define FREE_UPVAL(up) \
+    free_upval(up)
 #define NEW_STACK(size) \
     stack(size)
 #define OBJ(o) \
@@ -23,6 +25,8 @@
     native_fn(n)
 #define CLOSURE(c) \
     closure(c)
+#define UPVAL(c) \
+    up_val(c)
 
 typedef enum
 {
@@ -35,11 +39,15 @@ typedef enum
     OP_PUSH,
 
     OP_GLOBAL_DEF,
+
     OP_GET_GLOBAL,
     OP_SET_GLOBAL,
 
     OP_GET_LOCAL,
     OP_SET_LOCAL,
+
+    OP_GET_UPVALUE,
+    OP_SET_UPVALUE,
 
     OP_ASSIGN,
     OP_NEG,
@@ -101,12 +109,14 @@ typedef enum
     ARENA,
     NATIVE,
     CLOSURE,
-    FUNC
+    FUNC,
+    UPVAL
 } T;
 
 typedef struct Chunk Chunk;
 typedef struct Function Function;
 typedef struct Closure Closure;
+typedef struct Upval Upval;
 typedef struct Native Native;
 typedef struct Element Element;
 typedef struct Stack Stack;
@@ -126,13 +136,30 @@ struct Chunk
 struct Function
 {
     int arity;
+    int upvalue_count;
     arena name;
     Chunk ch;
+};
+
+struct Upval
+{
+    int len;
+    int count;
+    size_t size;
+    Stack *index;
 };
 
 struct Closure
 {
     Function *func;
+    Upval *upvals;
+};
+
+struct Native
+{
+    int arity;
+    arena obj;
+    NativeFn fn;
 };
 
 struct Element
@@ -145,6 +172,7 @@ struct Element
         Function *func;
         Native *native;
         Closure *closure;
+        Upval *upval;
     };
 };
 
@@ -158,13 +186,6 @@ struct Stack
     struct Stack *top;
 };
 
-struct Native
-{
-    int arity;
-    arena obj;
-    NativeFn fn;
-};
-
 void init_chunk(Chunk *c);
 void write_chunk(Chunk *c, uint8_t byte);
 int add_constant(Chunk *c, Element ar);
@@ -174,19 +195,26 @@ Stack *stack(size_t size);
 Stack *realloc_stack(Stack *stack, size_t size);
 void free_stack(Stack **stack);
 
+Upval *indices(size_t size);
+void free_indices(Upval *up);
+
 Element Obj(arena ar);
 Element Func(Function *f);
 Element native_fn(Native *native);
 Element closure(Closure *clos);
+Element up_val(Upval *up);
 
 Function *function();
 void free_function(Function *func);
 
-Native *native(NativeFn native, arena ar);
-void free_native(Native *native);
-
 Closure *new_closure(Function *func);
 void free_closure(Closure *closure);
+
+Upval upval(Stack *index);
+void free_upval(Upval *up);
+
+Native *native(NativeFn native, arena ar);
+void free_native(Native *native);
 
 void print(Element ar);
 void push(Stack **s, Element e);
