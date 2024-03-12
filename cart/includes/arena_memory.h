@@ -58,7 +58,6 @@ struct Memory
 static Memory mem;
 
 void initialize_global_memory(size_t size);
-void reset_global_mem();
 
 Arena *arena_alloc_arena(size_t size);
 Arena *arena_realloc_arena(Arena *ar, size_t size);

@@ -17,19 +17,6 @@ void initialize_global_memory(size_t size)
     mem.current = (sizeof(Free) * 2);
 }
 
-void reset_global_mem()
-{
-    mem.mem = mem.glob + mem.current;
-    mem.mem->size = sizeof(Free);
-    mem.mem->prev = NULL;
-    mem.mem->next = mem.mem + sizeof(Free);
-    mem.mem->next->size = mem.current - sizeof(Free);
-    mem.mem->next->prev = mem.mem;
-    mem.mem->next->next = NULL;
-    mem.remains = mem.current;
-    mem.current = (sizeof(Free) * 2);
-}
-
 Arena arena_init(void *data, size_t size, T type)
 {
     Arena ar;
@@ -204,35 +191,23 @@ void *alloc_ptr(size_t size)
             ptr = f + OFFSET;
             prev = f->prev;
 
-            if (!f->next)
-            {
-                f->next = f + new_size;
-                f->next->size = f->size - new_size;
-            }
-            else
-            {
-                size_t tmp = f->next->size + (f->size - new_size);
-                f->next = f + new_size;
-                f->next->size = tmp;
-            }
+            size_t tmp =
+                (!f->next)
+                    ? f->size - new_size
+                    : f->next->size + (f->size - new_size);
+
+            f->next = f + new_size;
+            f->next->size = tmp;
             f = f->next;
 
-            if (prev)
-            {
-                prev->next = f;
-                f->prev = prev;
-            }
+            prev->next = f;
+            f->prev = prev;
 
-            prev = NULL;
             mem.remains -= size;
             return (void *)ptr;
         }
 
     return NULL;
-    // reset_global_mem();
-    // return alloc_ptr(size);
-    // return mem.glob + mem.current;
-
 #undef OFFSET
 }
 Arena *arena_alloc_arena(size_t size)
