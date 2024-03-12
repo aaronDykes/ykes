@@ -63,7 +63,7 @@ void arena_free_entry(Table entry)
     else if (entry->type == ARENA_NATIVE)
         FREE_NATIVE(entry->val.n);
     else
-        FREE_FUNCTION(entry->val.f);
+        FREE_CLOSURE(&entry->val.c);
 
     FREE_ARRAY(&entry->key);
     entry->next = NULL;
@@ -97,10 +97,10 @@ void insert_entry(Table *t, table entry)
         return;
     }
 
-    else if (entry.type == FUNC_TABLE)
+    else if (entry.type == CLOSURE_TABLE)
     {
-        Function *f = find_func_entry(t, &entry.key);
-        if (!f)
+        Closure c = find_func_entry(t, &entry.key);
+        if (!c.func)
             ALLOC_ENTRY(&tmp[entry.key.as.hash].next, entry);
         return;
     }
@@ -438,17 +438,18 @@ Native *find_native_entry(Table *t, Arena *hash)
     return NULL;
 }
 
-Function *find_func_entry(Table *t, Arena *hash)
+Closure find_func_entry(Table *t, Arena *hash)
 {
     Table a = *t;
     size_t index = hash->as.hash;
     table entry = a[index];
+    Closure c = new_closure(NULL);
 
     if (entry.key.type == ARENA_NULL)
-        return NULL;
+        return c;
 
     if (strcmp(entry.key.as.String, hash->as.String) == 0)
-        return entry.val.f;
+        return entry.val.c;
 
     Table tmp = entry.next;
 
@@ -459,19 +460,19 @@ Function *find_func_entry(Table *t, Arena *hash)
         case ARENA_FUNC:
         case ARENA_STR:
             if (strcmp(tmp->key.as.String, hash->as.String) == 0)
-                return tmp->val.f;
+                return tmp->val.c;
             break;
         case ARENA_INT:
             if (tmp->key.as.Int == hash->as.Int)
-                return tmp->val.f;
+                return tmp->val.c;
             break;
         case ARENA_DOUBLE:
             if (tmp->key.as.Double == hash->as.Double)
-                return tmp->val.f;
+                return tmp->val.c;
             break;
         case ARENA_CHAR:
             if (tmp->key.as.Char == hash->as.Char)
-                return tmp->val.f;
+                return tmp->val.c;
             break;
         case ARENA_BYTE:
         case ARENA_LONG:
@@ -487,7 +488,7 @@ Function *find_func_entry(Table *t, Arena *hash)
             break;
         }
 
-    return NULL;
+    return c;
 }
 
 Arena find_arena_entry(Table *t, Arena *hash)
@@ -585,11 +586,11 @@ table func_entry(Function *func)
 {
     table el;
     el.key = func->name;
-    el.val.f = func;
+    el.val.c = new_closure(func);
     el.next = NULL;
     el.prev = NULL;
     el.size = el.key.size;
-    el.type = FUNC_TABLE;
+    el.type = CLOSURE_TABLE;
     return el;
 }
 table native_entry(Native *func)

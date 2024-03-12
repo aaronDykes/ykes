@@ -6,7 +6,7 @@
 
 #define CAPACITY 50
 #define INC 2
-#define PAGE 16384 * 8
+#define PAGE 16384 * 10
 #define FREE_LIST 2056
 #define ARENA_SIZE 100
 #define STACK_SIZE 250

@@ -22,7 +22,7 @@ typedef enum
 {
     ARENA_TABLE,
     NATIVE_TABLE,
-    FUNC_TABLE
+    CLOSURE_TABLE
 } TableType;
 
 struct hash_arena
@@ -33,7 +33,7 @@ struct hash_arena
     union
     {
         Native *n;
-        Function *f;
+        Closure c;
         Arena a;
     } val;
 
@@ -49,7 +49,7 @@ void delete_arena_entry(Table *t, Arena key);
 void delete_func_entry(Table *t, Arena key);
 
 Arena find_arena_entry(Table *t, Arena *key);
-Function *find_func_entry(Table *t, Arena *key);
+Closure find_func_entry(Table *t, Arena *key);
 Native *find_native_entry(Table *t, Arena *key);
 
 table arena_entry(Arena key, Arena val);

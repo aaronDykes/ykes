@@ -5,6 +5,7 @@ void initialize_global_memory(size_t size)
 {
 
     mem.glob = malloc(sizeof(Free) * size);
+
     mem.mem = mem.glob;
     mem.mem->size = sizeof(Free);
     mem.mem->prev = NULL;
@@ -129,6 +130,9 @@ void arena_free(Arena *ar)
         return;
     }
 
+    if (!new)
+        return;
+
     for (; new->next; new = new->next)
         ;
     Free *f = mem.mem;
@@ -224,8 +228,9 @@ void *alloc_ptr(size_t size)
             return (void *)ptr;
         }
 
-    reset_global_mem();
-    return alloc_ptr(size);
+    return NULL;
+    // reset_global_mem();
+    // return alloc_ptr(size);
     // return mem.glob + mem.current;
 
 #undef OFFSET

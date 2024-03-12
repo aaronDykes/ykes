@@ -164,6 +164,8 @@ Closure new_closure(Function *func)
 {
     Closure closure;
     closure.func = func;
+    if (!func)
+        return closure;
     closure.upvals = indices(func->upvalue_count);
     closure.upval_count = func->upvalue_count;
     return closure;

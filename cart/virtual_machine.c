@@ -115,7 +115,7 @@ static Arena find(Arena tmp)
     return find_arena_entry(&machine.glob.map, &tmp);
 }
 
-static Function *find_func(Arena hash)
+static Closure find_func(Arena hash)
 {
     hash.as.hash %= machine.glob.capacity;
     return find_func_entry(&machine.glob.map, &hash);
@@ -136,12 +136,6 @@ static bool exists(Arena tmp)
 {
     tmp.as.hash %= machine.glob.capacity;
     return find_arena_entry(&machine.glob.map, &tmp).type != ARENA_NULL;
-}
-
-static Function *func_exists(Arena ar)
-{
-    ar.as.hash %= machine.glob.capacity;
-    return find_func_entry(&machine.glob.map, &ar);
 }
 
 static bool call_value(Element el, uint8_t argc)
@@ -199,8 +193,8 @@ Interpretation run()
 #ifdef DEBUG_TRACE_EXECUTION
         for (Stack *v = machine.stack; v < machine.stack->top; v++)
             print(v->as);
-        disassemble_instruction(&frame->closure->func->ch,
-                                (int)(frame->ip - frame->closure->func->ch.op_codes.listof.Bytes));
+        disassemble_instruction(&frame->closure.func->ch,
+                                (int)(frame->ip - frame->closure.func->ch.op_codes.listof.Bytes));
 #endif
 
         switch (READ_BYTE())
@@ -376,9 +370,9 @@ Interpretation run()
             Element el = LOCAL();
             if (el.arena.type == ARENA_FUNC)
             {
-                Function *f = NULL;
-                if ((f = FIND_FUNC(el.arena)) != NULL)
-                    PUSH(CLOSURE(new_closure(f)));
+                Closure c = FIND_FUNC(el.arena);
+                // if (c.func != NULL)
+                PUSH(CLOSURE(c));
             }
             else if (el.arena.type == ARENA_NATIVE)
             {
@@ -418,7 +412,7 @@ Interpretation run()
             Element el = READ_CONSTANT();
 
             if (el.arena.type == ARENA_FUNC)
-                PUSH(CLOSURE(new_closure(FIND_FUNC(el.arena))));
+                PUSH(CLOSURE(FIND_FUNC(el.arena)));
             else if (el.arena.type == ARENA_NATIVE)
                 PUSH(NATIVE(FIND_NATIVE(el.arena)));
             else
