@@ -3,38 +3,50 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-typedef double Align;
-
-enum
+typedef enum
 {
-    ARENA_BYTE_PTR,
-    ARENA_INT_PTR,
-    ARENA_DOUBLE_PTR,
-    ARENA_LONG_PTR,
-    ARENA_BOOL_PTR,
-    ARENA_STR,
-    ARENA_VAR,
-    ARENA_FUNC,
-    ARENA_NATIVE,
+
     ARENA_BYTE,
     ARENA_INT,
     ARENA_DOUBLE,
     ARENA_LONG,
     ARENA_CHAR,
+    ARENA_STR,
     ARENA_BOOL,
     ARENA_NULL,
+    ARENA_BYTES,
+    ARENA_INTS,
+    ARENA_DOUBLES,
+    ARENA_LONGS,
+    ARENA_BOOLS,
+    ARENA_STRS,
+    ARENA_FUNC,
+    ARENA_NATIVE,
+    ARENA_VAR
 
-};
+} T;
 
-union Array
+typedef enum
+{
+    TABLE,
+    STACK
+} DataType;
+
+typedef union Vector Vector;
+typedef union Value Value;
+typedef struct Arena Arena;
+typedef struct Data Data;
+
+union Vector
 {
     uint8_t *Bytes;
     int *Ints;
     double *Doubles;
     long long int *Longs;
+    char **Strings;
     bool *Bools;
+    void *Void;
 };
-typedef union Array Array;
 
 union Value
 {
@@ -47,35 +59,57 @@ union Value
         char *String;
     };
 
-    void *null;
     uint8_t Byte;
     int Int;
     double Double;
     long long int Long;
     char Char;
     bool Bool;
+    void *Void;
 };
 
-typedef union Value Value;
-
-struct arena_struct
+struct Arena
 {
-    int type;
     size_t size;
+    T type;
 
     union
     {
         struct
         {
-            int len;
             int count;
-            Array listof;
+            int len;
+            Vector listof;
         };
+
         Value as;
     };
 };
 
-typedef struct arena_struct arena;
-typedef arena *Arena;
-
 #endif
+
+/*
+
+switch (type)
+{
+    case ARENA_BYTE:
+    case ARENA_INT:
+    case ARENA_DOUBLE:
+    case ARENA_LONG:
+    case ARENA_CHAR:
+    case ARENA_STR:
+    case ARENA_BOOL:
+    case ARENA_NULL:
+    case ARENA_BYTES:
+    case ARENA_INTS:
+    case ARENA_DOUBLES:
+    case ARENA_LONGS:
+    case ARENA_BOOLS:
+    case ARENA_STRS:
+    case ARENA_FUNC:
+    case ARENA_NATIVE:
+    case ARENA_VAR:
+break;
+}
+
+*/

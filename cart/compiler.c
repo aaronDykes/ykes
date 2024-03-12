@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static void init_compiler(Compiler *a, Compiler *b, FT type, arena name)
+static void init_compiler(Compiler *a, Compiler *b, FT type, Arena name)
 {
 
     if (b)
@@ -30,6 +30,7 @@ static void init_compiler(Compiler *a, Compiler *b, FT type, arena name)
     else
         local = &a->locals[a->local_count++];
 
+    local->captured = false;
     local->depth = 0;
     local->name = Null();
 }
@@ -106,12 +107,12 @@ static int argument_list(Compiler *c)
 static void func_declaration(Compiler *c)
 {
     consume(TOKEN_ID, "Expect function name.", &c->parser);
-    arena ar = parse_func_id(c);
+    Arena ar = parse_func_id(c);
 
     func_body(c, FUNCTION, ar);
 }
 
-static void func_body(Compiler *c, FT type, arena ar)
+static void func_body(Compiler *c, FT type, Arena ar)
 {
     Compiler co;
     init_compiler(&co, c, type, ar);
@@ -135,14 +136,14 @@ static void func_body(Compiler *c, FT type, arena ar)
     Function *f = end_compile(c);
 
     end_scope(c);
-
     c = c->enclosing;
+
     Element clos = CLOSURE(new_closure(f));
     emit_bytes(&c->func->ch, OP_CLOSURE, add_constant(&c->func->ch, clos));
 
     for (int i = 0; i < f->upvalue_count; i++)
     {
-        emit_byte(&c->func->ch, c->upvalues[i].islocal ? 1 : 0);
+        emit_byte(&c->func->ch, c->upvalues[i].islocal ? (uint8_t)1 : (uint8_t)0);
         emit_byte(&c->func->ch, c->upvalues[i].index);
     }
 }
@@ -151,7 +152,7 @@ static void func_var(Compiler *c)
 {
     consume(TOKEN_ID, "Expect variable name.", &c->parser);
 
-    arena ar = parse_id(c);
+    Arena ar = parse_id(c);
     int glob = parse_var(c, ar);
     uint8_t set = 0;
 
@@ -172,7 +173,7 @@ static void var_dec(Compiler *c)
 {
     consume(TOKEN_ID, "Expect variable name.", &c->parser);
 
-    arena ar = parse_id(c);
+    Arena ar = parse_id(c);
     int glob = parse_var(c, ar);
 
     uint8_t set = 0;
@@ -335,10 +336,10 @@ static void consume_elif(Compiler *c)
     consume(TOKEN_CH_RPAREN, "Expect `)` after an 'elif' condtion.", &c->parser);
 }
 
-static arena consume_switch(Compiler *c)
+static Arena consume_switch(Compiler *c)
 {
     consume(TOKEN_CH_LPAREN, "Expect `(` after a 'switch'.", &c->parser);
-    arena args = get_id(c);
+    Arena args = get_id(c);
     consume(TOKEN_CH_RPAREN, "Expect `)` after a 'switch' condtion.", &c->parser);
     return args;
 }
@@ -349,7 +350,7 @@ static arena consume_switch(Compiler *c)
  */
 static void switch_statement(Compiler *c)
 {
-    arena args = consume_switch(c);
+    Arena args = consume_switch(c);
     bool expect = match(TOKEN_CH_LCURL, &c->parser);
 
     case_statement(c, args);
@@ -365,7 +366,7 @@ static void switch_statement(Compiler *c)
     c->func->ch.cases.listof.Ints[c->func->ch.cases.count++] = c->func->ch.op_codes.count;
 }
 
-static void case_statement(Compiler *c, arena args)
+static void case_statement(Compiler *c, Arena args)
 {
     uint8_t get = args.listof.Ints[1];
     uint8_t arg = args.listof.Ints[0];
@@ -527,11 +528,14 @@ static void end_scope(Compiler *c)
 {
     c->scope_depth--;
 
-    if (c->local_count > 0 && (c->locals[c->local_count - 1].depth >= c->scope_depth))
+    if (c->local_count > 0 && (c->locals[c->local_count - 1].depth > c->scope_depth))
         emit_bytes(&c->func->ch, OP_POPN, add_constant(&c->func->ch, OBJ(Int(c->local_count))));
 
     while (c->local_count > 0 && (c->locals[c->local_count - 1].depth > c->scope_depth))
-        arena_free(&c->locals[--c->local_count].name);
+        if (c->locals[c->local_count - 1].captured)
+            emit_byte(&c->func->ch, OP_CLOSE_UPVAL);
+        else
+            arena_free(&c->locals[--c->local_count].name);
 }
 
 static void parse_block(Compiler *c)
@@ -732,7 +736,7 @@ static void emit_bytes(Chunk *ch, uint8_t b1, uint8_t b2)
     write_chunk(ch, b1);
     write_chunk(ch, b2);
 }
-static void emit_constant(Chunk *ch, arena ar)
+static void emit_constant(Chunk *ch, Arena ar)
 {
     emit_bytes(ch, OP_CONSTANT, add_constant(ch, OBJ(ar)));
 }
@@ -792,19 +796,19 @@ static void parse_native_argc1(Compiler *c)
     call_expect_arity(c, 1);
 }
 
-static arena parse_func_id(Compiler *c)
+static Arena parse_func_id(Compiler *c)
 {
     char *ch = (char *)c->parser.pre.start;
     ch[c->parser.pre.size] = '\0';
     return func_name(ch);
 }
-static arena parse_id(Compiler *c)
+static Arena parse_id(Compiler *c)
 {
     char *ch = (char *)c->parser.pre.start;
     ch[c->parser.pre.size] = '\0';
     return Var(ch);
 }
-static arena get_id(Compiler *c)
+static Arena get_id(Compiler *c)
 {
     bool pre_inc = (c->parser.pre.type == TOKEN_OP_INC);
     bool pre_dec = (c->parser.pre.type == TOKEN_OP_DEC);
@@ -812,11 +816,11 @@ static arena get_id(Compiler *c)
     if (match(TOKEN_ID, &c->parser))
         ;
 
-    arena ar = parse_id(c);
+    Arena ar = parse_id(c);
 
     uint8_t get, set;
 
-    arena args = GROW_ARRAY(NULL, 3 * sizeof(int), ARENA_INT_PTR);
+    Arena args = GROW_ARRAY(NULL, 3 * sizeof(int), ARENA_INTS);
     int arg = resolve_local(c, &ar);
 
     if (arg != -1)
@@ -863,7 +867,7 @@ static void id(Compiler *c)
     if (match(TOKEN_ID, &c->parser))
         ;
 
-    arena ar =
+    Arena ar =
         (check(TOKEN_CH_LPAREN, &c->parser))
             ? parse_func_id(c)
             : parse_id(c);
@@ -906,7 +910,7 @@ static void id(Compiler *c)
         emit_bytes(&c->func->ch, get, (uint8_t)arg);
 }
 
-static int parse_var(Compiler *c, arena ar)
+static int parse_var(Compiler *c, Arena ar)
 {
     declare_var(c, ar);
     if (c->scope_depth > 0)
@@ -914,7 +918,7 @@ static int parse_var(Compiler *c, arena ar)
     return add_constant(&c->func->ch, OBJ(ar));
 }
 
-static bool idcmp(arena a, arena b)
+static bool idcmp(Arena a, Arena b)
 {
     if (a.as.len != b.as.len)
         return false;
@@ -922,26 +926,29 @@ static bool idcmp(arena a, arena b)
     return a.as.hash == b.as.hash;
 }
 
-static int resolve_local(Compiler *c, arena *name)
+static int resolve_local(Compiler *c, Arena *name)
 {
     for (int i = c->local_count - 1; i >= 0; i--)
         if (idcmp(*name, c->locals[i].name))
             return i;
     return -1;
 }
-static int resolve_upvalue(Compiler *c, arena *name)
+static int resolve_upvalue(Compiler *c, Arena *name)
 {
     if (!c->enclosing)
         return -1;
 
-    int local = resolve_local(c, name);
+    int local = resolve_local(c->enclosing, name);
 
-    if (local == -1)
+    if (local != -1)
         return add_upvalue(c, local, true);
 
     int upvalue = resolve_upvalue(c->enclosing, name);
-    if (upvalue == -1)
+    if (upvalue != -1)
+    {
+        c->enclosing->locals[local].captured = true;
         return add_upvalue(c, upvalue, false);
+    }
 
     return -1;
 }
@@ -969,7 +976,7 @@ static int add_upvalue(Compiler *c, int index, bool isupvalue)
     return c->func->upvalue_count++;
 }
 
-static void declare_var(Compiler *c, arena ar)
+static void declare_var(Compiler *c, Arena ar)
 {
     if (c->scope_depth == 0)
         return;
@@ -988,7 +995,7 @@ static void declare_var(Compiler *c, arena ar)
     add_local(c, &ar);
 }
 
-static void add_local(Compiler *c, arena *ar)
+static void add_local(Compiler *c, Arena *ar)
 {
     if (c->local_count == LOCAL_COUNT)
     {
@@ -998,6 +1005,7 @@ static void add_local(Compiler *c, arena *ar)
     Local *local = &c->locals[c->local_count++];
     local->name = *ar;
     local->depth = c->scope_depth;
+    local->captured = false;
 }
 static Function *end_compile(Compiler *a)
 {
@@ -1038,5 +1046,6 @@ Function *compile(const char *src)
         declaration(&c);
     consume(TOKEN_EOF, "Expect end of expression", &c.parser);
 
-    return c.parser.err ? NULL : c.func;
+    Function *f = end_compile(&c);
+    return c.parser.err ? NULL : f;
 }

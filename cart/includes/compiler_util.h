@@ -39,8 +39,9 @@ typedef void (*parse_fn)(Compiler *);
 
 struct Local
 {
-    arena name;
+    Arena name;
     int depth;
+    bool captured;
 };
 
 struct Upvalue
@@ -81,7 +82,7 @@ static void call_expect_arity(Compiler *c, int arity);
 static int argument_list(Compiler *c);
 
 static void func_declaration(Compiler *c);
-static void func_body(Compiler *c, FT type, arena ar);
+static void func_body(Compiler *c, FT type, Arena ar);
 static void func_var(Compiler *c);
 
 static void var_dec(Compiler *c);
@@ -110,10 +111,10 @@ static void while_statement(Compiler *c);
 
 static void consume_if(Compiler *c);
 static void consume_elif(Compiler *c);
-static arena consume_switch(Compiler *c);
+static Arena consume_switch(Compiler *c);
 
 static void switch_statement(Compiler *c);
-static void case_statement(Compiler *c, arena ar);
+static void case_statement(Compiler *c, Arena ar);
 
 static void if_statement(Compiler *c);
 static void elif_statement(Compiler *c);
@@ -143,7 +144,7 @@ static void error_at(Token t, Parser *parser, const char *err);
 
 static void emit_byte(Chunk *ch, uint8_t byte);
 static void emit_bytes(Chunk *ch, uint8_t b1, uint8_t b2);
-static void emit_constant(Chunk *ch, arena ar);
+static void emit_constant(Chunk *ch, Arena ar);
 static void emit_return(Chunk *ch);
 
 static void dval(Compiler *c);
@@ -153,23 +154,23 @@ static void ch(Compiler *c);
 static void boolean(Compiler *c);
 static void cstr(Compiler *c);
 
-static int resolve_local(Compiler *c, arena *name);
-static int resolve_upvalue(Compiler *c, arena *name);
+static int resolve_local(Compiler *c, Arena *name);
+static int resolve_upvalue(Compiler *c, Arena *name);
 static int add_upvalue(Compiler *c, int upvalue, bool t);
 
-static arena parse_func_id(Compiler *c);
+static Arena parse_func_id(Compiler *c);
 
 static void parse_native_argc0(Compiler *c);
 static void parse_native_argc1(Compiler *c);
 
-static arena parse_id(Compiler *c);
-static int parse_var(Compiler *c, arena ar);
+static Arena parse_id(Compiler *c);
+static int parse_var(Compiler *c, Arena ar);
 static void id(Compiler *c);
-static arena get_id(Compiler *c);
+static Arena get_id(Compiler *c);
 
-static bool idcmp(arena a, arena b);
-static void declare_var(Compiler *c, arena ar);
-static void add_local(Compiler *c, arena *ar);
+static bool idcmp(Arena a, Arena b);
+static void declare_var(Compiler *c, Arena ar);
+static void add_local(Compiler *c, Arena *ar);
 
 static PRule rules[] = {
     [TOKEN_CH_LPAREN] = {grouping, call, PREC_CALL},
@@ -244,6 +245,6 @@ static PRule rules[] = {
 };
 
 static Function *end_compile(Compiler *a);
-static void init_compiler(Compiler *a, Compiler *b, FT type, arena ar);
+static void init_compiler(Compiler *a, Compiler *b, FT type, Arena ar);
 
 #endif

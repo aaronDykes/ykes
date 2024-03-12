@@ -1,13 +1,25 @@
-var x = "global";
 
-sr outer() {
+var a = "initial";
 
-  sr inner() {
-      pout "hello";
-  }
-  return inner();
+sr main() {
+
+  sr set() { a = "updated"; }
+  
+  set();
 }
 
-var hello = outer();
+sr ast() {
+  
+  main(); 
+  
+  sr get() 
+  { 
+    pout a; 
+  }
+  return get; 
+}
 
-hello();
+
+var c = ast();
+
+ast();

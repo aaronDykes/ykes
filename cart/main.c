@@ -28,7 +28,7 @@ static void repl()
 {
 
     initVM();
-    arena ar = GROW_ARRAY(NULL, 1024 * sizeof(char), ARENA_STR);
+    Arena ar = GROW_ARRAY(NULL, 1024 * sizeof(char), ARENA_STR);
 
     for (;;)
     {

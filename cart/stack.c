@@ -1,5 +1,4 @@
 #include "stack.h"
-#include "debug.h"
 #include <stdio.h>
 
 void free_function(Function *f);
@@ -42,9 +41,6 @@ Stack *realloc_stack(Stack *st, size_t size)
         case CLOSURE:
             s[i].as = CLOSURE(st[i].as.closure);
             break;
-        case UPVAL:
-            s[i].as = UPVAL(st[i].as.upval);
-            break;
         }
     s->count = st->count;
     s->top += s->count;
@@ -69,10 +65,7 @@ void free_stack(Stack **stack)
             FREE_NATIVE(tmp[i].as.native);
             break;
         case CLOSURE:
-            FREE_CLOSURE(tmp[i].as.closure);
-            break;
-        case UPVAL:
-            FREE_UPVAL(tmp[i].as.upval);
+            FREE_CLOSURE(&tmp[i].as.closure);
             break;
         }
     tmp = NULL;
@@ -99,7 +92,7 @@ void free_indices(Upval *up)
     up = NULL;
 }
 
-Element Obj(arena ar)
+Element Obj(Arena ar)
 {
     Element s;
     s.arena = ar;
@@ -124,15 +117,7 @@ Element native_fn(Native *native)
     return s;
 }
 
-Element up_val(Upval *index)
-{
-    Element el;
-    el.upval = index;
-    el.type = UPVAL;
-    return el;
-}
-
-Element closure(Closure *closure)
+Element closure(Closure closure)
 {
     Element el;
     el.closure = closure;
@@ -158,7 +143,7 @@ void free_function(Function *func)
     func = NULL;
 }
 
-Native *native(NativeFn func, arena ar)
+Native *native(NativeFn func, Arena ar)
 {
     Native *native = ALLOC(sizeof(Native));
     native->fn = func;
@@ -175,11 +160,12 @@ void free_native(Native *native)
 
     FREE_ARRAY(&native->obj);
 }
-Closure *new_closure(Function *func)
+Closure new_closure(Function *func)
 {
-    Closure *closure = ALLOC(sizeof(Closure));
-    closure->func = func;
-    closure->upvals = indices(func->upvalue_count);
+    Closure closure;
+    closure.func = func;
+    closure.upvals = indices(func->upvalue_count);
+    closure.upval_count = func->upvalue_count;
     return closure;
 }
 
@@ -219,12 +205,12 @@ void write_chunk(Chunk *c, uint8_t byte)
     if (c->op_codes.len < c->op_codes.count + 1)
     {
         c->op_codes.len = GROW_CAPACITY(c->op_codes.len);
-        c->op_codes = GROW_ARRAY(&c->op_codes, c->op_codes.len * sizeof(uint8_t), ARENA_BYTE_PTR);
+        c->op_codes = GROW_ARRAY(&c->op_codes, c->op_codes.len * sizeof(uint8_t), ARENA_BYTES);
     }
-    if (c->cases.len < c->cases.count + 1)
+    if (c->cases.len < (c->cases.count + 1))
     {
         c->cases.len = GROW_CAPACITY(c->cases.len);
-        c->cases = GROW_ARRAY(&c->cases, c->cases.len * sizeof(int), ARENA_INT_PTR);
+        c->cases = GROW_ARRAY(&c->cases, c->cases.len * sizeof(int), ARENA_INTS);
     }
 
     c->op_codes.listof.Bytes[c->op_codes.count++] = byte;
@@ -297,7 +283,7 @@ static void parse_str(const char *str)
 
 void print(Element ar)
 {
-    arena a = ar.arena;
+    Arena a = ar.arena;
     if (ar.type == FUNC)
     {
         printf("<fn %s>\n", ar.func->name.as.String ? ar.func->name.as.String : "<fn NULL>");
@@ -310,7 +296,7 @@ void print(Element ar)
     }
     else if (ar.type == CLOSURE)
     {
-        printf("<fn %s>\n", ar.closure->func->name.as.String);
+        printf("<fn %s>\n", ar.closure.func->name.as.String);
         return;
     }
     switch (a.type)
@@ -338,7 +324,7 @@ void print(Element ar)
     case ARENA_FUNC:
         parse_str(a.as.String);
         break;
-    case ARENA_INT_PTR:
+    case ARENA_INTS:
         printf("[ ");
         for (int i = 0; i < a.len; i++)
             if (i == a.len - 1)
@@ -348,6 +334,14 @@ void print(Element ar)
         break;
     case ARENA_NULL:
         printf("[ null ]\n");
+        break;
+
+    case ARENA_BYTES:
+    case ARENA_DOUBLES:
+    case ARENA_LONGS:
+    case ARENA_BOOLS:
+    case ARENA_STRS:
+    case ARENA_NATIVE:
         break;
     }
 }

@@ -37,6 +37,7 @@ typedef enum
     OP_POP,
     OP_POPN,
     OP_PUSH,
+    OP_CLOSE_UPVAL,
 
     OP_GLOBAL_DEF,
 
@@ -110,8 +111,7 @@ typedef enum
     NATIVE,
     CLOSURE,
     FUNC,
-    UPVAL
-} T;
+} ObjType;
 
 typedef struct Chunk Chunk;
 typedef struct Function Function;
@@ -127,8 +127,8 @@ struct Chunk
 
     int line;
 
-    arena cases;
-    arena op_codes;
+    Arena cases;
+    Arena op_codes;
 
     Stack *constants;
 };
@@ -137,7 +137,7 @@ struct Function
 {
     int arity;
     int upvalue_count;
-    arena name;
+    Arena name;
     Chunk ch;
 };
 
@@ -153,26 +153,26 @@ struct Closure
 {
     Function *func;
     Upval *upvals;
+    int upval_count;
 };
 
 struct Native
 {
     int arity;
-    arena obj;
+    Arena obj;
     NativeFn fn;
 };
 
 struct Element
 {
-    T type;
+    ObjType type;
 
     union
     {
-        arena arena;
+        Arena arena;
         Function *func;
         Native *native;
-        Closure *closure;
-        Upval *upval;
+        Closure closure;
     };
 };
 
@@ -198,22 +198,21 @@ void free_stack(Stack **stack);
 Upval *indices(size_t size);
 void free_indices(Upval *up);
 
-Element Obj(arena ar);
+Element Obj(Arena ar);
 Element Func(Function *f);
 Element native_fn(Native *native);
-Element closure(Closure *clos);
-Element up_val(Upval *up);
+Element closure(Closure clos);
 
 Function *function();
 void free_function(Function *func);
 
-Closure *new_closure(Function *func);
+Closure new_closure(Function *func);
 void free_closure(Closure *closure);
 
 Upval upval(Stack *index);
 void free_upval(Upval *up);
 
-Native *native(NativeFn native, arena ar);
+Native *native(NativeFn native, Arena ar);
 void free_native(Native *native);
 
 void print(Element ar);

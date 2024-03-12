@@ -7,7 +7,7 @@ void init_dict(Dict d)
     d->map = GROW_TABLE(NULL, d->capacity);
 }
 
-void write_dict(Dict d, arena ar1, arena ar2, size_t size)
+void write_dict(Dict d, Arena ar1, Arena ar2, size_t size)
 {
     int load_capacity = (int)(d->capacity * LOAD_FACTOR);
 

@@ -2,7 +2,7 @@
 
 Table arena_alloc_table(size_t size)
 {
-    Table t = alloc_ptr(((size_t)size * sizeof(table)) + sizeof(table));
+    Table t = ALLOC(((size_t)size * sizeof(table)) + sizeof(table));
 
     size_t n = (size_t)size + 1;
     for (size_t i = 1; i < n; i++)
@@ -106,7 +106,7 @@ void insert_entry(Table *t, table entry)
     }
     else if (entry.type == ARENA_TABLE)
     {
-        arena f = find_arena_entry(t, &entry.key);
+        Arena f = find_arena_entry(t, &entry.key);
         if (f.type == ARENA_NULL)
             ALLOC_ENTRY(&tmp[entry.key.as.hash].next, entry);
     }
@@ -134,12 +134,23 @@ void insert_entry(Table *t, table entry)
                 if (ptr->key.as.Char == entry.key.as.Char)
                     goto END;
                 break;
+            case ARENA_BYTE:
+            case ARENA_LONG:
+            case ARENA_BOOL:
+            case ARENA_NULL:
+            case ARENA_BYTES:
+            case ARENA_INTS:
+            case ARENA_DOUBLES:
+            case ARENA_LONGS:
+            case ARENA_BOOLS:
+            case ARENA_STRS:
+                break;
             }
     return;
 END:
     ptr->val = entry.val;
 }
-void delete_func_entry(Table *t, arena key)
+void delete_func_entry(Table *t, Arena key)
 {
     Table a = *t;
     size_t index = key.as.hash;
@@ -195,6 +206,19 @@ void delete_func_entry(Table *t, arena key)
             if (tmp->key.as.Char == key.as.Char)
                 goto DEL;
             break;
+        case ARENA_BYTE:
+        case ARENA_LONG:
+        case ARENA_STR:
+        case ARENA_BOOL:
+        case ARENA_NULL:
+        case ARENA_BYTES:
+        case ARENA_INTS:
+        case ARENA_DOUBLES:
+        case ARENA_LONGS:
+        case ARENA_BOOLS:
+        case ARENA_STRS:
+        case ARENA_NATIVE:
+            break;
         }
 
     switch (tmp->key.type)
@@ -216,6 +240,19 @@ void delete_func_entry(Table *t, arena key)
         if (tmp->key.as.Char == key.as.Char)
             goto DEL_LAST;
         break;
+    case ARENA_BYTE:
+    case ARENA_LONG:
+    case ARENA_STR:
+    case ARENA_BOOL:
+    case ARENA_NULL:
+    case ARENA_BYTES:
+    case ARENA_INTS:
+    case ARENA_DOUBLES:
+    case ARENA_LONGS:
+    case ARENA_BOOLS:
+    case ARENA_STRS:
+    case ARENA_NATIVE:
+        break;
     }
     return;
 DEL:
@@ -231,7 +268,7 @@ DEL_LAST:
     FREE_TABLE_ENTRY(tmp);
 }
 
-void delete_arena_entry(Table *t, arena key)
+void delete_arena_entry(Table *t, Arena key)
 {
     Table a = *t;
     size_t index = key.as.hash;
@@ -287,6 +324,19 @@ void delete_arena_entry(Table *t, arena key)
             if (tmp->key.as.Char == key.as.Char)
                 goto DEL;
             break;
+        case ARENA_BYTE:
+        case ARENA_LONG:
+        case ARENA_STR:
+        case ARENA_BOOL:
+        case ARENA_NULL:
+        case ARENA_BYTES:
+        case ARENA_INTS:
+        case ARENA_DOUBLES:
+        case ARENA_LONGS:
+        case ARENA_BOOLS:
+        case ARENA_STRS:
+        case ARENA_NATIVE:
+            break;
         }
 
     switch (tmp->key.type)
@@ -308,6 +358,19 @@ void delete_arena_entry(Table *t, arena key)
         if (tmp->key.as.Char == key.as.Char)
             goto DEL_LAST;
         break;
+    case ARENA_BYTE:
+    case ARENA_LONG:
+    case ARENA_STR:
+    case ARENA_BOOL:
+    case ARENA_NULL:
+    case ARENA_BYTES:
+    case ARENA_INTS:
+    case ARENA_DOUBLES:
+    case ARENA_LONGS:
+    case ARENA_BOOLS:
+    case ARENA_STRS:
+    case ARENA_NATIVE:
+        break;
     }
     return;
 DEL:
@@ -323,7 +386,7 @@ DEL_LAST:
     FREE_TABLE_ENTRY(tmp);
 }
 
-Native *find_native_entry(Table *t, arena *hash)
+Native *find_native_entry(Table *t, Arena *hash)
 {
     Table a = *t;
     size_t index = hash->as.hash;
@@ -357,12 +420,25 @@ Native *find_native_entry(Table *t, arena *hash)
             if (tmp->key.as.Char == hash->as.Char)
                 return tmp->val.n;
             break;
+        case ARENA_BYTE:
+        case ARENA_LONG:
+        case ARENA_BOOL:
+        case ARENA_NULL:
+        case ARENA_BYTES:
+        case ARENA_INTS:
+        case ARENA_DOUBLES:
+        case ARENA_LONGS:
+        case ARENA_BOOLS:
+        case ARENA_STRS:
+        case ARENA_FUNC:
+        case ARENA_VAR:
+            break;
         }
 
     return NULL;
 }
 
-Function *find_func_entry(Table *t, arena *hash)
+Function *find_func_entry(Table *t, Arena *hash)
 {
     Table a = *t;
     size_t index = hash->as.hash;
@@ -397,12 +473,24 @@ Function *find_func_entry(Table *t, arena *hash)
             if (tmp->key.as.Char == hash->as.Char)
                 return tmp->val.f;
             break;
+        case ARENA_BYTE:
+        case ARENA_LONG:
+        case ARENA_BOOL:
+        case ARENA_NULL:
+        case ARENA_BYTES:
+        case ARENA_INTS:
+        case ARENA_DOUBLES:
+        case ARENA_LONGS:
+        case ARENA_BOOLS:
+        case ARENA_STRS:
+        case ARENA_NATIVE:
+            break;
         }
 
     return NULL;
 }
 
-arena find_arena_entry(Table *t, arena *hash)
+Arena find_arena_entry(Table *t, Arena *hash)
 {
     Table a = *t;
     size_t index = hash->as.hash;
@@ -437,6 +525,18 @@ arena find_arena_entry(Table *t, arena *hash)
             if (tmp->key.as.Char == hash->as.Char)
                 return tmp->val.a;
             break;
+        case ARENA_BYTE:
+        case ARENA_LONG:
+        case ARENA_BOOL:
+        case ARENA_NULL:
+        case ARENA_BYTES:
+        case ARENA_INTS:
+        case ARENA_DOUBLES:
+        case ARENA_LONGS:
+        case ARENA_BOOLS:
+        case ARENA_STRS:
+        case ARENA_NATIVE:
+            break;
         }
 
     return Null();
@@ -470,7 +570,7 @@ table new_entry(table t)
     return el;
 }
 
-table arena_entry(arena key, arena val)
+table arena_entry(Arena key, Arena val)
 {
     table el;
     el.key = key;
@@ -504,10 +604,10 @@ table native_entry(Native *func)
     return el;
 }
 
-arena Var(const char *str)
+Arena Var(const char *str)
 {
     size_t size = strlen(str);
-    arena ar = GROW_ARRAY(NULL, size, ARENA_VAR);
+    Arena ar = GROW_ARRAY(NULL, size, ARENA_VAR);
     memcpy(ar.as.String, str, size);
     ar.as.String[size] = '\0';
     size_t h = hash(ar);
@@ -515,10 +615,10 @@ arena Var(const char *str)
     ar.type = ARENA_VAR;
     return ar;
 }
-arena func_name(const char *str)
+Arena func_name(const char *str)
 {
     size_t size = strlen(str);
-    arena ar = GROW_ARRAY(NULL, size, ARENA_FUNC);
+    Arena ar = GROW_ARRAY(NULL, size, ARENA_FUNC);
     memcpy(ar.as.String, str, size);
     ar.as.String[size] = '\0';
     size_t h = hash(ar);
@@ -526,10 +626,10 @@ arena func_name(const char *str)
     ar.type = ARENA_FUNC;
     return ar;
 }
-arena native_name(const char *str)
+Arena native_name(const char *str)
 {
     size_t size = strlen(str);
-    arena ar = GROW_ARRAY(NULL, size, ARENA_NATIVE);
+    Arena ar = GROW_ARRAY(NULL, size, ARENA_NATIVE);
     memcpy(ar.as.String, str, size);
     ar.as.String[size] = '\0';
     size_t h = hash(ar);
@@ -538,7 +638,7 @@ arena native_name(const char *str)
     return ar;
 }
 
-size_t hash(arena key)
+size_t hash(Arena key)
 {
     size_t index = 2166136261u;
 
@@ -567,6 +667,18 @@ size_t hash(arena key)
     case ARENA_CHAR:
         index ^= key.as.Char;
         index = (index * 16742069);
+        break;
+    case ARENA_BYTE:
+    case ARENA_STR:
+    case ARENA_BOOL:
+    case ARENA_NULL:
+    case ARENA_BYTES:
+    case ARENA_INTS:
+    case ARENA_DOUBLES:
+    case ARENA_LONGS:
+    case ARENA_BOOLS:
+    case ARENA_STRS:
+    case ARENA_NATIVE:
         break;
     }
     return index;

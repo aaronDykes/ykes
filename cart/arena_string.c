@@ -82,17 +82,17 @@ char *lltoa(char *c, long long int n)
     return c;
 }
 
-arena prepend_int_to_str(arena s, arena a)
+Arena prepend_int_to_str(Arena s, Arena a)
 {
     int len = intlen(s.as.Int);
-    arena ar;
+    Arena ar;
     ar = arena_alloc(sizeof(char) * (len + 1 + a.as.len), ARENA_STR);
     ar.as.String = itoa(ar.as.String, s.as.Int);
     strcat(ar.as.String, a.as.String);
     arena_free(&ar);
     return s;
 }
-arena prepend_char_to_str(arena s, arena a)
+Arena prepend_char_to_str(Arena s, Arena a)
 {
     char c = s.as.Char;
     arena_free(&s);
@@ -102,7 +102,7 @@ arena prepend_char_to_str(arena s, arena a)
     arena_free(&a);
     return s;
 }
-arena prepend_long_to_str(arena s, arena a)
+Arena prepend_long_to_str(Arena s, Arena a)
 {
     int len = longlen(s.as.Long);
     long long int llint = s.as.Long;
@@ -116,44 +116,44 @@ arena prepend_long_to_str(arena s, arena a)
     return s;
 }
 
-static arena append_int_to_str(arena s, arena i)
+static Arena append_int_to_str(Arena s, Arena i)
 {
     int len = intlen(i.as.Int);
     int ival = i.as.Int;
     int new = len + 1 + s.as.len;
-    arena ar;
+    Arena ar;
     if (ival < 0)
         ++len;
     // arena_free(&i);
     ar = arena_alloc(sizeof(char) * (len + 1), ARENA_STR);
     ar.as.String = itoa(ar.as.String, ival);
-    s = GROW_ARRAY(&s, new * sizeof(char), ARENA_STR);
+    s = arena_realloc(&s, new * sizeof(char), ARENA_STR);
     strcat(s.as.String, ar.as.String);
     arena_free(&ar);
     return s;
 }
-static arena append_str_to_str(arena s, arena str)
+static Arena append_str_to_str(Arena s, Arena str)
 {
     int new = s.as.len + str.as.len + 1;
-    s = GROW_ARRAY(&s, new * sizeof(char), ARENA_STR);
+    s = arena_realloc(&s, new * sizeof(char), ARENA_STR);
     strcat(s.as.String, str.as.String);
     s.as.String[new] = '\0';
     arena_free(&str);
     return s;
 }
-static arena append_char_to_str(arena s, arena c)
+static Arena append_char_to_str(Arena s, Arena c)
 {
     char ch = c.as.Char;
     arena_free(&c);
     c = arena_alloc(sizeof(char) * 2, ARENA_STR);
     c.as.String[0] = ch;
     c.as.String[1] = '\0';
-    s = GROW_ARRAY(&s, sizeof(char) * (s.as.len + 1), ARENA_STR);
+    s = arena_realloc(&s, sizeof(char) * (s.as.len + 1), ARENA_STR);
     strcat(s.as.String, c.as.String);
     arena_free(&c);
     return s;
 }
-static arena append_long_to_str(arena s, arena i)
+static Arena append_long_to_str(Arena s, Arena i)
 {
     int len = longlen(i.as.Long);
     long long int llint = i.as.Long;
@@ -165,12 +165,12 @@ static arena append_long_to_str(arena s, arena i)
     arena_free(&i);
     i = arena_alloc(sizeof(char) * (len + 1), ARENA_STR);
     i.as.String = lltoa(i.as.String, llint);
-    s = GROW_ARRAY(&s, new * sizeof(char), ARENA_STR);
+    s = arena_realloc(&s, new * sizeof(char), ARENA_STR);
     strcat(s.as.String, i.as.String);
     arena_free(&i);
     return s;
 }
-arena append(arena s, arena ar)
+Arena append(Arena s, Arena ar)
 {
     switch (ar.type)
     {
@@ -182,45 +182,58 @@ arena append(arena s, arena ar)
         return append_int_to_str(s, ar);
     case ARENA_LONG:
         return append_long_to_str(s, ar);
+    case ARENA_BYTE:
+    case ARENA_DOUBLE:
+    case ARENA_BOOL:
+    case ARENA_NULL:
+    case ARENA_BYTES:
+    case ARENA_INTS:
+    case ARENA_DOUBLES:
+    case ARENA_LONGS:
+    case ARENA_BOOLS:
+    case ARENA_STRS:
+    case ARENA_FUNC:
+    case ARENA_NATIVE:
+    case ARENA_VAR:
         break;
     }
     return ar;
 }
 
-arena ltoa_eqcmp(long long int llint, arena ar)
+Arena ltoa_eqcmp(long long int llint, Arena ar)
 {
-    arena a;
-    arena res;
+    Arena a;
+    Arena res;
     int len = longlen(llint);
     a = arena_alloc(sizeof(char) * len + 1, ARENA_STR);
     res = Bool(strcmp(lltoa(a.as.String, llint), ar.as.String) == 0);
     arena_free(&a);
     return res;
 }
-arena ltoa_neqcmp(long long int llint, arena ar)
+Arena ltoa_neqcmp(long long int llint, Arena ar)
 {
-    arena a;
-    arena res;
+    Arena a;
+    Arena res;
     int len = longlen(llint);
     a = arena_alloc(sizeof(char) * len + 1, ARENA_STR);
     res = Bool(strcmp(lltoa(a.as.String, llint), ar.as.String) != 0);
     arena_free(&a);
     return res;
 }
-arena itoa_eqcmp(int ival, arena ar)
+Arena itoa_eqcmp(int ival, Arena ar)
 {
-    arena a;
-    arena res;
+    Arena a;
+    Arena res;
     int len = intlen(ival);
     a = arena_alloc(sizeof(char) * len + 1, ARENA_STR);
     res = Bool(strcmp(itoa(a.as.String, ival), ar.as.String) == 0);
     arena_free(&a);
     return res;
 }
-arena itoa_neqcmp(int ival, arena ar)
+Arena itoa_neqcmp(int ival, Arena ar)
 {
-    arena a;
-    arena res;
+    Arena a;
+    Arena res;
     int len = intlen(ival);
     a = arena_alloc(sizeof(char) * len + 1, ARENA_STR);
     res = Bool(strcmp(itoa(a.as.String, ival), ar.as.String) != 0);
@@ -228,7 +241,7 @@ arena itoa_neqcmp(int ival, arena ar)
     return res;
 }
 
-arena string_eq(arena s, arena c)
+Arena string_eq(Arena s, Arena c)
 {
 
     switch (c.type)
@@ -241,10 +254,24 @@ arena string_eq(arena s, arena c)
         return itoa_eqcmp(c.as.Int, s);
     case ARENA_LONG:
         return ltoa_eqcmp(c.as.Int, s);
+    case ARENA_BYTE:
+    case ARENA_DOUBLE:
+    case ARENA_CHAR:
+    case ARENA_BOOL:
+    case ARENA_BYTES:
+    case ARENA_INTS:
+    case ARENA_DOUBLES:
+    case ARENA_LONGS:
+    case ARENA_BOOLS:
+    case ARENA_STRS:
+    case ARENA_FUNC:
+    case ARENA_NATIVE:
+    case ARENA_VAR:
+        break;
     }
     return Bool(false);
 }
-arena string_ne(arena s, arena c)
+Arena string_ne(Arena s, Arena c)
 {
     switch (c.type)
     {
@@ -256,10 +283,24 @@ arena string_ne(arena s, arena c)
         return itoa_eqcmp(c.as.Int, s);
     case ARENA_LONG:
         return ltoa_eqcmp(c.as.Int, s);
+    case ARENA_BYTE:
+    case ARENA_DOUBLE:
+    case ARENA_CHAR:
+    case ARENA_BOOL:
+    case ARENA_BYTES:
+    case ARENA_INTS:
+    case ARENA_DOUBLES:
+    case ARENA_LONGS:
+    case ARENA_BOOLS:
+    case ARENA_STRS:
+    case ARENA_FUNC:
+    case ARENA_NATIVE:
+    case ARENA_VAR:
+        break;
     }
     return Bool(true);
 }
-arena string_gt(arena s, arena c)
+Arena string_gt(Arena s, Arena c)
 {
     if (c.type != ARENA_STR)
     {
@@ -268,7 +309,7 @@ arena string_gt(arena s, arena c)
     }
     return Bool(strcmp(s.as.String, c.as.String) > 0);
 }
-arena string_ge(arena s, arena c)
+Arena string_ge(Arena s, Arena c)
 {
     if (c.type != ARENA_STR)
     {
@@ -277,7 +318,7 @@ arena string_ge(arena s, arena c)
     }
     return Bool(strcmp(s.as.String, c.as.String) >= 0);
 }
-arena string_lt(arena s, arena c)
+Arena string_lt(Arena s, Arena c)
 {
     if (c.type != ARENA_STR)
     {
@@ -286,7 +327,7 @@ arena string_lt(arena s, arena c)
     }
     return Bool(strcmp(s.as.String, c.as.String) < 0);
 }
-arena string_le(arena s, arena c)
+Arena string_le(Arena s, Arena c)
 {
     if (c.type != ARENA_STR)
     {

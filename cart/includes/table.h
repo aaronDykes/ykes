@@ -15,7 +15,7 @@ typedef struct machine_table dict;
 typedef dict *Dict;
 
 void init_dict(Dict d);
-void write_dict(Dict d, arena ar1, arena ar2, size_t size);
+void write_dict(Dict d, Arena ar1, Arena ar2, size_t size);
 void write_func_dict(Dict d, Function *func, size_t size);
 void free_dict(Dict d);
 

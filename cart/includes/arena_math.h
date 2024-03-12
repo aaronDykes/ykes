@@ -1,29 +1,27 @@
 #ifndef _ARENA_MATH_H
 #define _ARENA_MATH_H
 #include "arena_memory.h"
-#include <math.h>
 
-arena _neg(arena n);
-arena _add(arena a, arena b);
-arena _sub(arena a, arena b);
-arena _mul(arena a, arena b);
-arena _div(arena a, arena b);
-arena _mod(arena a, arena b);
-arena _eq(arena a, arena b);
-arena _ne(arena a, arena b);
-arena _seq(arena a, arena b);
-arena _sne(arena a, arena b);
-arena _lt(arena a, arena b);
-arena _le(arena a, arena b);
-arena _gt(arena a, arena b);
-arena _ge(arena a, arena b);
-arena _or(arena a, arena b);
-arena _and(arena a, arena b);
+Arena _neg(Arena n);
+Arena _add(Arena a, Arena b);
+Arena _sub(Arena a, Arena b);
+Arena _mul(Arena a, Arena b);
+Arena _div(Arena a, Arena b);
+Arena _mod(Arena a, Arena b);
+Arena _eq(Arena a, Arena b);
+Arena _ne(Arena a, Arena b);
+Arena _seq(Arena a, Arena b);
+Arena _sne(Arena a, Arena b);
+Arena _lt(Arena a, Arena b);
+Arena _le(Arena a, Arena b);
+Arena _gt(Arena a, Arena b);
+Arena _ge(Arena a, Arena b);
+Arena _or(Arena a, Arena b);
+Arena _and(Arena a, Arena b);
+Arena _inc(Arena b);
+Arena _dec(Arena b);
 
-arena _inc(arena b);
-arena _dec(arena b);
-
-arena _sqr(arena a);
-arena _prime(arena a);
+Arena _sqr(Arena a);
+Arena _prime(Arena a);
 
 #endif

@@ -28,13 +28,13 @@ typedef enum
 struct hash_arena
 {
     size_t size;
-    arena key;
+    Arena key;
     TableType type;
     union
     {
         Native *n;
         Function *f;
-        arena a;
+        Arena a;
     } val;
 
     struct hash_arena *next;
@@ -45,14 +45,14 @@ typedef struct hash_arena table;
 typedef table *Table;
 
 void insert_entry(Table *t, table entry);
-void delete_arena_entry(Table *t, arena key);
-void delete_func_entry(Table *t, arena key);
+void delete_arena_entry(Table *t, Arena key);
+void delete_func_entry(Table *t, Arena key);
 
-arena find_arena_entry(Table *t, arena *key);
-Function *find_func_entry(Table *t, arena *key);
-Native *find_native_entry(Table *t, arena *key);
+Arena find_arena_entry(Table *t, Arena *key);
+Function *find_func_entry(Table *t, Arena *key);
+Native *find_native_entry(Table *t, Arena *key);
 
-table arena_entry(arena key, arena val);
+table arena_entry(Arena key, Arena val);
 table func_entry(Function *f);
 table native_entry(Native *func);
 table new_entry(table t);
@@ -64,9 +64,9 @@ void alloc_entry(Table *e, table el);
 void arena_free_table(Table t);
 void arena_free_entry(Table entry);
 
-arena Var(const char *str);
-arena func_name(const char *str);
-arena native_name(const char *str);
-size_t hash(arena key);
+Arena Var(const char *str);
+Arena func_name(const char *str);
+Arena native_name(const char *str);
+size_t hash(Arena key);
 
 #endif
