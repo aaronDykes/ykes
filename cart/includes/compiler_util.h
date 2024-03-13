@@ -4,6 +4,7 @@
 
 #define MAX_ELIF 10
 #define LOCAL_COUNT 500
+#define CALL_COUNT 2056
 #define PTR_SIZE(X) sizeof(X) / sizeof(X[0])
 
 struct Parser
@@ -63,13 +64,13 @@ struct Compiler
     struct
     {
         int call_count;
-        Arena calls[LOCAL_COUNT];
+        Arena calls[CALL_COUNT];
     } en;
 
     struct
     {
         int call_count;
-        Arena calls[LOCAL_COUNT];
+        Arena calls[CALL_COUNT];
         Compiler *base;
     };
 

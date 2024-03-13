@@ -8,8 +8,6 @@ sr is_prime(l)
 
 }
 
-
-
 sr print_prime(n)
 {
     for (var i = 3; i < n; i++)
@@ -17,7 +15,12 @@ sr print_prime(n)
             pout i;
 }
 
+sr all_in_one(n)
+{
+    var start = clock();
+    print_prime(n);
+    pout clock() - start;
+}
 
-var start = clock();
-print_prime(1000000);
-pout clock() - start;
+all_in_one(100);
+
