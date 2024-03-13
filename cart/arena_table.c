@@ -647,6 +647,7 @@ size_t hash(Arena key)
     {
     case ARENA_VAR:
     case ARENA_FUNC:
+    case ARENA_NATIVE:
         for (char *s = key.as.String; *s; s++)
         {
             index ^= (int)*s;
@@ -679,7 +680,6 @@ size_t hash(Arena key)
     case ARENA_LONGS:
     case ARENA_BOOLS:
     case ARENA_STRS:
-    case ARENA_NATIVE:
         break;
     }
     return index;

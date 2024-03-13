@@ -11,15 +11,18 @@ void initVM()
 
     initialize_global_memory(PAGE);
     machine.stack = GROW_STACK(NULL, STACK_SIZE);
+    machine.call_stack = GROW_STACK(NULL, STACK_SIZE);
+    machine.native_calls = GROW_STACK(NULL, NATIVE_STACK_SIZE);
     init_dict(&machine.glob);
     define_native(native_name("clock"), clock_native);
     define_native(native_name("square"), square_native);
-    define_native(native_name("prime"), prime_native);
 }
 void freeVM()
 {
     free_dict(&machine.glob);
     FREE_STACK(machine.stack);
+    FREE_STACK(machine.call_stack);
+    FREE_STACK(machine.native_calls);
     destroy_global_memory();
 }
 
@@ -49,8 +52,8 @@ static void runtime_error(const char *format, ...)
 
 static void define_native(Arena ar, NativeFn n)
 {
-    ar.as.hash %= machine.glob.capacity;
-    insert_entry(&machine.glob.map, native_entry(native(n, ar)));
+    Element el = native_fn(native(n, ar));
+    push(&machine.native_calls, el);
 }
 
 static inline Element prime_native(int argc, Stack *args)
@@ -87,7 +90,7 @@ static bool call(Closure c, uint8_t argc)
     CallFrame *frame = &machine.frames[machine.frame_count++];
     frame->closure = c;
     frame->ip = c.func->ch.op_codes.listof.Bytes;
-    frame->ip_start = frame->ip;
+    frame->ip_start = c.func->ch.op_codes.listof.Bytes;
     frame->slots = machine.stack->top - argc - 1;
     return true;
 }
@@ -166,6 +169,14 @@ static Upval capture_upvalue(Stack *s)
     return new;
 }
 
+Native *traverse_stack_native(Arena *ar)
+{
+    for (Stack *s = machine.native_calls->top - 1; s >= machine.native_calls; s--)
+        if (s->as.native->obj.as.hash == ar->as.hash)
+            return s->as.native;
+    return NULL;
+}
+
 Interpretation run()
 {
 
@@ -174,19 +185,27 @@ Interpretation run()
 #define READ_BYTE() (*frame->ip++)
 #define READ_SHORT() (((READ_BYTE() << 8) & 0xFF) | READ_BYTE() & 0xFF)
 #define READ_CONSTANT() ((frame->closure.func->ch.constants + READ_BYTE())->as)
+#define GET_FUNC(ar) \
+    (CLOSURE(traverse_stack_closure(&ar)))
+#define GET_NATIVE(ar) \
+    (NATIVE(traverse_stack_native(&ar)))
 #define PEEK() ((machine.stack->top - 1)->as)
 #define NPEEK(N) ((machine.stack->top + (-1 + -N))->as)
+#define CPEEK(N) ((machine.call_stack->top + (-1 + -N))->as)
 #define FALSEY() (!PEEK().arena.as.Bool)
 #define POPN(n) (popn(&machine.stack, n))
 #define LOCAL() ((frame->slots + READ_BYTE())->as)
 #define JUMP() (*(frame->closure.func->ch.cases.listof.Ints + READ_SHORT()))
 #define PUSH(ar) (push(&machine.stack, ar))
+#define CPUSH(ar) (push(&machine.call_stack, ar))
 #define FIND_FUNC(ar) (find_func(ar))
 #define FIND_NATIVE(ar) (find_native(ar))
 #define WRITE_AR(a, b) (write_dict(&machine.glob, a, b, machine.glob.capacity))
 #define WRITE_FUNC(f) (write_func_dict(&machine.glob, f, machine.glob.capacity))
 #define POP() \
     (--machine.stack->count, (--machine.stack->top)->as)
+#define CPOP() \
+    (--machine.call_stack->count, (--machine.call_stack->top)->as)
 
     for (;;)
     {
@@ -204,20 +223,19 @@ Interpretation run()
             break;
         case OP_CLOSURE:
         {
-            Closure c = READ_CONSTANT().closure;
+            Element c = READ_CONSTANT();
 
-            WRITE_FUNC(c.func);
-            PUSH(CLOSURE(c));
+            CPUSH(CLOSURE(c.closure));
 
-            for (int i = 0; i < c.upval_count; i++)
+            for (int i = 0; i < c.closure.upval_count; i++)
             {
                 uint8_t is_local = READ_BYTE();
                 uint8_t index = READ_BYTE();
 
                 if (is_local)
-                    c.upvals[i] = *(frame->closure.upvals + i);
+                    c.closure.upvals[i] = *(frame->closure.upvals + i);
                 else
-                    c.upvals[i] = capture_upvalue(frame->slots + index);
+                    c.closure.upvals[i] = capture_upvalue(frame->slots + index);
             }
         }
         break;
@@ -225,7 +243,7 @@ Interpretation run()
             PUSH((frame->closure.upvals + READ_BYTE())->index->as);
             break;
         case OP_SET_UPVALUE:
-            (frame->closure.upvals + READ_BYTE())->index = machine.stack->top - 1;
+            (frame->closure.upvals + READ_BYTE())->index = (machine.stack->top - 1);
             break;
         case OP_NEG:
             (--machine.stack->top)->as = OBJ(_neg((machine.stack->top++)->as.arena));
@@ -344,11 +362,8 @@ Interpretation run()
             break;
         case OP_CALL:
         {
-
             uint8_t argc = READ_BYTE();
-            Element el = NPEEK(argc);
-
-            if (!call_value(el, argc))
+            if (!call_value(NPEEK(argc), argc))
                 return INTERPRET_RUNTIME_ERR;
 
             frame = (machine.frames + (machine.frame_count - 1));
@@ -366,78 +381,37 @@ Interpretation run()
         case OP_CLOSE_UPVAL:
             break;
         case OP_GET_LOCAL:
-        {
-            Element el = LOCAL();
-            if (el.arena.type == ARENA_FUNC)
-            {
-                Closure c = FIND_FUNC(el.arena);
-                // if (c.func != NULL)
-                PUSH(CLOSURE(c));
-            }
-            else if (el.arena.type == ARENA_NATIVE)
-            {
-                Native *n = NULL;
-                if ((n = FIND_NATIVE(el.arena)) != NULL)
-                    PUSH(NATIVE(n));
-            }
-            else
-                PUSH(el);
+            PUSH(LOCAL());
             break;
-        }
         case OP_SET_LOCAL:
-        {
-            Element el = PEEK();
-            if (el.type == CLOSURE)
-                WRITE_FUNC(el.closure.func);
-            LOCAL() = el;
+            LOCAL() = PEEK();
             break;
-        }
         case OP_SET_GLOBAL:
         {
             Element el = READ_CONSTANT();
-            if (el.type != CLOSURE)
-            {
-                if (!exists(el.arena))
-                    return undefined_var(el.arena);
-                Arena ar = POP().arena;
-                WRITE_AR(el.arena, ar);
-                PUSH(OBJ(ar));
-            }
-            else
-                WRITE_FUNC(el.closure.func);
+
+            Arena ar = POP().arena;
+            WRITE_AR(el.arena, ar);
+            PUSH(OBJ(ar));
         }
         break;
         case OP_GET_GLOBAL:
-        {
-            Element el = READ_CONSTANT();
-
-            if (el.arena.type == ARENA_FUNC)
-                PUSH(CLOSURE(FIND_FUNC(el.arena)));
-            else if (el.arena.type == ARENA_NATIVE)
-                PUSH(NATIVE(FIND_NATIVE(el.arena)));
-            else
-                PUSH(OBJ(find(el.arena)));
-        }
-        break;
+            PUSH(OBJ(find(READ_CONSTANT().arena)));
+            break;
+        case OP_GET_CLOSURE:
+            PUSH((machine.call_stack + READ_BYTE())->as);
+            break;
+        case OP_GET_NATIVE:
+            PUSH(GET_NATIVE(READ_CONSTANT().arena));
+            break;
         case OP_NOOP:
             break;
         case OP_GLOBAL_DEF:
-        {
-            Element el = READ_CONSTANT();
-            WRITE_AR(el.arena, POP().arena);
+            WRITE_AR(READ_CONSTANT().arena, POP().arena);
             break;
-        }
         case OP_PRINT:
-        {
-            Element el = POP();
-            if (el.type == FUNC || el.type == CLOSURE)
-            {
-                PUSH(el);
-                break;
-            }
-            print(el);
+            print(POP());
             break;
-        }
         case OP_RETURN:
         {
 
@@ -449,8 +423,7 @@ Interpretation run()
                 POP();
                 return INTERPRET_SUCCESS;
             }
-
-            for (Stack *s = machine.stack; s < frame->slots; s++)
+            for (Stack *s = machine.stack; s < machine.stack->top; s++)
                 POP();
 
             machine.stack->top = frame->slots;
@@ -461,11 +434,13 @@ Interpretation run()
         }
         }
     }
+#undef CPOP
 #undef POP
 #undef WRITE_FUNC
 #undef WRITE_AR
 #undef FIND_NATIVE
 #undef FIND_FUNC
+#undef CPUSH
 #undef PUSH
 #undef JUMP
 #undef LOCAL
@@ -474,6 +449,8 @@ Interpretation run()
 #undef FALSEY
 #undef NPEEK
 #undef PEEK
+#undef GET_NATIVE
+#undef GET_FUNC
 #undef READ_CONSTANT
 #undef READ_SHORT
 #undef READ_BYTE

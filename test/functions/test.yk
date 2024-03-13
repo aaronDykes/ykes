@@ -1,16 +1,18 @@
-
-
-sr hello(n)
-{
-    return n + 69; 
-}
-
-sr okay()
-{
-    return hello(69) + 69; 
+sr fib(n) {
+  if (n < 2) return n;
+  return fib(n - 2) + fib(n - 1);
 }
 
 
+sr print_fib(n)
+{
+  for (var i = 1; i < n; i++)
+    pout fib(i);
+}
 
-pout okay();
+var start = clock();
 
+print_fib(36);
+
+
+pout clock() - start;

@@ -32,9 +32,6 @@ Stack *realloc_stack(Stack *st, size_t size)
         case ARENA:
             s[i].as = OBJ(st[i].as.arena);
             break;
-        case FUNC:
-            s[i].as = FUNC(st[i].as.func);
-            break;
         case NATIVE:
             s[i].as = NATIVE(st[i].as.native);
             break;
@@ -58,9 +55,9 @@ void free_stack(Stack **stack)
         case ARENA:
             FREE_ARRAY(&tmp[i].as.arena);
             break;
-        case FUNC:
-            FREE_FUNCTION(tmp[i].as.func);
-            break;
+        // case FUNC:
+        //     FREE_FUNCTION(tmp[i].as.func);
+        //     break;
         case NATIVE:
             FREE_NATIVE(tmp[i].as.native);
             break;
@@ -99,15 +96,6 @@ Element Obj(Arena ar)
     s.type = ARENA;
     return s;
 }
-Element Func(Function *f)
-{
-    Element s;
-
-    s.func = f;
-    s.type = FUNC;
-    return s;
-}
-
 Element native_fn(Native *native)
 {
     Element s;
@@ -209,7 +197,7 @@ void write_chunk(Chunk *c, uint8_t byte)
         c->op_codes.len = GROW_CAPACITY(c->op_codes.len);
         c->op_codes = GROW_ARRAY(&c->op_codes, c->op_codes.len * sizeof(uint8_t), ARENA_BYTES);
     }
-    if (c->cases.len < (c->cases.count + 1))
+    if (c->cases.len < c->cases.count + 1)
     {
         c->cases.len = GROW_CAPACITY(c->cases.len);
         c->cases = GROW_ARRAY(&c->cases, c->cases.len * sizeof(int), ARENA_INTS);
@@ -264,7 +252,7 @@ void push(Stack **s, Element e)
 
     Stack *st = *s;
     check_stack_size(st);
-    (*st->top++).as = e;
+    (st->top++)->as = e;
     st->count++;
 }
 
@@ -286,19 +274,15 @@ static void parse_str(const char *str)
 void print(Element ar)
 {
     Arena a = ar.arena;
-    if (ar.type == FUNC)
+
+    if (ar.type == NATIVE)
     {
-        printf("<fn %s>\n", ar.func->name.as.String ? ar.func->name.as.String : "<fn NULL>");
-        return;
-    }
-    else if (ar.type == NATIVE)
-    {
-        printf("<fn native>\n");
+        printf("<native: %s>\n", ar.native->obj.as.String);
         return;
     }
     else if (ar.type == CLOSURE)
     {
-        printf("<fn %s>\n", ar.closure.func->name.as.String);
+        printf("<fn: %s>\n", ar.closure.func->name.as.String);
         return;
     }
     switch (a.type)

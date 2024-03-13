@@ -942,8 +942,6 @@ static Arena int_lt(int ival, Arena ar)
     case ARENA_NATIVE:
     case ARENA_VAR:
         break;
-    default:
-        log_err("ERROR: comparison type mismatch");
     }
     return Bool(false);
 }
@@ -1966,15 +1964,15 @@ Arena _sqr(Arena a)
     switch (a.type)
     {
     case ARENA_INT:
-        return Int((int)sqrt(a.as.Int));
+        return Double(sqrt(a.as.Int));
     case ARENA_DOUBLE:
-        return Int((int)sqrt(a.as.Double));
+        return Double(sqrt(a.as.Double));
     case ARENA_LONG:
-        return Int((int)sqrt(a.as.Long));
+        return Double(sqrt(a.as.Long));
     case ARENA_BYTE:
-        return Int((int)sqrt(a.as.Byte));
+        return Double(sqrt(a.as.Byte));
     case ARENA_CHAR:
-        return Int((int)sqrt(a.as.Char));
+        return Double(sqrt(a.as.Char));
     case ARENA_STR:
     case ARENA_BOOL:
     case ARENA_NULL:

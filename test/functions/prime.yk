@@ -1,6 +1,5 @@
-sr is_prime(l) {
-
-
+sr is_prime(l)
+{
     for (var i = 2; i < square(l); i++)
         if (l % i == 0)
             return false;
@@ -11,7 +10,8 @@ sr is_prime(l) {
 
 
 
-sr print_prime(n) {
+sr print_prime(n)
+{
     for (var i = 3; i < n; i++)
         if (is_prime(i))
             pout i;
@@ -19,5 +19,5 @@ sr print_prime(n) {
 
 
 var start = clock();
-print_prime(200000);
+print_prime(1000000);
 pout clock() - start;

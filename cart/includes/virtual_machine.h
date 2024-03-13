@@ -5,7 +5,7 @@
 #include "table.h"
 #include "compiler.h"
 
-#define FRAMES_MAX 250
+#define FRAMES_MAX 500
 
 typedef enum
 {
@@ -21,6 +21,7 @@ struct CallFrame
     uint8_t *ip;
     uint8_t *ip_start;
     Stack *slots;
+    Stack *calls;
 };
 typedef struct CallFrame CallFrame;
 
@@ -28,8 +29,9 @@ struct vm
 {
     CallFrame frames[FRAMES_MAX];
     int frame_count;
-
     Stack *stack;
+    Stack *call_stack;
+    Stack *native_calls;
     dict glob;
 };
 typedef struct vm vm;

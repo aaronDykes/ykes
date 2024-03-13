@@ -77,6 +77,10 @@ void arena_free(Arena *ar)
 {
 
 #define OFFSET sizeof(Free);
+
+    if (!ar)
+        return;
+
     Free *new = NULL;
     size_t new_size = ar->size + OFFSET;
 
@@ -122,9 +126,8 @@ void arena_free(Arena *ar)
 
     for (; new->next; new = new->next)
         ;
-    Free *f = mem.mem;
 
-    for (; f; f = f->next)
+    for (Free *f = mem.mem; f; f = f->next)
 
         if (new == f->next)
         {
@@ -185,11 +188,8 @@ void *alloc_ptr(size_t size)
         if (f->size >= new_size)
         {
 
-            void *ptr = NULL;
-            Free *prev = NULL;
-
-            ptr = f + OFFSET;
-            prev = f->prev;
+            void *ptr = f + OFFSET;
+            Free *prev = f->prev;
 
             size_t tmp =
                 (!f->next)

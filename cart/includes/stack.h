@@ -39,6 +39,10 @@ typedef enum
     OP_PUSH,
     OP_CLOSE_UPVAL,
 
+    OP_FIND_CLOSURE,
+    OP_GET_CLOSURE,
+    OP_GET_NATIVE,
+
     OP_GLOBAL_DEF,
 
     OP_GET_GLOBAL,
@@ -109,8 +113,7 @@ typedef enum
 {
     ARENA,
     NATIVE,
-    CLOSURE,
-    FUNC,
+    CLOSURE
 } ObjType;
 
 typedef struct Chunk Chunk;
@@ -170,7 +173,6 @@ struct Element
     union
     {
         Arena arena;
-        Function *func;
         Native *native;
         Closure closure;
     };
@@ -199,7 +201,7 @@ Upval *indices(size_t size);
 void free_indices(Upval *up);
 
 Element Obj(Arena ar);
-Element Func(Function *f);
+// Element Func(Function *f);
 Element native_fn(Native *native);
 Element closure(Closure clos);
 

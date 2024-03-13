@@ -30,12 +30,12 @@ typedef enum
 
 } Precedence;
 
+typedef struct Parser Parser;
 typedef struct Local Local;
 typedef struct Upvalue Upvalue;
-typedef struct parse_rule PRule;
-typedef struct Parser Parser;
 typedef struct Compiler Compiler;
 typedef void (*parse_fn)(Compiler *);
+typedef struct parse_rule PRule;
 
 struct Local
 {
@@ -46,7 +46,7 @@ struct Local
 
 struct Upvalue
 {
-    int index;
+    uint8_t index;
     bool islocal;
 };
 
@@ -59,7 +59,20 @@ struct Compiler
     FT type;
     Function *func;
 
-    struct Compiler *enclosing;
+    Compiler *enclosing;
+    struct
+    {
+        int call_count;
+        Arena calls[LOCAL_COUNT];
+    } en;
+
+    struct
+    {
+        int call_count;
+        Arena calls[LOCAL_COUNT];
+        Compiler *base;
+    };
+
     Local locals[LOCAL_COUNT];
     Upvalue upvalues[LOCAL_COUNT];
     Parser parser;
