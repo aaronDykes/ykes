@@ -12,11 +12,11 @@ static void init_compiler(Compiler *a, Compiler *b, FT type, Arena name)
 
     if (b)
     {
-        a->base = b->base;
+        // a->base = b->base;
         a->parser = b->parser;
         a->enclosing = b;
     }
-    a->base_call_count = 0;
+    // a->base_call_count = 0;
     a->call_count = 0;
     a->upvalue_count = 0;
     a->func = function(name);
@@ -116,6 +116,8 @@ static void func_declaration(Compiler *c)
     consume(TOKEN_ID, "Expect function name.", &c->parser);
     Arena ar = parse_func_id(c);
 
+    c->calls[c->call_count++] = ar;
+    // c->base->base_calls[c->base_call_count++] = ar;
     func_body(c, FUNCTION, ar);
 }
 
@@ -139,7 +141,6 @@ static void func_body(Compiler *c, FT type, Arena ar)
     consume(TOKEN_CH_RPAREN, "Expect `)` after function parameters.", &c->parser);
     consume(TOKEN_CH_LCURL, "Expect `{` prior to function body.", &c->parser);
 
-    c->calls[c->call_count++] = ar;
     block(c);
 
     Function *f = end_compile(c);
@@ -149,8 +150,6 @@ static void func_body(Compiler *c, FT type, Arena ar)
     c = c->enclosing;
 
     Closure *clos = new_closure(f);
-
-    c->base->base_calls[c->base_call_count++] = ar;
 
     emit_bytes(
         &c->func->ch, OP_CLOSURE,
@@ -883,16 +882,6 @@ static Arena get_id(Compiler *c)
     return args;
 }
 
-static int resolve_call(Compiler *c, Arena *ar)
-{
-
-    for (int i = c->base->call_count - 1; i >= 0; i--)
-        if (idcmp(*ar, c->base->base_calls[i]))
-            return i;
-
-    return -1;
-}
-
 static int resolve_upcall(Compiler *c, Arena *ar)
 {
 
@@ -916,19 +905,14 @@ static void id(Compiler *c)
     Arena ar = parse_id(c);
     uint8_t get, set;
     int arg = 0;
-    arg = resolve_call(c, &ar);
-
-    if (arg != -1)
-    {
-        emit_bytes(&c->func->ch, OP_GET_CLOSURE, (uint8_t)arg);
-        return;
-    }
-
     arg = resolve_upcall(c, &ar);
 
     if (arg != -1)
     {
         emit_bytes(&c->func->ch, OP_GET_CLOSURE, (uint8_t)arg);
+
+        if (match(TOKEN_CH_LPAREN, &c->parser))
+            call(c);
         return;
     }
 
@@ -1097,8 +1081,6 @@ Function *compile(const char *src)
 
     init_scanner(src);
     init_compiler(&c, NULL, SCRIPT, func_name("SCRIPT"));
-
-    c.base = &c;
 
     c.parser.panic = false;
     c.parser.err = false;

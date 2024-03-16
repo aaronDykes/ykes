@@ -56,16 +56,13 @@ struct Compiler
     int local_count;
     int scope_depth;
     int upvalue_count;
-    int base_call_count;
     int call_count;
 
     FT type;
     Function *func;
 
     Compiler *enclosing;
-    Compiler *base;
 
-    Arena base_calls[CALL_COUNT];
     Arena calls[CALL_COUNT];
 
     Local locals[LOCAL_COUNT];

@@ -32,10 +32,107 @@ typedef enum
     STACK
 } DataType;
 
+typedef enum
+{
+    OP_CONSTANT,
+    OP_CLOSURE,
+    OP_PRINT,
+
+    OP_POP,
+    OP_POPN,
+    OP_PUSH,
+    OP_CLOSE_UPVAL,
+
+    OP_FIND_CLOSURE,
+    OP_GET_CLOSURE,
+    OP_GET_NATIVE,
+
+    OP_GLOBAL_DEF,
+
+    OP_GET_GLOBAL,
+    OP_SET_GLOBAL,
+
+    OP_GET_LOCAL,
+    OP_SET_LOCAL,
+
+    OP_GET_UPVALUE,
+    OP_SET_UPVALUE,
+
+    OP_ASSIGN,
+    OP_NEG,
+
+    OP_INC_LOC,
+    OP_INC_GLO,
+    OP_DEC_LOC,
+    OP_DEC_GLO,
+
+    OP_INC,
+    OP_DEC,
+    OP_ADD,
+    OP_SUB,
+    OP_MUL,
+    OP_MOD,
+    OP_DIV,
+
+    OP_BIT_AND,
+    OP_BIT_OR,
+
+    OP_AND,
+    OP_OR,
+
+    OP_SEQ,
+    OP_SNE,
+    OP_EQ,
+    OP_NE,
+    OP_LT,
+    OP_LE,
+    OP_GT,
+    OP_GE,
+
+    OP_JMPL,
+    OP_JMPC,
+    OP_JMPF,
+    OP_JMPT,
+    OP_JMP,
+    OP_LOOP,
+
+    OP_CALL,
+
+    OP_NOOP,
+    OP_NULL,
+
+    OP_RETURN
+
+} opcode;
+
+typedef enum
+{
+    FN_CLOSURE,
+    FUNCTION,
+    NATIVE_FN,
+    SCRIPT
+} FT;
+
+typedef enum
+{
+    ARENA,
+    NATIVE,
+    CLOSURE
+} ObjType;
+
 typedef union Vector Vector;
 typedef union Value Value;
 typedef struct Arena Arena;
 typedef struct Data Data;
+
+typedef struct Chunk Chunk;
+typedef struct Function Function;
+typedef struct Closure Closure;
+typedef struct Upval Upval;
+typedef struct Native Native;
+typedef struct Element Element;
+typedef struct Stack Stack;
+typedef Element (*NativeFn)(int argc, Stack *argv);
 
 union Vector
 {
@@ -84,6 +181,71 @@ struct Arena
 
         Value as;
     };
+};
+
+struct Chunk
+{
+
+    int line;
+
+    Arena cases;
+    Arena op_codes;
+
+    Stack *constants;
+};
+
+struct Function
+{
+    int arity;
+    int upvalue_count;
+    Arena name;
+    Chunk ch;
+};
+
+struct Closure
+{
+    Function *func;
+    Upval *upvals;
+    int upval_count;
+};
+
+struct Native
+{
+    int arity;
+    Arena obj;
+    NativeFn fn;
+};
+
+struct Element
+{
+    ObjType type;
+
+    union
+    {
+        Arena arena;
+        Native *native;
+        Closure *closure;
+    };
+};
+
+struct Stack
+{
+
+    int count;
+    int len;
+    size_t size;
+    Element as;
+    struct Stack *top;
+};
+
+struct Upval
+{
+    int len;
+    int count;
+    size_t size;
+    Stack *index;
+    Stack closed;
+    Upval *next;
 };
 
 #endif

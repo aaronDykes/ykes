@@ -31,6 +31,34 @@
 #define FREE_ARRAY(ar) \
     arena_realloc(ar, 0, ARENA_NULL)
 
+#define ARENA_FREE(ar) \
+    arena_free(ar)
+
+#define GROW_STACK(st, size) \
+    realloc_stack(st, size)
+#define FREE_STACK(st) \
+    realloc_stack(st, 0)
+#define FREE_FUNCTION(func) \
+    free_function(func)
+#define FREE_NATIVE(nat) \
+    free_native(nat)
+#define FREE_CLOSURE(clos) \
+    free_closure(clos)
+#define FREE_UPVAL(up) \
+    free_upval(up)
+#define NEW_STACK(size) \
+    stack(size)
+#define OBJ(o) \
+    Obj(o)
+#define FUNC(ar) \
+    Func(ar)
+#define NATIVE(n) \
+    native_fn(n)
+#define CLOSURE(c) \
+    closure(c)
+#define UPVAL(c) \
+    up_val(c)
+
 typedef union Free Free;
 typedef struct Memory Memory;
 
@@ -49,7 +77,6 @@ union Free
 
 struct Memory
 {
-    void *glob;
     size_t current;
     size_t remains;
     Free *mem;
@@ -80,6 +107,32 @@ Arena Null();
 
 void arena_free(Arena *ar);
 void destroy_global_memory();
+
+void init_chunk(Chunk *c);
+void free_chunk(Chunk *c);
+
+Stack *stack(size_t size);
+Stack *realloc_stack(Stack *stack, size_t size);
+void free_stack(Stack **stack);
+
+Upval *indices(size_t size);
+void free_indices(Upval *up);
+
+Element Obj(Arena ar);
+Element native_fn(Native *native);
+Element closure(Closure *clos);
+
+Function *function(Arena name);
+void free_function(Function *func);
+
+Closure *new_closure(Function *func);
+void free_closure(Closure *closure);
+
+Upval *upval(Stack *index);
+void free_upval(Upval *up);
+
+Native *native(NativeFn native, Arena ar);
+void free_native(Native *native);
 
 void print_arena(Arena ar);
 

@@ -342,7 +342,7 @@ static bool alpha(char c)
 
 static void skip_line_comment()
 {
-    for (; *scan.current != '\n'; skip())
+    for (; *scan.current && *scan.current != '\n'; skip())
         ;
 
     if (!end())

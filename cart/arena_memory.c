@@ -1,15 +1,31 @@
 #include "arena_memory.h"
 #include <stdio.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <stdlib.h>
+
+#define OFFSET sizeof(Free)
+#define PAGE_SIZE \
+    (PAGE * OFFSET)
 
 void initialize_global_memory(size_t size)
 {
 
-    mem.glob = malloc(sizeof(Free) * size);
+    mem.mem = mmap(
+        0,
+        PAGE_SIZE,
+        PROT_READ | PROT_WRITE,
+        POSIX_MADV_RANDOM |
+            POSIX_MADV_WILLNEED |
+            MAP_PRIVATE |
+            MAP_ANON,
+        -1, 0);
 
-    mem.mem = mem.glob;
     mem.mem->size = sizeof(Free);
     mem.mem->prev = NULL;
-    mem.mem->next = mem.glob + mem.mem->size;
+    mem.mem->next = mem.mem + mem.mem->size;
     mem.mem->next->size = (size * sizeof(Free)) - (sizeof(Free) * 2);
     mem.mem->next->next = NULL;
     mem.mem->next->prev = mem.mem;
@@ -75,8 +91,6 @@ Arena arena_init(void *data, size_t size, T type)
 
 void arena_free(Arena *ar)
 {
-
-#define OFFSET sizeof(Free);
 
     if (!ar)
         return;
@@ -169,17 +183,15 @@ void arena_free(Arena *ar)
     mem.remains += new_size;
 
     ar = NULL;
-#undef OFFSET
 }
 
 void destroy_global_memory()
 {
-    free(mem.glob);
+    munmap(mem.mem, PAGE_SIZE);
 }
 
 void *alloc_ptr(size_t size)
 {
-#define OFFSET sizeof(Free)
 
     size_t new_size = size + OFFSET;
 
@@ -208,7 +220,6 @@ void *alloc_ptr(size_t size)
         }
 
     return NULL;
-#undef OFFSET
 }
 Arena *arena_alloc_arena(size_t size)
 {
@@ -248,6 +259,7 @@ void arena_free_arena(Arena *ar)
 {
     if (!(ar - 1))
         return;
+    size_t new_size = ((ar - 1)->size * sizeof(Arena)) + sizeof(Arena) + OFFSET;
 
     for (size_t i = 0; i < (ar - 1)->size; i++)
         switch (ar[i].type)
@@ -262,7 +274,7 @@ void arena_free_arena(Arena *ar)
         case ARENA_FUNC:
         case ARENA_NATIVE:
         case ARENA_VAR:
-            arena_free(&ar[i]);
+            ARENA_FREE(&ar[i]);
             break;
         case ARENA_BYTE:
         case ARENA_INT:
@@ -274,10 +286,46 @@ void arena_free_arena(Arena *ar)
             break;
         }
 
-    (ar - 1)->size = 0;
-    (ar - 1)->type = ARENA_NULL;
-    --ar;
-    ar = NULL;
+    Free *f = (Free *)(ar - 1) - OFFSET;
+
+    if (!f)
+        return;
+
+    for (; f->next; f = f->next)
+        ;
+
+    for (Free *p = mem.mem; p; p = p->next)
+    {
+        if (p == f)
+        {
+            Free *next = p->next;
+
+            size_t tmp = new_size + p->size;
+
+            // if (next)
+            // tmp += p->next->size;
+            p = f;
+            p->size = new_size;
+            p->prev = p;
+            // p->prev->next = p->next;
+
+            if (!next)
+            {
+                p->size = tmp;
+                p->next = NULL;
+            }
+            else
+            {
+                p->next = next;
+                p->next->prev = p->next;
+            }
+
+            mem.remains += new_size;
+            mem.current -= new_size;
+
+            return;
+        }
+    }
 }
 
 Arena arena_alloc(size_t size, T type)
@@ -407,6 +455,250 @@ Arena Null()
     ar.type = ARENA_NULL;
     ar.size = sizeof(void);
     return ar;
+}
+
+Stack *stack(size_t size)
+{
+    Stack *s = NULL;
+    s = ALLOC((size * sizeof(Stack)) + sizeof(Stack));
+    s->size = size;
+    (s + 1)->len = (int)size;
+    (s + 1)->count = 0;
+    (s + 1)->top = s + 1;
+    return s + 1;
+}
+Stack *realloc_stack(Stack *st, size_t size)
+{
+
+    if (size == 0)
+    {
+        free_stack(&st);
+        return NULL;
+    }
+    Stack *s = NEW_STACK(size);
+
+    if (!st)
+        return s;
+
+    for (size_t i = 0; i < (st - 1)->size; i++)
+        switch (st[i].as.type)
+        {
+        case ARENA:
+            s[i].as = OBJ(st[i].as.arena);
+            break;
+        case NATIVE:
+            s[i].as = NATIVE(st[i].as.native);
+            break;
+        case CLOSURE:
+            s[i].as = CLOSURE(st[i].as.closure);
+            break;
+        }
+    s->count = st->count;
+    s->top += s->count;
+    free_stack(&st);
+    return s;
+}
+void free_stack(Stack **stack)
+{
+    Stack *tmp = *stack;
+
+    size_t new_size = (((tmp - 1)->size * sizeof(Stack)) + sizeof(Stack)) + OFFSET;
+
+    if (!(tmp - 1))
+        return;
+    for (size_t i = 0; i < (tmp - 1)->size; i++)
+        switch (tmp[i].as.type)
+        {
+        case ARENA:
+            ARENA_FREE(&tmp[i].as.arena);
+            break;
+        case NATIVE:
+            FREE_NATIVE(tmp[i].as.native);
+            break;
+        case CLOSURE:
+            FREE_CLOSURE(tmp[i].as.closure);
+            break;
+        }
+
+    Free *f = (Free *)((*stack) - 1) - OFFSET;
+
+    if (!f)
+        return;
+
+    for (; f->next; f = f->next)
+        ;
+
+    for (Free *p = mem.mem; p; p = p->next)
+    {
+        if (p == f)
+        {
+            Free *next = p->next;
+
+            size_t tmp = new_size + p->size;
+
+            p = f;
+            p->size = new_size;
+            p->prev = p;
+
+            if (!next)
+            {
+                p->size = tmp;
+                p->next = NULL;
+            }
+            else
+            {
+                p->next = next;
+                p->next->prev = p->next;
+            }
+
+            mem.remains += new_size;
+            mem.current -= new_size;
+
+            return;
+        }
+    }
+    tmp = NULL;
+}
+
+Upval *indices(size_t size)
+{
+    Upval *up = ALLOC((sizeof(Upval) * size) + sizeof(Upval));
+
+    up->size = size;
+    for (size_t i = 1; i < size; i++)
+        up[i].index = NULL;
+
+    (up + 1)->len = (int)size;
+    (up + 1)->count = 0;
+    return up + 1;
+}
+
+void free_indices(Upval *up)
+{
+    for (size_t i = 0; i < (up - 1)->size; i++)
+        FREE_STACK(up[i].index);
+
+    up = NULL;
+}
+
+Element Obj(Arena ar)
+{
+    Element s;
+    s.arena = ar;
+    s.type = ARENA;
+    return s;
+}
+Element native_fn(Native *native)
+{
+    Element s;
+
+    s.native = native;
+    s.type = NATIVE;
+    return s;
+}
+
+Element closure(Closure *closure)
+{
+    Element el;
+    el.closure = closure;
+    el.type = CLOSURE;
+    return el;
+}
+
+Function *function(Arena name)
+{
+    Function *func = ALLOC(sizeof(Function));
+    func->arity = 0;
+    func->upvalue_count = 0;
+    func->name = name;
+    init_chunk(&func->ch);
+    return func;
+}
+void free_function(Function *func)
+{
+    if (!func)
+        return;
+    if (func->name.type != ARENA_NULL)
+        FREE_ARRAY(&func->name);
+    free_chunk(&func->ch);
+    func = NULL;
+}
+
+Native *native(NativeFn func, Arena ar)
+{
+    Native *native = ALLOC(sizeof(Native));
+    native->fn = func;
+    native->obj = ar;
+    return native;
+}
+
+void free_native(Native *native)
+{
+
+    if (!native)
+        return;
+    native->fn = NULL;
+
+    FREE_ARRAY(&native->obj);
+}
+Closure *new_closure(Function *func)
+{
+    Closure *closure = ALLOC(sizeof(Closure));
+    closure->func = func;
+    if (!func)
+        return closure;
+    closure->upvals = indices(func->upvalue_count);
+    closure->upval_count = func->upvalue_count;
+    return closure;
+}
+
+void free_closure(Closure *closure)
+{
+    if (!closure)
+        return;
+    closure = NULL;
+}
+
+Upval *upval(Stack *index)
+{
+    Upval *up = ALLOC(sizeof(Upval));
+    up->index = index;
+    up->next = NULL;
+    return up;
+}
+void free_upval(Upval *up)
+{
+    if (!up)
+        return;
+    up->index = NULL;
+}
+
+void init_chunk(Chunk *c)
+{
+    c->op_codes.len = 0;
+    c->op_codes.count = 0;
+    c->op_codes.listof.Bytes = NULL;
+    c->cases.len = 0;
+    c->cases.count = 0;
+    c->cases.listof.Ints = NULL;
+    c->cases.len = 0;
+    c->line = 0;
+    c->constants = GROW_STACK(NULL, STACK_SIZE);
+}
+
+void free_chunk(Chunk *c)
+{
+    if (!c)
+    {
+        init_chunk(c);
+        return;
+    }
+    if (c->op_codes.listof.Bytes)
+        FREE_ARRAY(&c->op_codes);
+    if (c->cases.listof.Ints)
+        FREE_ARRAY(&c->cases);
+    c->constants = NULL;
+    init_chunk(c);
 }
 
 void print_arena(Arena ar)
