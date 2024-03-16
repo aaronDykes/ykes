@@ -5,10 +5,12 @@
 
 void write_chunk(Chunk *c, uint8_t byte);
 int add_constant(Chunk *c, Element ar);
-void print(Element ar);
+
 void push(Stack **s, Element e);
 void popn(Stack **s, int ival);
-void check_stack_size(Stack *s);
 void reset_stack(Stack *s);
+void check_stack_size(Stack *s);
+
+void print(Element ar);
 
 #endif

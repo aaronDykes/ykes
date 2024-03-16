@@ -701,6 +701,220 @@ void free_chunk(Chunk *c)
     init_chunk(c);
 }
 
+Table *arena_alloc_table(size_t size)
+{
+    Table *t = ALLOC(((size_t)size * sizeof(Table)) + sizeof(Table));
+
+    size_t n = (size_t)size + 1;
+    for (size_t i = 1; i < n; i++)
+        t[i] = arena_entry(Null(), Null());
+
+    t->size = size;
+    return t + 1;
+}
+
+Table *arena_realloc_table(Table *t, size_t size)
+{
+
+    Table *ptr = NULL;
+
+    if (!t && size != 0)
+    {
+        ptr = arena_alloc_table(size);
+        return ptr;
+    }
+    if (size == 0)
+    {
+        arena_free_table(t);
+        return NULL;
+    }
+
+    ptr = arena_alloc_table(size);
+
+    size_t new_size = (size <= (t - 1)->size) ? size : (t - 1)->size;
+
+    for (size_t i = 0; i < new_size; i++)
+        ptr[i] = new_entry(t[i]);
+
+    arena_free_table(t);
+    return ptr;
+}
+
+void arena_free_table(Table *t)
+{
+    if (!(t - 1))
+        return;
+
+    size_t size = (t - 1)->size;
+
+    for (size_t i = 0; i < size; i++)
+    {
+        FREE_TABLE_ENTRY(&t[i]);
+        t[i].size = 0;
+    }
+
+    (t - 1)->size = 0;
+    --t;
+    t = NULL;
+}
+
+void arena_free_entry(Table *entry)
+{
+    if (entry->type == ARENA_TABLE)
+        FREE_ARRAY(&entry->val.a);
+    else if (entry->type == ARENA_NATIVE)
+        FREE_NATIVE(entry->val.n);
+    else
+        FREE_CLOSURE(entry->val.c);
+
+    FREE_ARRAY(&entry->key);
+    entry->next = NULL;
+    entry->prev = NULL;
+    entry = NULL;
+}
+
+void alloc_entry(Table **e, Table el)
+{
+    Table *tmp = *e;
+
+    if (!tmp)
+    {
+        *e = ALLOC(sizeof(Table));
+        **e = el;
+        return;
+    }
+    for (; tmp->next; tmp = tmp->next)
+        ;
+    tmp->next = ALLOC(sizeof(Table));
+    *tmp->next = el;
+    tmp->next->prev = tmp;
+}
+
+Table new_entry(Table t)
+{
+    Table el;
+    el.key = t.key;
+    el.val = t.val;
+    el.next = t.next;
+    el.prev = t.prev;
+    el.type = t.type;
+    return el;
+}
+
+Table arena_entry(Arena key, Arena val)
+{
+    Table el;
+    el.key = key;
+    el.val.a = val;
+    el.next = NULL;
+    el.prev = NULL;
+    el.size = key.size + val.size;
+    el.type = ARENA_TABLE;
+    return el;
+}
+Table func_entry(Function *func)
+{
+    Table el;
+    el.key = func->name;
+    el.val.c = new_closure(func);
+    el.next = NULL;
+    el.prev = NULL;
+    el.size = el.key.size;
+    el.type = CLOSURE_TABLE;
+    return el;
+}
+Table native_entry(Native *func)
+{
+    Table el;
+    el.key = func->obj;
+    el.val.n = func;
+    el.next = NULL;
+    el.prev = NULL;
+    el.size = el.key.size;
+    el.type = NATIVE_TABLE;
+    return el;
+}
+
+Arena Var(const char *str)
+{
+    size_t size = strlen(str);
+    Arena ar = GROW_ARRAY(NULL, size, ARENA_VAR);
+    memcpy(ar.as.String, str, size);
+    ar.as.String[size] = '\0';
+    size_t h = hash(ar);
+    ar.as.hash = h;
+    ar.type = ARENA_VAR;
+    return ar;
+}
+Arena func_name(const char *str)
+{
+    size_t size = strlen(str);
+    Arena ar = GROW_ARRAY(NULL, size, ARENA_FUNC);
+    memcpy(ar.as.String, str, size);
+    ar.as.String[size] = '\0';
+    size_t h = hash(ar);
+    ar.as.hash = h;
+    ar.type = ARENA_FUNC;
+    return ar;
+}
+Arena native_name(const char *str)
+{
+    size_t size = strlen(str);
+    Arena ar = GROW_ARRAY(NULL, size, ARENA_NATIVE);
+    memcpy(ar.as.String, str, size);
+    ar.as.String[size] = '\0';
+    size_t h = hash(ar);
+    ar.as.hash = h;
+    ar.type = ARENA_NATIVE;
+    return ar;
+}
+
+size_t hash(Arena key)
+{
+    size_t index = 2166136261u;
+
+    switch (key.type)
+    {
+    case ARENA_VAR:
+    case ARENA_FUNC:
+    case ARENA_NATIVE:
+        for (char *s = key.as.String; *s; s++)
+        {
+            index ^= (int)*s;
+            index *= 16777619;
+        }
+        break;
+    case ARENA_INT:
+        index ^= key.as.Int;
+        index = (index * 16777669);
+        break;
+    case ARENA_DOUBLE:
+        index ^= ((int)key.as.Double);
+        index = (index * 16777420);
+        break;
+    case ARENA_LONG:
+        index ^= key.as.Long;
+        index = (index * 16776969);
+        break;
+    case ARENA_CHAR:
+        index ^= key.as.Char;
+        index = (index * 16742069);
+        break;
+    case ARENA_BYTE:
+    case ARENA_STR:
+    case ARENA_BOOL:
+    case ARENA_NULL:
+    case ARENA_BYTES:
+    case ARENA_INTS:
+    case ARENA_DOUBLES:
+    case ARENA_LONGS:
+    case ARENA_BOOLS:
+    case ARENA_STRS:
+        break;
+    }
+    return index;
+}
+
 void print_arena(Arena ar)
 {
     switch (ar.type)

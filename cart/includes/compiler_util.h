@@ -61,13 +61,12 @@ struct Compiler
     FT type;
     Function *func;
 
+    Parser parser;
+
     Compiler *enclosing;
-
     Arena calls[CALL_COUNT];
-
     Local locals[LOCAL_COUNT];
     Upvalue upvalues[LOCAL_COUNT];
-    Parser parser;
 };
 
 struct parse_rule

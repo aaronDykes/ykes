@@ -274,21 +274,21 @@ Interpretation run()
                 uint8_t index = READ_BYTE();
 
                 if (is_local)
-                    frame->closure->upvals[i].index = capture_upvalue(frame->slots + index)->index;
+                    c->upvals[i].index = capture_upvalue(frame->slots + index)->index;
                 else
-                    frame->closure->upvals[i].index = c->upvals[i].index;
+                    c->upvals[i].index = frame->closure->upvals[i].index;
             }
         }
         break;
         case OP_GET_UPVALUE:
         {
             Stack s = *frame->closure->upvals[READ_BYTE()].index;
-
             PUSH(s.as);
+
             break;
         }
         case OP_SET_UPVALUE:
-            *frame->closure->upvals[READ_BYTE()].index = *(machine.stack->top - 1);
+            frame->closure->upvals[READ_BYTE()].index = (machine.stack->top - 1);
             break;
         case OP_NEG:
             (--machine.stack->top)->as = OBJ(_neg((machine.stack->top++)->as.arena));
@@ -459,8 +459,10 @@ Interpretation run()
                 PUSH(OBJ(find(ar)));
         }
         break;
+
         case OP_GET_CLOSURE:
-            PUSH((machine.call_stack + READ_BYTE())->as);
+            PUSH(CLOSURE(GET_FUNC(READ_CONSTANT().arena)));
+            // PUSH((machine.call_stack + READ_BYTE())->as);
             break;
         case OP_GET_NATIVE:
             PUSH(GET_NATIVE(READ_CONSTANT().arena));

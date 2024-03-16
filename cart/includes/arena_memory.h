@@ -14,40 +14,48 @@
 #define IP_SIZE 100
 #define MEM_OFFSET 1
 
+#define ALLOC(size) \
+    alloc_ptr(size)
 #define GROW_CAPACITY(capacity) \
     ((capacity) < CAPACITY ? CAPACITY : capacity * INC)
 
 #define GROW_ARRAY(ar, size, type) \
     arena_realloc(ar, size, type)
-
 #define GROW_ARENA(ar, size) \
     arena_realloc_arena(ar, size)
-#define ALLOC(size) \
-    alloc_ptr(size)
-
 #define FREE_ARENA(ar) \
     arena_realloc_arena(ar, 0)
-
 #define FREE_ARRAY(ar) \
     arena_realloc(ar, 0, ARENA_NULL)
-
 #define ARENA_FREE(ar) \
     arena_free(ar)
+
+#define GROW_TABLE(ar, size) \
+    arena_realloc_table(ar, size)
+#define ALLOC_ENTRY(a, b) \
+    alloc_entry(a, b)
+#define FREE_TABLE(ar) \
+    arena_realloc_table(ar, 0)
+#define FREE_TABLE_ENTRY(ar) \
+    arena_free_entry(ar)
 
 #define GROW_STACK(st, size) \
     realloc_stack(st, size)
 #define FREE_STACK(st) \
     realloc_stack(st, 0)
+
 #define FREE_FUNCTION(func) \
     free_function(func)
 #define FREE_NATIVE(nat) \
     free_native(nat)
 #define FREE_CLOSURE(clos) \
     free_closure(clos)
+
 #define FREE_UPVAL(up) \
     free_upval(up)
 #define NEW_STACK(size) \
     stack(size)
+
 #define OBJ(o) \
     Obj(o)
 #define FUNC(ar) \
@@ -56,8 +64,6 @@
     native_fn(n)
 #define CLOSURE(c) \
     closure(c)
-#define UPVAL(c) \
-    up_val(c)
 
 typedef union Free Free;
 typedef struct Memory Memory;
@@ -135,5 +141,23 @@ Native *native(NativeFn native, Arena ar);
 void free_native(Native *native);
 
 void print_arena(Arena ar);
+
+Table arena_entry(Arena key, Arena val);
+Table func_entry(Function *f);
+Table native_entry(Native *func);
+
+Table new_entry(Table t);
+size_t hash(Arena key);
+
+Table *arena_alloc_table(size_t size);
+Table *arena_realloc_table(Table *t, size_t size);
+
+void alloc_entry(Table **e, Table el);
+void arena_free_table(Table *t);
+void arena_free_entry(Table *entry);
+
+Arena Var(const char *str);
+Arena func_name(const char *str);
+Arena native_name(const char *str);
 
 #endif

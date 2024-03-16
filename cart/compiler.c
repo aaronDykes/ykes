@@ -12,11 +12,9 @@ static void init_compiler(Compiler *a, Compiler *b, FT type, Arena name)
 
     if (b)
     {
-        // a->base = b->base;
         a->parser = b->parser;
         a->enclosing = b;
     }
-    // a->base_call_count = 0;
     a->call_count = 0;
     a->upvalue_count = 0;
     a->func = function(name);
@@ -28,14 +26,9 @@ static void init_compiler(Compiler *a, Compiler *b, FT type, Arena name)
     Local *local = NULL;
 
     if (b)
-    {
-        // a->scope_depth = (b->scope_depth == 1) ? 1 : b->scope_depth - 1;
         local = &b->locals[b->local_count++];
-    }
     else
-    {
         local = &a->locals[a->local_count++];
-    }
 
     local->captured = false;
     local->depth = 0;
@@ -117,7 +110,6 @@ static void func_declaration(Compiler *c)
     Arena ar = parse_func_id(c);
 
     c->calls[c->call_count++] = ar;
-    // c->base->base_calls[c->base_call_count++] = ar;
     func_body(c, FUNCTION, ar);
 }
 
@@ -145,6 +137,7 @@ static void func_body(Compiler *c, FT type, Arena ar)
 
     Function *f = end_compile(c);
 
+    Compiler *tmp = c;
     end_scope(c);
 
     c = c->enclosing;
@@ -157,10 +150,10 @@ static void func_body(Compiler *c, FT type, Arena ar)
 
     for (int i = 0; i < f->upvalue_count; i++)
     {
-        uint8_t local = c->upvalues[i].islocal ? (uint8_t)1 : (uint8_t)0;
-        uint8_t index = (uint8_t)c->upvalues[i].index;
-
-        clos->upvals[i].index = (c->func->ch.constants + i);
+        uint8_t local = tmp->upvalues[i].islocal ? (uint8_t)1 : (uint8_t)0;
+        uint8_t index = (uint8_t)tmp->upvalues[i].index;
+        //
+        // clos->upvals[i].index = (c->func->ch.constants + i);
         emit_byte(&c->func->ch, local);
         emit_byte(&c->func->ch, index);
     }
@@ -882,16 +875,16 @@ static Arena get_id(Compiler *c)
     return args;
 }
 
-static int resolve_upcall(Compiler *c, Arena *ar)
+static int resolve_call(Compiler *c, Arena *ar)
 {
 
-    for (int i = c->call_count - 1; i >= 0; i--)
+    for (int i = 0; i < c->call_count; i++)
         if (idcmp(*ar, c->calls[i]))
             return i;
 
     if (!c->enclosing)
         return -1;
-    return resolve_upcall(c->enclosing, ar);
+    return resolve_call(c->enclosing, ar);
 }
 
 static void id(Compiler *c)
@@ -905,11 +898,15 @@ static void id(Compiler *c)
     Arena ar = parse_id(c);
     uint8_t get, set;
     int arg = 0;
-    arg = resolve_upcall(c, &ar);
+    arg = resolve_call(c, &ar);
 
     if (arg != -1)
     {
-        emit_bytes(&c->func->ch, OP_GET_CLOSURE, (uint8_t)arg);
+        // if (c->enclosing)
+        // emit_bytes(&c->enclosing->func->ch, OP_GET_CLOSURE, (uint8_t)arg);
+        // else
+        // emit_bytes(&c->func->ch, OP_GET_CLOSURE, (uint8_t)arg);
+        emit_bytes(&c->func->ch, OP_GET_CLOSURE, add_constant(&c->func->ch, OBJ(ar)));
 
         if (match(TOKEN_CH_LPAREN, &c->parser))
             call(c);
@@ -1000,7 +997,7 @@ static int resolve_upvalue(Compiler *c, Arena *name)
 
 static int add_upvalue(Compiler *c, int index, bool islocal)
 {
-    int count = c->upvalue_count + 1;
+    int count = c->upvalue_count;
 
     for (int i = 0; i < count; i++)
     {

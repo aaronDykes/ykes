@@ -22,10 +22,13 @@ sr n()
 
     sr sum()
     {
-        return f() + g() + h();
+        var res = f();
+        return res; 
     }
 
-  return sum();
+  return sum;
 }
 
 var hello = n();
+
+hello();

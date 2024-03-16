@@ -120,6 +120,13 @@ typedef enum
     CLOSURE
 } ObjType;
 
+typedef enum
+{
+    ARENA_TABLE,
+    NATIVE_TABLE,
+    CLOSURE_TABLE
+} TableType;
+
 typedef union Vector Vector;
 typedef union Value Value;
 typedef struct Arena Arena;
@@ -132,6 +139,7 @@ typedef struct Upval Upval;
 typedef struct Native Native;
 typedef struct Element Element;
 typedef struct Stack Stack;
+typedef struct Table Table;
 typedef Element (*NativeFn)(int argc, Stack *argv);
 
 union Vector
@@ -246,6 +254,23 @@ struct Upval
     Stack *index;
     Stack closed;
     Upval *next;
+};
+
+struct Table
+{
+    size_t size;
+    Arena key;
+    TableType type;
+
+    union
+    {
+        Native *n;
+        Closure *c;
+        Arena a;
+    } val;
+
+    Table *next;
+    Table *prev;
 };
 
 #endif

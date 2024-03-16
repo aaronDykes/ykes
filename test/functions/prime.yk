@@ -2,10 +2,9 @@ sr is_prime(l)
 {
     if (l == 9) 
         return false;
-    else 
-        for (var i = 2; i < square(l); i++)
-            if (l % i == 0)
-                return false;
+    for (var i = 2; i < square(l); i++)
+        if (l % i == 0)
+            return false;
 
     return true;
 
@@ -22,6 +21,7 @@ sr print_prime(n)
 }
 
 var start = clock();
-print_prime(100);
+print_prime(100000);
 pout clock() - start;
+
 

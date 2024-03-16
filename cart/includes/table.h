@@ -8,7 +8,7 @@ struct machine_table
 {
     int capacity;
     int count;
-    Table map;
+    Table *map;
 };
 
 typedef struct machine_table dict;
