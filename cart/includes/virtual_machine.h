@@ -17,11 +17,10 @@ typedef enum
 
 struct CallFrame
 {
-    Closure closure;
+    Closure *closure;
     uint8_t *ip;
     uint8_t *ip_start;
     Stack *slots;
-    Stack *calls;
 };
 typedef struct CallFrame CallFrame;
 
@@ -32,6 +31,7 @@ struct vm
     Stack *stack;
     Stack *call_stack;
     Stack *native_calls;
+    Upval *open_upvals;
     dict glob;
 };
 typedef struct vm vm;

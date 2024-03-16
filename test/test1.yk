@@ -1,0 +1,31 @@
+sr n()
+{
+    
+    var al = 1;
+    var be = 2;
+    var cunt = 3;
+
+    sr f()
+    {
+      return al;
+    }
+    
+    sr g()
+    {
+      return be;
+    }
+
+    sr h()
+    {
+      return cunt;
+    }
+
+    sr sum()
+    {
+        return f() + g() + h();
+    }
+
+  return sum();
+}
+
+var hello = n();

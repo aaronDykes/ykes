@@ -4,7 +4,7 @@
 
 #define MAX_ELIF 10
 #define LOCAL_COUNT 500
-#define CALL_COUNT 2056
+#define CALL_COUNT 1000
 #define PTR_SIZE(X) sizeof(X) / sizeof(X[0])
 
 struct Parser
@@ -56,23 +56,17 @@ struct Compiler
     int local_count;
     int scope_depth;
     int upvalue_count;
+    int base_call_count;
+    int call_count;
 
     FT type;
     Function *func;
 
     Compiler *enclosing;
-    struct
-    {
-        int call_count;
-        Arena calls[CALL_COUNT];
-    } en;
+    Compiler *base;
 
-    struct
-    {
-        int call_count;
-        Arena calls[CALL_COUNT];
-        Compiler *base;
-    };
+    Arena base_calls[CALL_COUNT];
+    Arena calls[CALL_COUNT];
 
     Local locals[LOCAL_COUNT];
     Upvalue upvalues[LOCAL_COUNT];

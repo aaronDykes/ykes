@@ -1,0 +1,15 @@
+sr outer() 
+{
+  var x = "outside";
+  
+  sr inner() 
+  {
+    x = "updated"; 
+    pout x + "... How?";
+  }
+
+  return inner;
+}
+var hello = outer();
+
+hello();

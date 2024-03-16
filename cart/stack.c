@@ -55,14 +55,11 @@ void free_stack(Stack **stack)
         case ARENA:
             FREE_ARRAY(&tmp[i].as.arena);
             break;
-        // case FUNC:
-        //     FREE_FUNCTION(tmp[i].as.func);
-        //     break;
         case NATIVE:
             FREE_NATIVE(tmp[i].as.native);
             break;
         case CLOSURE:
-            FREE_CLOSURE(&tmp[i].as.closure);
+            FREE_CLOSURE(tmp[i].as.closure);
             break;
         }
     tmp = NULL;
@@ -105,7 +102,7 @@ Element native_fn(Native *native)
     return s;
 }
 
-Element closure(Closure closure)
+Element closure(Closure *closure)
 {
     Element el;
     el.closure = closure;
@@ -113,11 +110,12 @@ Element closure(Closure closure)
     return el;
 }
 
-Function *function()
+Function *function(Arena name)
 {
     Function *func = ALLOC(sizeof(Function));
     func->arity = 0;
     func->upvalue_count = 0;
+    func->name = name;
     init_chunk(&func->ch);
     return func;
 }
@@ -148,14 +146,14 @@ void free_native(Native *native)
 
     FREE_ARRAY(&native->obj);
 }
-Closure new_closure(Function *func)
+Closure *new_closure(Function *func)
 {
-    Closure closure;
-    closure.func = func;
+    Closure *closure = ALLOC(sizeof(Closure));
+    closure->func = func;
     if (!func)
         return closure;
-    closure.upvals = indices(func->upvalue_count);
-    closure.upval_count = func->upvalue_count;
+    closure->upvals = indices(func->upvalue_count);
+    closure->upval_count = func->upvalue_count;
     return closure;
 }
 
@@ -166,10 +164,11 @@ void free_closure(Closure *closure)
     closure = NULL;
 }
 
-Upval upval(Stack *index)
+Upval *upval(Stack *index)
 {
-    Upval up;
-    up.index = index;
+    Upval *up = ALLOC(sizeof(Upval));
+    up->index = index;
+    up->next = NULL;
     return up;
 }
 void free_upval(Upval *up)
@@ -183,8 +182,11 @@ void init_chunk(Chunk *c)
 {
     c->op_codes.len = 0;
     c->op_codes.count = 0;
+    c->op_codes.listof.Bytes = NULL;
     c->cases.len = 0;
     c->cases.count = 0;
+    c->cases.listof.Ints = NULL;
+    c->cases.len = 0;
     c->line = 0;
     c->constants = GROW_STACK(NULL, STACK_SIZE);
 }
@@ -282,7 +284,7 @@ void print(Element ar)
     }
     else if (ar.type == CLOSURE)
     {
-        printf("<fn: %s>\n", ar.closure.func->name.as.String);
+        printf("<fn: %s>\n", ar.closure->func->name.as.String);
         return;
     }
     switch (a.type)

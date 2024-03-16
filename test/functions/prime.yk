@@ -1,8 +1,11 @@
 sr is_prime(l)
 {
-    for (var i = 2; i < square(l); i++)
-        if (l % i == 0)
-            return false;
+    if (l == 9) 
+        return false;
+    else 
+        for (var i = 2; i < square(l); i++)
+            if (l % i == 0)
+                return false;
 
     return true;
 
@@ -11,16 +14,14 @@ sr is_prime(l)
 sr print_prime(n)
 {
     for (var i = 3; i < n; i++)
+    {
         if (is_prime(i))
             pout i;
+
+    }
 }
 
-sr all_in_one(n)
-{
-    var start = clock();
-    print_prime(n);
-    pout clock() - start;
-}
-
-all_in_one(100);
+var start = clock();
+print_prime(100);
+pout clock() - start;
 

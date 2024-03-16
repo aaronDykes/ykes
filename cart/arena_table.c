@@ -63,7 +63,7 @@ void arena_free_entry(Table entry)
     else if (entry->type == ARENA_NATIVE)
         FREE_NATIVE(entry->val.n);
     else
-        FREE_CLOSURE(&entry->val.c);
+        FREE_CLOSURE(entry->val.c);
 
     FREE_ARRAY(&entry->key);
     entry->next = NULL;
@@ -99,8 +99,8 @@ void insert_entry(Table *t, table entry)
 
     else if (entry.type == CLOSURE_TABLE)
     {
-        Closure c = find_func_entry(t, &entry.key);
-        if (!c.func)
+        Closure *c = find_func_entry(t, &entry.key);
+        if (!c)
             ALLOC_ENTRY(&tmp[entry.key.as.hash].next, entry);
         return;
     }
@@ -438,15 +438,15 @@ Native *find_native_entry(Table *t, Arena *hash)
     return NULL;
 }
 
-Closure find_func_entry(Table *t, Arena *hash)
+Closure *find_func_entry(Table *t, Arena *hash)
 {
     Table a = *t;
     size_t index = hash->as.hash;
     table entry = a[index];
-    Closure c = new_closure(NULL);
+    Closure *c = NULL;
 
     if (entry.key.type == ARENA_NULL)
-        return c;
+        return NULL;
 
     if (strcmp(entry.key.as.String, hash->as.String) == 0)
         return entry.val.c;
@@ -488,7 +488,7 @@ Closure find_func_entry(Table *t, Arena *hash)
             break;
         }
 
-    return c;
+    return NULL;
 }
 
 Arena find_arena_entry(Table *t, Arena *hash)

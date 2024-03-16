@@ -1,11 +1,16 @@
-sr outer() {
-  var x = 1;    // (1)
-  x = 2;        // (2)
-  sr inner() { // (3)
-    x = 69; 
-    pout x + 69;
-  }
-  inner();
+var globalSet;
+var globalGet;
+
+sr main() {
+  var a = "initial";
+
+  sr set() { a = "updated"; }
+  sr get() { pout a; }
+
+  globalSet = set;
+  globalGet = get;
 }
 
-outer();
+main();
+globalSet();
+globalGet();

@@ -98,7 +98,7 @@ static char *read_file(const char *path)
         int status = fstat(fd, &s);
         int size = s.st_size;
 
-        char *f = (char *)mmap(0, size, PROT_READ, MAP_PRIVATE, fd, 0);
+        void *f = (char *)mmap(0, PAGE, PROT_READ, MAP_PRIVATE, -1, 0);
         char *tmp = f;
 
         munmap(f, size);

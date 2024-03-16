@@ -144,14 +144,6 @@ struct Function
     Chunk ch;
 };
 
-struct Upval
-{
-    int len;
-    int count;
-    size_t size;
-    Stack *index;
-};
-
 struct Closure
 {
     Function *func;
@@ -174,7 +166,7 @@ struct Element
     {
         Arena arena;
         Native *native;
-        Closure closure;
+        Closure *closure;
     };
 };
 
@@ -186,6 +178,15 @@ struct Stack
     size_t size;
     Element as;
     struct Stack *top;
+};
+struct Upval
+{
+    int len;
+    int count;
+    size_t size;
+    Stack *index;
+    Stack closed;
+    Upval *next;
 };
 
 void init_chunk(Chunk *c);
@@ -203,15 +204,15 @@ void free_indices(Upval *up);
 Element Obj(Arena ar);
 // Element Func(Function *f);
 Element native_fn(Native *native);
-Element closure(Closure clos);
+Element closure(Closure *clos);
 
-Function *function();
+Function *function(Arena name);
 void free_function(Function *func);
 
-Closure new_closure(Function *func);
+Closure *new_closure(Function *func);
 void free_closure(Closure *closure);
 
-Upval upval(Stack *index);
+Upval *upval(Stack *index);
 void free_upval(Upval *up);
 
 Native *native(NativeFn native, Arena ar);

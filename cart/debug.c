@@ -64,8 +64,8 @@ int disassemble_instruction(Chunk *c, int offset)
         printf("%-16s %4d ", "OP_CLOSURE", constant);
         print(c->constants[constant].as);
 
-        Closure clos = c->constants[constant].as.closure;
-        for (int j = 0; j < clos.upval_count; j++)
+        Closure *clos = c->constants[constant].as.closure;
+        for (int j = 0; j < clos->upval_count; j++)
         {
             int isLocal = c->op_codes.listof.Bytes[offset++];
             int index = c->op_codes.listof.Bytes[offset++];
