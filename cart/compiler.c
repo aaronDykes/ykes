@@ -149,6 +149,7 @@ static void func_body(Compiler *c, ObjType type, Arena ar)
     {
         uint8_t local = tmp->upvalues[i].islocal ? 1 : 0;
         uint8_t index = (uint8_t)tmp->upvalues[i].index;
+
         emit_byte(&c->func->ch, local);
         emit_byte(&c->func->ch, index);
     }

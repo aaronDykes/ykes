@@ -674,8 +674,8 @@ void free_closure(Closure *closure)
 Upval *upval(Stack *index)
 {
     Upval *up = ALLOC(sizeof(Upval));
-    up->index = ALLOC(sizeof(Stack));
-    *up->index = *index;
+    up->index = index;
+    up->closed = *index;
     up->next = NULL;
     return up;
 }

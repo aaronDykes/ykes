@@ -4,14 +4,17 @@ sr n()
 
     sr f()
     {
-      al = 120; 
       return al;
     }
     var be = 10;
+
+    sr set()
+    {
+      be = be + 69;
+    }
     
     sr g()
     {
-      be = be + 69; 
       return be;
     }
 
@@ -23,6 +26,7 @@ sr n()
 
     sr sum()
     {
+        set();
         return f() + g() + h(); 
     }
 

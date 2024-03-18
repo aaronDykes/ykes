@@ -1,0 +1,22 @@
+var glob_set = 0;
+var glob_get = 0;
+
+sr n()
+{
+
+    var a = "initial";
+    
+    sr set() { a = "updated"; }
+    sr get() { return a; }
+
+
+
+    glob_set = set;
+    glob_get = get;
+}
+
+
+n();
+glob_set();
+pout glob_get();
+

@@ -137,6 +137,7 @@ void free_function(Function *func);
 Closure *new_closure(Function *func);
 void free_closure(Closure *closure);
 
+Upval *new_upval(Stack *index);
 Upval *upval(Stack *index);
 void free_upval(Upval *up);
 

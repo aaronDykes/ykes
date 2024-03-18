@@ -253,15 +253,15 @@ Interpretation run()
                 if (is_local)
                     c->upvals[i] = capture_upvalue(frame->slots + index);
                 else
-                    c->upvals[i] = frame->closure->upvals[index];
+                    c->upvals[i] = frame->closure->upvals[index]->index;
             }
         }
         break;
         case OP_GET_UPVALUE:
-            PUSH((*frame->closure->upvals[READ_BYTE()]->index).as);
+            PUSH((*frame->closure->upvals + READ_BYTE())->closed.as);
             break;
         case OP_SET_UPVALUE:
-            *frame->closure->upvals[READ_BYTE()]->index = *(machine.stack->top - 1);
+            ((*frame->closure->upvals + READ_BYTE()))->closed = *(machine.stack->top - 1);
             break;
         case OP_NEG:
             (--machine.stack->top)->as = OBJ(_neg((machine.stack->top++)->as.arena));
@@ -460,6 +460,7 @@ Interpretation run()
             PUSH(el);
 
             frame = &machine.frames[machine.frame_count - 1];
+
             break;
         }
         }
