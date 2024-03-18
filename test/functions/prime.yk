@@ -22,10 +22,10 @@ sr print()
         }
     }
 
+    var start = clock();
     print_prime(100000);
-
+    pout clock() - start;
 
 }
-    var start = clock();
-    print();
-    pout clock() - start;
+    
+print();

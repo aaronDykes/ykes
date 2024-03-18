@@ -1,16 +1,17 @@
 sr n()
 {
-    
     var al = 100;
 
     sr f()
     {
+      al = 120; 
       return al;
     }
     var be = 10;
     
     sr g()
     {
+      be = be + 69; 
       return be;
     }
 

@@ -1,8 +1,11 @@
 sr n()
 {
-  var a = 69;
+  var a = 10;
 
-  sr f() {
+
+  sr f()
+  {
+    a = 69; 
     return a;
   }
   var b = 69;
@@ -28,4 +31,4 @@ sr n()
 
 var hello = n();
 
-pout hello();
+hello();

@@ -127,12 +127,6 @@ static Element find(Table *t, Arena ar)
     ar.as.hash %= (t - 1)->len;
     return find_entry(&t, &ar);
 }
-static Interpretation undefined_var(Arena tmp)
-{
-    runtime_error("Undefined variable `%s`.", tmp.as.String);
-    return INTERPRET_RUNTIME_ERR;
-}
-
 static bool call_value(Element el, uint8_t argc)
 {
     switch (el.type)
@@ -248,8 +242,8 @@ Interpretation run()
         case OP_CLOSURE:
         {
             Closure *c = READ_CONSTANT().closure;
-            const char *name = c->func->name.as.String;
             CPUSH(CLOSURE(c));
+            char *s = c->func->name.as.String;
 
             for (int i = 0; i < c->upval_count; i++)
             {
@@ -264,20 +258,11 @@ Interpretation run()
         }
         break;
         case OP_GET_UPVALUE:
-        {
-            // uint8_t i = READ_BYTE();
-            Upval *s = frame->closure->upvals[READ_BYTE()];
-            PUSH(s->index->as);
+            PUSH((*frame->closure->upvals[READ_BYTE()]->index).as);
             break;
-        }
         case OP_SET_UPVALUE:
-        {
-            // uint8_t i = READ_BYTE();
-            Upval *s = frame->closure->upvals[READ_BYTE()];
-            *s->index = *(machine.stack->top - 1);
-
+            *frame->closure->upvals[READ_BYTE()]->index = *(machine.stack->top - 1);
             break;
-        }
         case OP_NEG:
             (--machine.stack->top)->as = OBJ(_neg((machine.stack->top++)->as.arena));
             break;
@@ -460,8 +445,6 @@ Interpretation run()
             break;
         case OP_RETURN:
         {
-
-            Upval *tmp = machine.open_upvals;
             Element el = POP();
             --machine.frame_count;
 
@@ -477,7 +460,6 @@ Interpretation run()
             PUSH(el);
 
             frame = &machine.frames[machine.frame_count - 1];
-            machine.open_upvals = tmp;
             break;
         }
         }

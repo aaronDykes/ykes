@@ -347,7 +347,6 @@ Closure *find_func_entry(Table **t, Arena *hash)
     Table *a = *t;
     size_t index = hash->as.hash;
     Table entry = a[index];
-    Closure *c = NULL;
 
     if (entry.key.type == ARENA_NULL)
         return NULL;

@@ -85,21 +85,22 @@ char *lltoa(char *c, long long int n)
 Arena prepend_int_to_str(Arena s, Arena a)
 {
     int len = intlen(s.as.Int);
-    Arena ar;
-    ar = arena_alloc(sizeof(char) * (len + 1 + a.as.len), ARENA_STR);
-    ar.as.String = itoa(ar.as.String, s.as.Int);
-    strcat(ar.as.String, a.as.String);
-    arena_free(&ar);
+    int ival = s.as.Int;
+    if (ival < 0)
+        ++len;
+    s = GROW_ARRAY(NULL, sizeof(char) * (len + 1 + a.as.len), ARENA_STR);
+    s.as.String = itoa(s.as.String, ival);
+    strcat(s.as.String, a.as.String);
+    ARENA_FREE(&a);
     return s;
 }
 Arena prepend_char_to_str(Arena s, Arena a)
 {
     char c = s.as.Char;
-    arena_free(&s);
-    s = arena_alloc(sizeof(char) * (a.as.len + 1), ARENA_STR);
+    s = GROW_ARRAY(NULL, sizeof(char) * (a.as.len + 1), ARENA_STR);
     s.as.String[0] = c;
     strcat(s.as.String, a.as.String);
-    arena_free(&a);
+    ARENA_FREE(&a);
     return s;
 }
 Arena prepend_long_to_str(Arena s, Arena a)
@@ -108,11 +109,10 @@ Arena prepend_long_to_str(Arena s, Arena a)
     long long int llint = s.as.Long;
     if (llint < 0)
         len++;
-    arena_free(&s);
-    s = arena_alloc(sizeof(char) * (len + 1 + a.as.len), ARENA_STR);
+    s = GROW_ARRAY(NULL, sizeof(char) * (len + 1 + a.as.len), ARENA_STR);
     s.as.String = lltoa(s.as.String, llint);
     strcat(s.as.String, a.as.String);
-    arena_free(&a);
+    ARENA_FREE(&a);
     return s;
 }
 
@@ -120,37 +120,33 @@ static Arena append_int_to_str(Arena s, Arena i)
 {
     int len = intlen(i.as.Int);
     int ival = i.as.Int;
-    int new = len + 1 + s.as.len;
-    Arena ar;
     if (ival < 0)
         ++len;
-    // arena_free(&i);
-    ar = arena_alloc(sizeof(char) * (len + 1), ARENA_STR);
-    ar.as.String = itoa(ar.as.String, ival);
-    s = arena_realloc(&s, new * sizeof(char), ARENA_STR);
-    strcat(s.as.String, ar.as.String);
-    arena_free(&ar);
+    int new = len + 1 + s.as.len;
+
+    i = GROW_ARRAY(NULL, sizeof(char) * len, ARENA_STR);
+    i.as.String = itoa(i.as.String, ival);
+    s = GROW_ARRAY(&s, sizeof(char) * new, ARENA_STR);
+    strcat(s.as.String, i.as.String);
+    ARENA_FREE(&i);
     return s;
 }
 static Arena append_str_to_str(Arena s, Arena str)
 {
     int new = s.as.len + str.as.len + 1;
-    s = arena_realloc(&s, new * sizeof(char), ARENA_STR);
+    s = GROW_ARRAY(&s, new * sizeof(char), ARENA_STR);
     strcat(s.as.String, str.as.String);
     s.as.String[new] = '\0';
-    arena_free(&str);
+    ARENA_FREE(&str);
     return s;
 }
 static Arena append_char_to_str(Arena s, Arena c)
 {
-    char ch = c.as.Char;
-    arena_free(&c);
-    c = arena_alloc(sizeof(char) * 2, ARENA_STR);
-    c.as.String[0] = ch;
-    c.as.String[1] = '\0';
-    s = arena_realloc(&s, sizeof(char) * (s.as.len + 1), ARENA_STR);
-    strcat(s.as.String, c.as.String);
-    arena_free(&c);
+
+    int size = s.as.len + 1;
+    s = GROW_ARRAY(&s, sizeof(char) * size, ARENA_STR);
+    s.as.String[s.as.len - 1] = c.as.Char;
+    s.as.String[s.as.len] = '\0';
     return s;
 }
 static Arena append_long_to_str(Arena s, Arena i)
@@ -162,12 +158,11 @@ static Arena append_long_to_str(Arena s, Arena i)
     if (llint < 0)
         ++len;
 
-    arena_free(&i);
-    i = arena_alloc(sizeof(char) * (len + 1), ARENA_STR);
+    i = GROW_ARRAY(NULL, sizeof(char) * (len + 1), ARENA_STR);
     i.as.String = lltoa(i.as.String, llint);
-    s = arena_realloc(&s, new * sizeof(char), ARENA_STR);
+    s = GROW_ARRAY(&s, new * sizeof(char), ARENA_STR);
     strcat(s.as.String, i.as.String);
-    arena_free(&i);
+    ARENA_FREE(&i);
     return s;
 }
 Arena append(Arena s, Arena ar)
@@ -202,42 +197,34 @@ Arena append(Arena s, Arena ar)
 
 Arena ltoa_eqcmp(long long int llint, Arena ar)
 {
-    Arena a;
-    Arena res;
     int len = longlen(llint);
-    a = arena_alloc(sizeof(char) * len + 1, ARENA_STR);
-    res = Bool(strcmp(lltoa(a.as.String, llint), ar.as.String) == 0);
-    arena_free(&a);
+    Arena a = GROW_ARRAY(NULL, sizeof(char) * len + 1, ARENA_STR);
+    Arena res = Bool(strcmp(lltoa(a.as.String, llint), ar.as.String) == 0);
+    ARENA_FREE(&a);
     return res;
 }
 Arena ltoa_neqcmp(long long int llint, Arena ar)
 {
-    Arena a;
-    Arena res;
     int len = longlen(llint);
-    a = arena_alloc(sizeof(char) * len + 1, ARENA_STR);
-    res = Bool(strcmp(lltoa(a.as.String, llint), ar.as.String) != 0);
-    arena_free(&a);
+    Arena a = GROW_ARRAY(NULL, sizeof(char) * len + 1, ARENA_STR);
+    Arena res = Bool(strcmp(lltoa(a.as.String, llint), ar.as.String) != 0);
+    ARENA_FREE(&a);
     return res;
 }
 Arena itoa_eqcmp(int ival, Arena ar)
 {
-    Arena a;
-    Arena res;
     int len = intlen(ival);
-    a = arena_alloc(sizeof(char) * len + 1, ARENA_STR);
-    res = Bool(strcmp(itoa(a.as.String, ival), ar.as.String) == 0);
-    arena_free(&a);
+    Arena a = GROW_ARRAY(NULL, sizeof(char) * len + 1, ARENA_STR);
+    Arena res = Bool(strcmp(itoa(a.as.String, ival), ar.as.String) == 0);
+    ARENA_FREE(&a);
     return res;
 }
 Arena itoa_neqcmp(int ival, Arena ar)
 {
-    Arena a;
-    Arena res;
     int len = intlen(ival);
-    a = arena_alloc(sizeof(char) * len + 1, ARENA_STR);
-    res = Bool(strcmp(itoa(a.as.String, ival), ar.as.String) != 0);
-    arena_free(&a);
+    Arena a = GROW_ARRAY(NULL, sizeof(char) * len + 1, ARENA_STR);
+    Arena res = Bool(strcmp(itoa(a.as.String, ival), ar.as.String) != 0);
+    ARENA_FREE(&a);
     return res;
 }
 

@@ -12,6 +12,8 @@ static void init_compiler(Compiler *a, Compiler *b, ObjType type, Arena name)
 
     Local *local = NULL;
     a->local_count = 0;
+    a->scope_depth = 0;
+    a->call_count = 0;
 
     if (b)
     {
@@ -24,12 +26,10 @@ static void init_compiler(Compiler *a, Compiler *b, ObjType type, Arena name)
     else
         local = &a->locals[a->local_count++];
 
-    a->call_count = 0;
     a->param_count = 0;
     a->upvalue_count = 0;
     a->func = function(name);
     a->type = type;
-    a->scope_depth = 0;
 
     local->depth = 0;
     local->name = Null();
@@ -145,7 +145,7 @@ static void func_body(Compiler *c, ObjType type, Arena ar)
         &c->func->ch, OP_CLOSURE,
         add_constant(&c->func->ch, CLOSURE(clos)));
 
-    for (int i = 0; i < f->upvalue_count; i++)
+    for (int i = 0; i < tmp->upvalue_count; i++)
     {
         uint8_t local = tmp->upvalues[i].islocal ? 1 : 0;
         uint8_t index = (uint8_t)tmp->upvalues[i].index;
