@@ -48,9 +48,12 @@ typedef enum
     OP_GET_NATIVE,
 
     OP_GLOBAL_DEF,
-
     OP_GET_GLOBAL,
     OP_SET_GLOBAL,
+
+    OP_FUNC_VAR_DEF,
+    OP_GET_FUNC_VAR,
+    OP_SET_FUNC_VAR,
 
     OP_GET_LOCAL,
     OP_SET_LOCAL,
@@ -107,25 +110,12 @@ typedef enum
 
 typedef enum
 {
-    FN_CLOSURE,
-    FUNCTION,
-    NATIVE_FN,
-    SCRIPT
-} FT;
-
-typedef enum
-{
     ARENA,
     NATIVE,
-    CLOSURE
+    CLOSURE,
+    SCRIPT,
+    NULL_OBJ
 } ObjType;
-
-typedef enum
-{
-    ARENA_TABLE,
-    NATIVE_TABLE,
-    CLOSURE_TABLE
-} TableType;
 
 typedef union Vector Vector;
 typedef union Value Value;
@@ -208,12 +198,13 @@ struct Function
     int upvalue_count;
     Arena name;
     Chunk ch;
+    Table *params;
 };
 
 struct Closure
 {
     Function *func;
-    Upval *upvals;
+    Upval **upvals;
     int upval_count;
 };
 
@@ -233,6 +224,7 @@ struct Element
         Arena arena;
         Native *native;
         Closure *closure;
+        void *null;
     };
 };
 
@@ -260,7 +252,9 @@ struct Table
 {
     size_t size;
     Arena key;
-    TableType type;
+    ObjType type;
+    int count;
+    int len;
 
     union
     {

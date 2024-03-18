@@ -32,7 +32,7 @@ struct vm
     Stack *call_stack;
     Stack *native_calls;
     Upval *open_upvals;
-    dict glob;
+    Table *glob;
 };
 typedef struct vm vm;
 typedef vm *Vm;

@@ -18,7 +18,7 @@ void insert_entry(Table **t, Table entry)
         return;
     }
 
-    if (entry.type == NATIVE_TABLE)
+    if (entry.type == NATIVE)
     {
         Native *n = find_native_entry(t, &entry.key);
         if (!n)
@@ -26,55 +26,45 @@ void insert_entry(Table **t, Table entry)
         return;
     }
 
-    else if (entry.type == CLOSURE_TABLE)
+    else if (entry.type == CLOSURE)
     {
         Closure *c = find_func_entry(t, &entry.key);
         if (!c)
             ALLOC_ENTRY(&tmp[entry.key.as.hash].next, entry);
         return;
     }
-    else if (entry.type == ARENA_TABLE)
+    else if (entry.type == ARENA)
     {
         Arena f = find_arena_entry(t, &entry.key);
         if (f.type == ARENA_NULL)
             ALLOC_ENTRY(&tmp[entry.key.as.hash].next, entry);
+        return;
     }
-    else
-
-        for (; ptr; ptr = ptr->next)
-            switch (ptr->key.type)
-            {
-            case ARENA_VAR:
-            case ARENA_FUNC:
-            case ARENA_NATIVE:
-            case ARENA_STR:
-                if (strcmp(ptr->key.as.String, entry.key.as.String) == 0)
-                    goto END;
-                break;
-            case ARENA_INT:
-                if (ptr->key.as.Int == entry.key.as.Int)
-                    goto END;
-                break;
-            case ARENA_DOUBLE:
-                if (ptr->key.as.Double == entry.key.as.Double)
-                    goto END;
-                break;
-            case ARENA_CHAR:
-                if (ptr->key.as.Char == entry.key.as.Char)
-                    goto END;
-                break;
-            case ARENA_BYTE:
-            case ARENA_LONG:
-            case ARENA_BOOL:
-            case ARENA_NULL:
-            case ARENA_BYTES:
-            case ARENA_INTS:
-            case ARENA_DOUBLES:
-            case ARENA_LONGS:
-            case ARENA_BOOLS:
-            case ARENA_STRS:
-                break;
-            }
+    for (; ptr; ptr = ptr->next)
+        switch (ptr->key.type)
+        {
+        case ARENA_VAR:
+        case ARENA_FUNC:
+        case ARENA_NATIVE:
+        case ARENA_STR:
+            if (strcmp(ptr->key.as.String, entry.key.as.String) == 0)
+                goto END;
+            break;
+        case ARENA_INT:
+        case ARENA_DOUBLE:
+        case ARENA_CHAR:
+        case ARENA_BYTE:
+        case ARENA_LONG:
+        case ARENA_BOOL:
+        case ARENA_NULL:
+        case ARENA_BYTES:
+        case ARENA_INTS:
+        case ARENA_DOUBLES:
+        case ARENA_LONGS:
+        case ARENA_BOOLS:
+        case ARENA_STRS:
+            break;
+        }
     return;
 END:
     ptr->val = entry.val;
@@ -124,17 +114,8 @@ void delete_func_entry(Table **t, Arena key)
                 goto DEL;
             break;
         case ARENA_INT:
-            if (tmp->key.as.Int == key.as.Int)
-                goto DEL;
-            break;
         case ARENA_DOUBLE:
-            if (tmp->key.as.Double == key.as.Double)
-                goto DEL;
-            break;
         case ARENA_CHAR:
-            if (tmp->key.as.Char == key.as.Char)
-                goto DEL;
-            break;
         case ARENA_BYTE:
         case ARENA_LONG:
         case ARENA_STR:
@@ -158,17 +139,8 @@ void delete_func_entry(Table **t, Arena key)
             goto DEL_LAST;
         break;
     case ARENA_INT:
-        if (tmp->key.as.Int == key.as.Int)
-            goto DEL_LAST;
-        break;
     case ARENA_DOUBLE:
-        if (tmp->key.as.Double == key.as.Double)
-            goto DEL_LAST;
-        break;
     case ARENA_CHAR:
-        if (tmp->key.as.Char == key.as.Char)
-            goto DEL_LAST;
-        break;
     case ARENA_BYTE:
     case ARENA_LONG:
     case ARENA_STR:
@@ -242,17 +214,8 @@ void delete_arena_entry(Table **t, Arena key)
                 goto DEL;
             break;
         case ARENA_INT:
-            if (tmp->key.as.Int == key.as.Int)
-                goto DEL;
-            break;
         case ARENA_DOUBLE:
-            if (tmp->key.as.Double == key.as.Double)
-                goto DEL;
-            break;
         case ARENA_CHAR:
-            if (tmp->key.as.Char == key.as.Char)
-                goto DEL;
-            break;
         case ARENA_BYTE:
         case ARENA_LONG:
         case ARENA_STR:
@@ -276,17 +239,8 @@ void delete_arena_entry(Table **t, Arena key)
             goto DEL_LAST;
         break;
     case ARENA_INT:
-        if (tmp->key.as.Int == key.as.Int)
-            goto DEL_LAST;
-        break;
     case ARENA_DOUBLE:
-        if (tmp->key.as.Double == key.as.Double)
-            goto DEL_LAST;
-        break;
     case ARENA_CHAR:
-        if (tmp->key.as.Char == key.as.Char)
-            goto DEL_LAST;
-        break;
     case ARENA_BYTE:
     case ARENA_LONG:
     case ARENA_STR:
@@ -315,6 +269,36 @@ DEL_LAST:
     FREE_TABLE_ENTRY(tmp);
 }
 
+Element find_entry(Table **t, Arena *hash)
+{
+
+    Table *a = *t;
+    size_t index = hash->as.hash;
+    Table entry = a[index];
+
+    Element el = null_obj();
+
+    if (entry.key.type == ARENA_NULL)
+        return el;
+
+    if (entry.type == ARENA)
+    {
+        Arena ar = find_arena_entry(t, hash);
+        return ar.type == ARENA_NULL ? el : OBJ(ar);
+    }
+    else if (entry.type == NATIVE)
+    {
+        Native *n = find_native_entry(t, hash);
+        return n == NULL ? el : NATIVE(n);
+    }
+    else if (entry.type == CLOSURE)
+    {
+        Closure *c = find_func_entry(t, hash);
+        return c == NULL ? el : CLOSURE(c);
+    }
+    return el;
+}
+
 Native *find_native_entry(Table **t, Arena *hash)
 {
     Table *a = *t;
@@ -334,21 +318,14 @@ Native *find_native_entry(Table **t, Arena *hash)
         {
         case ARENA_NATIVE:
         case ARENA_STR:
+        case ARENA_FUNC:
+        case ARENA_VAR:
             if (strcmp(tmp->key.as.String, hash->as.String) == 0)
                 return tmp->val.n;
             break;
         case ARENA_INT:
-            if (tmp->key.as.Int == hash->as.Int)
-                return tmp->val.n;
-            break;
         case ARENA_DOUBLE:
-            if (tmp->key.as.Double == hash->as.Double)
-                return tmp->val.n;
-            break;
         case ARENA_CHAR:
-            if (tmp->key.as.Char == hash->as.Char)
-                return tmp->val.n;
-            break;
         case ARENA_BYTE:
         case ARENA_LONG:
         case ARENA_BOOL:
@@ -359,8 +336,6 @@ Native *find_native_entry(Table **t, Arena *hash)
         case ARENA_LONGS:
         case ARENA_BOOLS:
         case ARENA_STRS:
-        case ARENA_FUNC:
-        case ARENA_VAR:
             break;
         }
 
@@ -392,17 +367,8 @@ Closure *find_func_entry(Table **t, Arena *hash)
                 return tmp->val.c;
             break;
         case ARENA_INT:
-            if (tmp->key.as.Int == hash->as.Int)
-                return tmp->val.c;
-            break;
         case ARENA_DOUBLE:
-            if (tmp->key.as.Double == hash->as.Double)
-                return tmp->val.c;
-            break;
         case ARENA_CHAR:
-            if (tmp->key.as.Char == hash->as.Char)
-                return tmp->val.c;
-            break;
         case ARENA_BYTE:
         case ARENA_LONG:
         case ARENA_BOOL:
@@ -426,7 +392,7 @@ Arena find_arena_entry(Table **t, Arena *hash)
     size_t index = hash->as.hash;
     Table entry = a[index];
 
-    if (entry.key.type == ARENA_NULL || hash->type != ARENA_VAR)
+    if (entry.key.type == ARENA_NULL)
         return Null();
 
     if (strcmp(entry.key.as.String, hash->as.String) == 0)
@@ -440,21 +406,13 @@ Arena find_arena_entry(Table **t, Arena *hash)
         case ARENA_VAR:
         case ARENA_FUNC:
         case ARENA_STR:
+        case ARENA_NATIVE:
             if (strcmp(tmp->key.as.String, hash->as.String) == 0)
                 return tmp->val.a;
             break;
         case ARENA_INT:
-            if (tmp->key.as.Int == hash->as.Int)
-                return tmp->val.a;
-            break;
         case ARENA_DOUBLE:
-            if (tmp->key.as.Double == hash->as.Double)
-                return tmp->val.a;
-            break;
         case ARENA_CHAR:
-            if (tmp->key.as.Char == hash->as.Char)
-                return tmp->val.a;
-            break;
         case ARENA_BYTE:
         case ARENA_LONG:
         case ARENA_BOOL:
@@ -465,7 +423,6 @@ Arena find_arena_entry(Table **t, Arena *hash)
         case ARENA_LONGS:
         case ARENA_BOOLS:
         case ARENA_STRS:
-        case ARENA_NATIVE:
             break;
         }
 

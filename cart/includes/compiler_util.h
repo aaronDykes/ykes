@@ -4,7 +4,7 @@
 
 #define MAX_ELIF 10
 #define LOCAL_COUNT 500
-#define CALL_COUNT 1000
+#define CALL_COUNT 255
 #define PTR_SIZE(X) sizeof(X) / sizeof(X[0])
 
 struct Parser
@@ -57,13 +57,16 @@ struct Compiler
     int scope_depth;
     int upvalue_count;
     int call_count;
+    int param_count;
 
-    FT type;
+    ObjType type;
     Function *func;
 
     Parser parser;
 
+    Compiler *base;
     Compiler *enclosing;
+    Arena call_params[CALL_COUNT];
     Arena calls[CALL_COUNT];
     Local locals[LOCAL_COUNT];
     Upvalue upvalues[LOCAL_COUNT];
@@ -86,7 +89,7 @@ static void call_expect_arity(Compiler *c, int arity);
 static int argument_list(Compiler *c);
 
 static void func_declaration(Compiler *c);
-static void func_body(Compiler *c, FT type, Arena ar);
+static void func_body(Compiler *c, ObjType type, Arena ar);
 static void func_var(Compiler *c);
 
 static void var_dec(Compiler *c);
@@ -249,6 +252,6 @@ static PRule rules[] = {
 };
 
 static Function *end_compile(Compiler *a);
-static void init_compiler(Compiler *a, Compiler *b, FT type, Arena ar);
+static void init_compiler(Compiler *a, Compiler *b, ObjType type, Arena ar);
 
 #endif

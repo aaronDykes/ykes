@@ -1,42 +1,38 @@
 #include "table.h"
 
-void init_dict(Dict d)
+void write_table(Table *t, Arena a, Element b)
 {
-    d->capacity = TABLE_SIZE;
-    d->count = 0;
-    d->map = GROW_TABLE(NULL, d->capacity);
-}
+    Element el;
 
-void write_dict(Dict d, Arena ar1, Arena ar2, size_t size)
-{
-    int load_capacity = (int)(d->capacity * LOAD_FACTOR);
-
-    if (load_capacity < d->count + 1)
+    if (b.type == CLOSURE)
     {
-        d->capacity *= INC;
-        d->map = GROW_TABLE(d->map, d->capacity);
+        b.closure->func->name.as.hash %= (t - 1)->len;
+        if (find_entry(&t, &b.closure->func->name).type != NULL_OBJ)
+            goto OVERWRITE;
     }
-    ar1.as.hash %= size;
-    insert_entry(&d->map, arena_entry(ar1, ar2));
-    d->count++;
-}
-
-void write_func_dict(Dict d, Function *func, size_t size)
-{
-    int load_capacity = (int)(d->capacity * LOAD_FACTOR);
-
-    if (load_capacity < d->count + 1)
+    else if (b.type == NATIVE)
     {
-        d->capacity *= INC;
-        d->map = GROW_TABLE(d->map, d->capacity);
+        b.native->obj.as.hash %= (t - 1)->len;
+        if (find_entry(&t, &b.native->obj).type != NULL_OBJ)
+            goto OVERWRITE;
     }
-    func->name.as.hash %= size;
-    insert_entry(&d->map, func_entry(func));
-    d->count++;
-}
+    else
+    {
+        a.as.hash %= (t - 1)->len;
+        if (find_entry(&t, &a).type != NULL_OBJ)
+            goto OVERWRITE;
+    }
 
-void free_dict(Dict d)
-{
-    FREE_TABLE(d->map);
-    init_dict(d);
+    int load_capacity = (int)((t - 1)->len * LOAD_FACTOR);
+
+    if (load_capacity < (t - 1)->count + 1)
+    {
+        --t;
+        t->len *= INC;
+        t = GROW_TABLE(t, t->len);
+    }
+    (t - 1)->count++;
+
+OVERWRITE:
+    insert_entry(&t, Entry(a, b));
 }

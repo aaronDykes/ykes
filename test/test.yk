@@ -1,16 +1,31 @@
-var globalSet;
-var globalGet;
+sr n()
+{
+  var a = 69;
 
-sr main() {
-  var a = "initial";
+  sr f() {
+    return a;
+  }
+  var b = 69;
 
-  sr set() { a = "updated"; }
-  sr get() { pout a; }
+  sr g() {
+    return b;
+  }
+  
+  var c = 69;
 
-  globalSet = set;
-  globalGet = get;
+  sr h() {
+    return c;
+  }
+
+
+  sr sum()
+  {
+    pout f() + g() + h();
+  }
+  return sum;
 }
 
-main();
-globalSet();
-globalGet();
+
+var hello = n();
+
+pout hello();

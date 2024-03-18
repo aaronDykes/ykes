@@ -1,20 +1,20 @@
 sr n()
 {
     
-    var al = 1;
-    var be = 2;
-    var cunt = 3;
+    var al = 100;
 
     sr f()
     {
       return al;
     }
+    var be = 10;
     
     sr g()
     {
       return be;
     }
 
+    var cunt = 420;
     sr h()
     {
       return cunt;
@@ -22,13 +22,12 @@ sr n()
 
     sr sum()
     {
-        var res = f();
-        return res; 
+        return f() + g() + h(); 
     }
 
-  return sum;
+   return sum;
 }
 
-var hello = n();
 
-hello();
+var hello=n();
+pout hello();

@@ -4,6 +4,8 @@
 #include <string.h>
 #include "arena.h"
 
+#define LOAD_FACTOR 0.75
+
 #define CAPACITY 50
 #define INC 2
 #define PAGE 16384 * 10
@@ -121,12 +123,13 @@ Stack *stack(size_t size);
 Stack *realloc_stack(Stack *stack, size_t size);
 void free_stack(Stack **stack);
 
-Upval *indices(size_t size);
-void free_indices(Upval *up);
+Upval **indices(size_t size);
+void free_indices(Upval **up);
 
 Element Obj(Arena ar);
 Element native_fn(Native *native);
 Element closure(Closure *clos);
+Element null_obj();
 
 Function *function(Arena name);
 void free_function(Function *func);
@@ -142,13 +145,12 @@ void free_native(Native *native);
 
 void print_arena(Arena ar);
 
+Table Entry(Arena key, Element val);
 Table arena_entry(Arena key, Arena val);
-Table func_entry(Function *f);
+Table func_entry(Closure *c);
 Table native_entry(Native *func);
-
 Table new_entry(Table t);
 size_t hash(Arena key);
-
 Table *arena_alloc_table(size_t size);
 Table *arena_realloc_table(Table *t, size_t size);
 

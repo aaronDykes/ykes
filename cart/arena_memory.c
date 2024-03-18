@@ -492,6 +492,9 @@ Stack *realloc_stack(Stack *st, size_t size)
         case CLOSURE:
             s[i].as = CLOSURE(st[i].as.closure);
             break;
+        case NULL_OBJ:
+        case SCRIPT:
+            break;
         }
     s->count = st->count;
     s->top += s->count;
@@ -517,6 +520,9 @@ void free_stack(Stack **stack)
             break;
         case CLOSURE:
             FREE_CLOSURE(tmp[i].as.closure);
+            break;
+        case SCRIPT:
+        case NULL_OBJ:
             break;
         }
 
@@ -560,23 +566,20 @@ void free_stack(Stack **stack)
     tmp = NULL;
 }
 
-Upval *indices(size_t size)
+Upval **indices(size_t size)
 {
-    Upval *up = ALLOC((sizeof(Upval) * size) + sizeof(Upval));
+    Upval **up = ALLOC((sizeof(Upval *) * size) + sizeof(Upval *));
 
-    up->size = size;
-    for (size_t i = 1; i < size; i++)
-        up[i].index = NULL;
+    for (size_t i = 0; i < size; i++)
+        up[i] = NULL;
 
-    (up + 1)->len = (int)size;
-    (up + 1)->count = 0;
-    return up + 1;
+    return up;
 }
 
-void free_indices(Upval *up)
+void free_indices(Upval **up)
 {
-    for (size_t i = 0; i < (up - 1)->size; i++)
-        FREE_STACK(up[i].index);
+    for (size_t i = 0; i < ((*up) - 1)->size; i++)
+        FREE_STACK((*up)[i].index);
 
     up = NULL;
 }
@@ -604,6 +607,13 @@ Element closure(Closure *closure)
     el.type = CLOSURE;
     return el;
 }
+Element null_obj()
+{
+    Element el;
+    el.null = NULL;
+    el.type = NULL_OBJ;
+    return el;
+}
 
 Function *function(Arena name)
 {
@@ -612,6 +622,8 @@ Function *function(Arena name)
     func->upvalue_count = 0;
     func->name = name;
     init_chunk(&func->ch);
+    func->params = GROW_TABLE(NULL, TABLE_SIZE);
+
     return func;
 }
 void free_function(Function *func)
@@ -662,7 +674,8 @@ void free_closure(Closure *closure)
 Upval *upval(Stack *index)
 {
     Upval *up = ALLOC(sizeof(Upval));
-    up->index = index;
+    up->index = ALLOC(sizeof(Stack));
+    *up->index = *index;
     up->next = NULL;
     return up;
 }
@@ -703,13 +716,16 @@ void free_chunk(Chunk *c)
 
 Table *arena_alloc_table(size_t size)
 {
-    Table *t = ALLOC(((size_t)size * sizeof(Table)) + sizeof(Table));
+    Table *t = ALLOC((size * sizeof(Table)) + sizeof(Table));
 
     size_t n = (size_t)size + 1;
+
     for (size_t i = 1; i < n; i++)
         t[i] = arena_entry(Null(), Null());
 
-    t->size = size;
+    t->size = n;
+    t->len = (int)size;
+    t->count = 0;
     return t + 1;
 }
 
@@ -760,9 +776,9 @@ void arena_free_table(Table *t)
 
 void arena_free_entry(Table *entry)
 {
-    if (entry->type == ARENA_TABLE)
+    if (entry->type == ARENA)
         FREE_ARRAY(&entry->val.a);
-    else if (entry->type == ARENA_NATIVE)
+    else if (entry->type == NATIVE)
         FREE_NATIVE(entry->val.n);
     else
         FREE_CLOSURE(entry->val.c);
@@ -794,11 +810,42 @@ Table new_entry(Table t)
 {
     Table el;
     el.key = t.key;
-    el.val = t.val;
+    switch (t.type)
+    {
+    case ARENA:
+        el.val.a = t.val.a;
+        break;
+    case NATIVE:
+        el.val.n = t.val.n;
+        break;
+    case CLOSURE:
+        el.val.c = t.val.c;
+        break;
+    case SCRIPT:
+    case NULL_OBJ:
+        break;
+    }
     el.next = t.next;
     el.prev = t.prev;
     el.type = t.type;
     return el;
+}
+
+Table Entry(Arena key, Element val)
+{
+    switch (val.type)
+    {
+    case ARENA:
+        return arena_entry(key, val.arena);
+    case NATIVE:
+        return native_entry(val.native);
+    case CLOSURE:
+        return func_entry(val.closure);
+    case SCRIPT:
+    case NULL_OBJ:
+        break;
+    }
+    return func_entry(NULL);
 }
 
 Table arena_entry(Arena key, Arena val)
@@ -809,18 +856,18 @@ Table arena_entry(Arena key, Arena val)
     el.next = NULL;
     el.prev = NULL;
     el.size = key.size + val.size;
-    el.type = ARENA_TABLE;
+    el.type = ARENA;
     return el;
 }
-Table func_entry(Function *func)
+Table func_entry(Closure *clos)
 {
     Table el;
-    el.key = func->name;
-    el.val.c = new_closure(func);
+    el.key = clos->func->name;
+    el.val.c = clos;
     el.next = NULL;
     el.prev = NULL;
     el.size = el.key.size;
-    el.type = CLOSURE_TABLE;
+    el.type = CLOSURE;
     return el;
 }
 Table native_entry(Native *func)
@@ -831,7 +878,7 @@ Table native_entry(Native *func)
     el.next = NULL;
     el.prev = NULL;
     el.size = el.key.size;
-    el.type = NATIVE_TABLE;
+    el.type = NATIVE;
     return el;
 }
 
