@@ -18,9 +18,9 @@
 #define OFFSET sizeof(Free)
 
 #define ALLOC(size) \
-    alloc_ptr(size)
+    alloc_ptr(size + OFFSET)
 #define FREE(ptr, size) \
-    free_ptr((Free *)ptr - OFFSET - 1, size)
+    free_ptr((Free *)ptr - OFFSET, size + OFFSET)
 
 #define GROW_CAPACITY(capacity) \
     ((capacity) < CAPACITY ? CAPACITY : capacity * INC)
@@ -57,7 +57,7 @@
 #define FREE_CLOSURE(clos) \
     free_closure(clos)
 #define FREE_UPVALS(up) \
-    free_indices(up)
+    free_upvals(up)
 
 #define FREE_UPVAL(up) \
     free_upval(up)
@@ -130,8 +130,8 @@ Stack *stack(size_t size);
 Stack *realloc_stack(Stack *stack, size_t size);
 void free_stack(Stack **stack);
 
-Upval **indices(size_t size);
-void free_indices(Upval **up);
+Upval **upvals(size_t size);
+void free_upvals(Upval **up);
 
 Element Obj(Arena ar);
 Element native_fn(Native *native);

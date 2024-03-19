@@ -17,17 +17,18 @@ void initialize_global_memory(size_t size)
         PAGE_SIZE,
         PROT_READ | PROT_WRITE,
         POSIX_MADV_RANDOM |
+            POSIX_MADV_SEQUENTIAL |
             POSIX_MADV_WILLNEED |
             MAP_PRIVATE |
             MAP_ANON,
         -1, 0);
 
-    mem.mem->size = sizeof(Free);
+    mem.current = OFFSET;
+    mem.mem->size = OFFSET;
     mem.mem->next = mem.mem + mem.mem->size;
-    mem.mem->next->size = (size * sizeof(Free)) - (sizeof(Free) * 2);
+    mem.mem->next->size = ((size * OFFSET) - OFFSET);
     mem.mem->next->next = NULL;
     mem.remains = mem.mem->next->size;
-    mem.current = (sizeof(Free) * 2);
 }
 
 Arena arena_init(void *data, size_t size, T type)
@@ -93,7 +94,7 @@ void arena_free(Arena *ar)
         return;
 
     void *new = NULL;
-    size_t new_size = ar->size + OFFSET;
+    size_t size = ar->size;
 
     switch (ar->type)
     {
@@ -133,7 +134,7 @@ void arena_free(Arena *ar)
         return;
     }
 
-    FREE(new, new_size);
+    FREE(new, size);
     ar = NULL;
 }
 
@@ -148,7 +149,7 @@ void free_ptr(Free *new, size_t size)
     if (!new)
         return;
     Free *p = NULL;
-    for (p = mem.mem; p->next; p = p->next)
+    for (p = mem.mem->next; p->next; p = p->next)
         ;
 
     mem.remains += size;
@@ -159,28 +160,11 @@ void free_ptr(Free *new, size_t size)
     Free *prev = NULL;
     Free *f = NULL;
 
-    // for (; new->next; new = new->next)
-    //     ;
-
-    for (f = mem.mem; f && f < new; f = f->next)
+    for (f = mem.mem->next; f && f < new; f = f->next)
         prev = f;
 
     if (f && new == f)
     {
-
-        Free *next = f->next;
-        size_t tmp = size + f->size;
-
-        f = new;
-        f->size = tmp;
-
-        if (!next)
-        {
-            f->next = NULL;
-        }
-        else
-            f->next = next;
-        prev->next = f;
         return;
     }
 
@@ -195,12 +179,12 @@ void free_ptr(Free *new, size_t size)
     }
     else
     {
-        Free *tmp = f->next;
-        f->next = new;
-        f->next->size = size;
-        f->next->next = tmp;
-        if (!tmp)
-            mem.mem->next->size = mem.remains;
+        Free *tmp = f;
+        f = new;
+        f->size = size;
+        f->next = tmp;
+        if (!f->next)
+            f->size = mem.remains;
     }
 
     prev = NULL;
@@ -211,37 +195,34 @@ void free_ptr(Free *new, size_t size)
 void *alloc_ptr(size_t size)
 {
 
-    size_t new_size = size + OFFSET + 1;
-
-    mem.current += new_size;
-    mem.remains -= new_size;
+    mem.current += size;
+    mem.remains -= size;
     Free *p = NULL;
     Free *f = NULL;
     Free *fr = NULL;
 
-    for (fr = mem.mem; fr->next; fr = fr->next)
+    for (fr = mem.mem->next; fr->next; fr = fr->next)
         ;
     fr->size = mem.remains;
     fr = NULL;
 
-    for (f = mem.mem; f && f->size < new_size; f = f->next)
+    for (f = mem.mem; f && f->size < size; f = f->next)
         p = f;
 
-    if (f && f->size >= new_size)
+    if (f && f->size >= size)
     {
 
-        void *ptr = f + OFFSET + 1;
+        void *ptr = f + OFFSET;
 
         size_t tmp =
             (!f->next)
-                ? f->size - new_size
-                : f->next->size + (f->size - new_size);
+                ? f->size - size
+                : f->next->size + (f->size - size);
 
-        f->next = f + new_size;
+        f->next = f + size;
         f->next->size = tmp;
 
         p->next = f->next;
-        f = f->next;
         f = NULL;
 
         return ptr;
@@ -249,11 +230,12 @@ void *alloc_ptr(size_t size)
 
     if (p)
     {
-        void *ptr = p + OFFSET + 1;
-        size_t tmp = p->size - new_size;
-        p->next = p + tmp;
+        Free *next = p->next;
+        void *ptr = p + OFFSET;
+        size_t tmp = p->size - size;
+        p->next = p + size;
         p->next->size = tmp;
-        p = p->next;
+        p->next->next = next;
         return (void *)ptr;
     }
 
@@ -261,7 +243,7 @@ void *alloc_ptr(size_t size)
 }
 Arena *arena_alloc_arena(size_t size)
 {
-    Arena *p = alloc_ptr((size * sizeof(Arena)) + sizeof(Arena));
+    Arena *p = ALLOC((size * sizeof(Arena)) + sizeof(Arena));
 
     p->size = size;
 
@@ -297,7 +279,7 @@ void arena_free_arena(Arena *ar)
 {
     if (!(ar - 1))
         return;
-    size_t new_size = ((ar - 1)->size * sizeof(Arena)) + sizeof(Arena) + OFFSET;
+    size_t new_size = ((ar - 1)->size * sizeof(Arena)) + sizeof(Arena);
 
     for (size_t i = 0; i < (ar - 1)->size; i++)
         switch (ar[i].type)
@@ -330,7 +312,7 @@ void arena_free_arena(Arena *ar)
 Arena arena_alloc(size_t size, T type)
 {
 
-    void *ptr = alloc_ptr(size);
+    void *ptr = ALLOC(size);
     return arena_init(ptr, size, type);
 }
 
@@ -343,7 +325,7 @@ Arena arena_realloc(Arena *ar, size_t size, T type)
         return Null();
     }
 
-    void *ptr = alloc_ptr(size);
+    void *ptr = ALLOC(size);
     if (!ar && size != 0)
         return arena_init(ptr, size, type);
 
@@ -387,7 +369,7 @@ Arena arena_realloc(Arena *ar, size_t size, T type)
     a.count = (ar->count > a.len)
                   ? a.len
                   : ar->count;
-    arena_free(ar);
+    ARENA_FREE(ar);
     return a;
 }
 Arena Char(char Char)
@@ -471,7 +453,7 @@ Stack *realloc_stack(Stack *st, size_t size)
 
     if (size == 0)
     {
-        free_stack(&st);
+        FREE_STACK(&st);
         return NULL;
     }
     Stack *s = NEW_STACK(size);
@@ -504,7 +486,7 @@ void free_stack(Stack **stack)
 {
     Stack *tmp = *stack;
 
-    size_t new_size = (((tmp - 1)->size * sizeof(Stack)) + sizeof(Stack)) + OFFSET;
+    size_t new_size = (((tmp - 1)->size * sizeof(Stack)) + sizeof(Stack));
 
     if (!(tmp - 1))
         return;
@@ -527,20 +509,21 @@ void free_stack(Stack **stack)
     FREE((void *)((*stack) - 1), new_size);
 }
 
-Upval **indices(size_t size)
+Upval **upvals(size_t size)
 {
     Upval **up = ALLOC((sizeof(Upval *) * size) + sizeof(Upval *));
 
     *up = ALLOC(sizeof(Upval));
 
     (*up)->size = size;
+
     for (size_t i = 1; i < size; i++)
         up[i] = NULL;
 
     return up + 1;
 }
 
-void free_indices(Upval **up)
+void free_upvals(Upval **up)
 {
     if (!up)
         return;
@@ -551,7 +534,7 @@ void free_indices(Upval **up)
     for (size_t i = 0; i < ((*up) - 1)->size; i++)
         (*up)[i].index = NULL;
 
-    FREE((void *)((*up) - 1), ((*up) - 1)->size + OFFSET);
+    FREE((void *)((*up) - 1), ((*up) - 1)->size);
 }
 
 Element Obj(Arena ar)
@@ -604,7 +587,7 @@ void free_function(Function *func)
         FREE_ARRAY(&func->name);
     free_chunk(&func->ch);
 
-    FREE((void *)func, sizeof(Function) + OFFSET);
+    FREE((void *)func, sizeof(Function));
 }
 
 Native *native(NativeFn func, Arena ar)
@@ -623,7 +606,7 @@ void free_native(Native *native)
 
     ARENA_FREE(&native->obj);
 
-    FREE((void *)native, sizeof(Native) + OFFSET);
+    FREE((void *)native, sizeof(Native));
 }
 Closure *new_closure(Function *func)
 {
@@ -631,7 +614,7 @@ Closure *new_closure(Function *func)
     closure->func = func;
     if (!func)
         return closure;
-    closure->upvals = indices(func->upvalue_count);
+    closure->upvals = upvals(func->upvalue_count);
     closure->upval_count = func->upvalue_count;
     return closure;
 }
@@ -642,7 +625,7 @@ void free_closure(Closure *closure)
         return;
 
     FREE_UPVALS(closure->upvals);
-    FREE((void *)closure, sizeof(Closure) + OFFSET);
+    FREE((void *)closure, sizeof(Closure));
 }
 
 Upval *upval(Stack *index)
@@ -658,6 +641,7 @@ void free_upval(Upval *up)
     if (!up)
         return;
     up->index = NULL;
+    up->next = NULL;
 }
 
 void init_chunk(Chunk *c)
@@ -744,7 +728,7 @@ void arena_free_table(Table *t)
     for (size_t i = 0; i < size; i++)
         FREE_TABLE_ENTRY(&t[i]);
 
-    FREE((void *)(t - 1), (t - 1)->size + OFFSET);
+    FREE((void *)(t - 1), (t - 1)->size);
 }
 
 void arena_free_entry(Table *entry)

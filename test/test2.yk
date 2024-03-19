@@ -6,7 +6,7 @@ sr n()
 
     var a = "initial";
     
-    sr set() { a = "updated"; }
+    sr set() { a = "I'm updated"; }
     sr get() { return a; }
 
 
