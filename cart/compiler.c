@@ -75,7 +75,7 @@ static void declaration(Compiler *c)
 static void call(Compiler *c)
 {
     uint8_t argc = argument_list(c);
-    emit_bytes(&c->func->ch, OP_CALL, argc);
+    emit_bytes(c, OP_CALL, argc);
 }
 
 static void call_expect_arity(Compiler *c, int arity)
@@ -83,7 +83,7 @@ static void call_expect_arity(Compiler *c, int arity)
     uint8_t argc = argument_list(c);
     if ((int)argc != arity)
         error("Incorrect number of args.", &c->parser);
-    emit_bytes(&c->func->ch, OP_CALL, argc);
+    emit_bytes(c, OP_CALL, argc);
 }
 
 static int argument_list(Compiler *c)
@@ -142,7 +142,7 @@ static void func_body(Compiler *c, ObjType type, Arena ar)
     c = c->enclosing;
 
     emit_bytes(
-        &c->func->ch, OP_CLOSURE,
+        c, OP_CLOSURE,
         add_constant(&c->func->ch, CLOSURE(clos)));
 
     for (int i = 0; i < tmp->upvalue_count; i++)
@@ -150,8 +150,8 @@ static void func_body(Compiler *c, ObjType type, Arena ar)
         uint8_t local = tmp->upvalues[i].islocal ? 1 : 0;
         uint8_t index = (uint8_t)tmp->upvalues[i].index;
 
-        emit_byte(&c->func->ch, local);
-        emit_byte(&c->func->ch, index);
+        emit_byte(c, local);
+        emit_byte(c, index);
     }
 }
 
@@ -175,7 +175,7 @@ static void func_var(Compiler *c)
     c->base->call_params[c->base->param_count++] = ar;
     if (match(TOKEN_OP_ASSIGN, &c->parser))
         expression(c);
-    emit_bytes(&c->func->ch, set, (uint8_t)glob);
+    emit_bytes(c, set, (uint8_t)glob);
 }
 
 static void var_dec(Compiler *c)
@@ -197,10 +197,10 @@ static void var_dec(Compiler *c)
     if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
         expression(c);
-        emit_bytes(&c->func->ch, set, (uint8_t)glob);
+        emit_bytes(c, set, (uint8_t)glob);
     }
     else
-        emit_byte(&c->func->ch, OP_NULL);
+        emit_byte(c, OP_NULL);
 
     consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
 }
@@ -261,7 +261,7 @@ static void comment(Compiler *c)
 {
 
     advance_compiler(&c->parser);
-    emit_byte(&c->func->ch, OP_NOOP);
+    emit_byte(c, OP_NOOP);
 }
 
 static void for_statement(Compiler *c)
@@ -282,16 +282,16 @@ static void for_statement(Compiler *c)
     {
         expression(c);
         consume(TOKEN_CH_SEMI, "Expect `;` after 'for' condition.", &c->parser);
-        exit = emit_jump(&c->func->ch, OP_JMPF);
-        emit_byte(&c->func->ch, OP_POP);
+        exit = emit_jump(c, OP_JMPF);
+        emit_byte(c, OP_POP);
     }
     if (!match(TOKEN_CH_RPAREN, &c->parser))
     {
-        int body_jump = emit_jump(&c->func->ch, OP_JMP);
+        int body_jump = emit_jump(c, OP_JMP);
         int inc_start = c->func->ch.op_codes.count;
 
         expression(c);
-        emit_byte(&c->func->ch, OP_POP);
+        emit_byte(c, OP_POP);
         consume(TOKEN_CH_RPAREN, "Expect `)` after 'for' statement.", &c->parser);
 
         emit_loop(c, start);
@@ -305,7 +305,7 @@ static void for_statement(Compiler *c)
     if (exit != -1)
     {
         patch_jump(c, exit);
-        emit_byte(&c->func->ch, OP_POP);
+        emit_byte(c, OP_POP);
     }
 
     end_scope(c);
@@ -319,8 +319,8 @@ static void while_statement(Compiler *c)
     expression(c);
     consume(TOKEN_CH_RPAREN, "Expect `)` after 'while' condition.", &c->parser);
 
-    int exit_jmp = emit_jump(&c->func->ch, OP_JMPF);
-    emit_byte(&c->func->ch, OP_POP);
+    int exit_jmp = emit_jump(c, OP_JMPF);
+    emit_byte(c, OP_POP);
 
     statement(c);
 
@@ -329,7 +329,7 @@ static void while_statement(Compiler *c)
 
     // If true, exit
     patch_jump(c, exit_jmp);
-    emit_byte(&c->func->ch, OP_POP);
+    emit_byte(c, OP_POP);
 }
 
 static void consume_if(Compiler *c)
@@ -384,16 +384,16 @@ static void case_statement(Compiler *c, Arena args)
     {
         expression(c);
         consume(TOKEN_CH_COLON, "Expect `:` prior to case body.", &c->parser);
-        emit_bytes(&c->func->ch, get, (uint8_t)arg);
-        emit_byte(&c->func->ch, OP_SEQ);
+        emit_bytes(c, get, (uint8_t)arg);
+        emit_byte(c, OP_SEQ);
 
-        int tr = emit_jump_long(&c->func->ch, OP_JMPC);
+        int tr = emit_jump_long(c, OP_JMPC);
         int begin = c->func->ch.op_codes.count;
-        emit_byte(&c->func->ch, OP_POP);
+        emit_byte(c, OP_POP);
         statement(c);
-        emit_byte(&c->func->ch, OP_JMPL);
+        emit_byte(c, OP_JMPL);
         emit_bytes(
-            &c->func->ch,
+            c,
             (c->func->ch.cases.count >> 8) & 0xFF,
             (c->func->ch.cases.count & 0xFF));
         patch_jump_long(c, begin, tr);
@@ -407,14 +407,14 @@ static void if_statement(Compiler *c)
 
     consume_if(c);
 
-    int fi = emit_jump(&c->func->ch, OP_JMPF);
+    int fi = emit_jump(c, OP_JMPF);
     // If truthy, follow through
-    emit_byte(&c->func->ch, OP_POP);
+    emit_byte(c, OP_POP);
     statement(c);
 
-    int exit = emit_jump(&c->func->ch, OP_JMP);
+    int exit = emit_jump(c, OP_JMP);
     patch_jump(c, fi);
-    emit_byte(&c->func->ch, OP_POP);
+    emit_byte(c, OP_POP);
 
     elif_statement(c);
 
@@ -430,13 +430,13 @@ static void elif_statement(Compiler *c)
     while (match(TOKEN_ELIF, &c->parser))
     {
         consume_elif(c);
-        int tr = emit_jump_long(&c->func->ch, OP_JMPC);
+        int tr = emit_jump_long(c, OP_JMPC);
         int begin = c->func->ch.op_codes.count;
-        emit_byte(&c->func->ch, OP_POP);
+        emit_byte(c, OP_POP);
         statement(c);
-        emit_byte(&c->func->ch, OP_JMPL);
+        emit_byte(c, OP_JMPL);
         emit_bytes(
-            &c->func->ch,
+            c,
             (c->func->ch.cases.count >> 8) & 0xFF,
             (c->func->ch.cases.count & 0xFF));
         patch_jump_long(c, begin, tr);
@@ -449,12 +449,12 @@ static void return_statement(Compiler *c)
         error("Unable to return from top of script.", &c->parser);
 
     else if (match(TOKEN_CH_SEMI, &c->parser))
-        emit_return(&c->func->ch);
+        emit_return(c);
     else
     {
         expression(c);
         consume(TOKEN_CH_SEMI, "Expect semi colon after return statement.", &c->parser);
-        emit_byte(&c->func->ch, OP_RETURN);
+        emit_byte(c, OP_RETURN);
     }
 }
 
@@ -488,43 +488,43 @@ static void patch_jump(Compiler *c, int offset)
 
 static void emit_loop(Compiler *c, int byte)
 {
-    emit_byte(&c->func->ch, OP_LOOP);
+    emit_byte(c, OP_LOOP);
 
     int offset = c->func->ch.op_codes.count - byte + 2;
 
     if (offset > UINT16_MAX)
         error("ERROR: big boi loop", &c->parser);
 
-    emit_bytes(&c->func->ch, (offset >> 8) & 0xFF, offset & 0xFF);
+    emit_bytes(c, (offset >> 8) & 0xFF, offset & 0xFF);
 }
-static int emit_jump_long(Chunk *ch, int byte)
+static int emit_jump_long(Compiler *c, int byte)
 {
-    emit_byte(ch, byte);
-    emit_bytes(ch, 0xFF, 0xFF);
-    emit_bytes(ch, 0xFF, 0xFF);
+    emit_byte(c, byte);
+    emit_bytes(c, 0xFF, 0xFF);
+    emit_bytes(c, 0xFF, 0xFF);
 
-    return ch->op_codes.count - 4;
+    return c->func->ch.op_codes.count - 4;
 }
-static int emit_jump(Chunk *ch, int byte)
+static int emit_jump(Compiler *c, int byte)
 {
-    emit_byte(ch, byte);
-    emit_bytes(ch, 0xFF, 0xFF);
+    emit_byte(c, byte);
+    emit_bytes(c, 0xFF, 0xFF);
 
-    return ch->op_codes.count - 2;
+    return c->func->ch.op_codes.count - 2;
 }
 
 static void default_expression(Compiler *c)
 {
     expression(c);
     consume(TOKEN_CH_SEMI, "Expect `;` after expression.", &c->parser);
-    emit_byte(&c->func->ch, OP_POP);
+    emit_byte(c, OP_POP);
 }
 
 static void print_statement(Compiler *c)
 {
     expression(c);
     consume(TOKEN_CH_SEMI, "Expect ';' after value.", &c->parser);
-    emit_byte(&c->func->ch, OP_PRINT);
+    emit_byte(c, OP_PRINT);
 }
 
 static void begin_scope(Compiler *c)
@@ -536,12 +536,12 @@ static void end_scope(Compiler *c)
     c->scope_depth--;
 
     if (c->local_count > 0 && (c->locals[c->local_count - 1].depth > c->scope_depth))
-        emit_bytes(&c->func->ch, OP_POPN, add_constant(&c->func->ch, OBJ(Int(c->local_count))));
+        emit_bytes(c, OP_POPN, add_constant(&c->func->ch, OBJ(Int(c->local_count))));
 
     while (c->local_count > 0 && (c->locals[c->local_count - 1].depth > c->scope_depth))
     {
         if (c->locals[c->local_count - 1].captured)
-            emit_byte(&c->func->ch, OP_CLOSE_UPVAL);
+            emit_byte(c, OP_CLOSE_UPVAL);
         else
             arena_free(&c->locals[c->local_count - 1].name);
         --c->local_count;
@@ -610,18 +610,18 @@ static void parse_precedence(Precedence prec, Compiler *c)
 
 static void _and(Compiler *c)
 {
-    int end = emit_jump(&c->func->ch, OP_JMPF);
+    int end = emit_jump(c, OP_JMPF);
 
-    emit_byte(&c->func->ch, OP_POP);
+    emit_byte(c, OP_POP);
     parse_precedence(PREC_AND, c);
 
     patch_jump(c, end);
 }
 static void _or(Compiler *c)
 {
-    int else_jmp = emit_jump(&c->func->ch, OP_JMPT);
+    int else_jmp = emit_jump(c, OP_JMPT);
 
-    emit_byte(&c->func->ch, OP_POP);
+    emit_byte(c, OP_POP);
     parse_precedence(PREC_OR, c);
 
     patch_jump(c, else_jmp);
@@ -637,49 +637,49 @@ static void binary(Compiler *c)
     switch (t)
     {
     case TOKEN_OP_ADD:
-        emit_byte(&c->func->ch, OP_ADD);
+        emit_byte(c, OP_ADD);
         break;
     case TOKEN_OP_SUB:
-        emit_byte(&c->func->ch, OP_SUB);
+        emit_byte(c, OP_SUB);
         break;
     case TOKEN_OP_MUL:
-        emit_byte(&c->func->ch, OP_MUL);
+        emit_byte(c, OP_MUL);
         break;
     case TOKEN_OP_DIV:
-        emit_byte(&c->func->ch, OP_DIV);
+        emit_byte(c, OP_DIV);
         break;
     case TOKEN_OP_MOD:
-        emit_byte(&c->func->ch, OP_MOD);
+        emit_byte(c, OP_MOD);
         break;
     case TOKEN_OP_NE:
-        emit_byte(&c->func->ch, OP_NE);
+        emit_byte(c, OP_NE);
         break;
     case TOKEN_OP_EQ:
-        emit_byte(&c->func->ch, OP_EQ);
+        emit_byte(c, OP_EQ);
         break;
     case TOKEN_OP_SNE:
-        emit_byte(&c->func->ch, OP_SNE);
+        emit_byte(c, OP_SNE);
         break;
     case TOKEN_OP_SEQ:
-        emit_byte(&c->func->ch, OP_SEQ);
+        emit_byte(c, OP_SEQ);
         break;
     case TOKEN_OP_GT:
-        emit_byte(&c->func->ch, OP_GT);
+        emit_byte(c, OP_GT);
         break;
     case TOKEN_OP_GE:
-        emit_byte(&c->func->ch, OP_GE);
+        emit_byte(c, OP_GE);
         break;
     case TOKEN_OP_LT:
-        emit_byte(&c->func->ch, OP_LT);
+        emit_byte(c, OP_LT);
         break;
     case TOKEN_OP_LE:
-        emit_byte(&c->func->ch, OP_LE);
+        emit_byte(c, OP_LE);
         break;
     case TOKEN_OP_OR:
-        emit_byte(&c->func->ch, OP_OR);
+        emit_byte(c, OP_OR);
         break;
     case TOKEN_OP_AND:
-        emit_byte(&c->func->ch, OP_AND);
+        emit_byte(c, OP_AND);
         break;
     default:
         return;
@@ -696,11 +696,11 @@ static void unary(Compiler *c)
 
     case TOKEN_OP_SUB:
     case TOKEN_OP_BANG:
-        emit_byte(&c->func->ch, OP_NEG);
+        emit_byte(c, OP_NEG);
         break;
     case TOKEN_LINE_COMMENT:
     case TOKEN_NLINE_COMMENT:
-        emit_byte(&c->func->ch, OP_NOOP);
+        emit_byte(c, OP_NOOP);
         break;
     default:
         return;
@@ -732,49 +732,51 @@ static void error_at(Token toke, Parser *parser, const char *err)
     fprintf(stderr, ": %s\n", err);
 }
 
-static void emit_return(Chunk *ch)
+static void emit_return(Compiler *c)
 {
-    emit_byte(ch, OP_NULL);
-    emit_byte(ch, OP_RETURN);
+    emit_byte(c, OP_NULL);
+    emit_byte(c, OP_RETURN);
 }
-static void emit_byte(Chunk *ch, uint8_t byte)
+static void emit_byte(Compiler *c, uint8_t byte)
 {
-    write_chunk(ch, byte);
+    write_chunk(&c->func->ch, byte, c->parser.pre.line);
 }
-static void emit_bytes(Chunk *ch, uint8_t b1, uint8_t b2)
+static void emit_bytes(Compiler *c, uint8_t b1, uint8_t b2)
 {
-    write_chunk(ch, b1);
-    write_chunk(ch, b2);
+    write_chunk(&c->func->ch, b1, c->parser.pre.line);
+    write_chunk(&c->func->ch, b2, c->parser.pre.line);
 }
-static void emit_constant(Chunk *ch, Arena ar)
+static void emit_constant(Compiler *c, Arena ar)
 {
-    emit_bytes(ch, OP_CONSTANT, add_constant(ch, OBJ(ar)));
+    emit_bytes(
+        c, OP_CONSTANT,
+        add_constant(&c->func->ch, OBJ(ar)));
 }
 
 static void dval(Compiler *c)
 {
     double val = strtod(c->parser.pre.start, NULL);
-    emit_constant(&c->func->ch, Double(val));
+    emit_constant(c, Double(val));
 }
 static void ival(Compiler *c)
 {
-    emit_constant(&c->func->ch, Int(atoi(c->parser.pre.start)));
+    emit_constant(c, Int(atoi(c->parser.pre.start)));
 }
 static void llint(Compiler *c)
 {
-    emit_constant(&c->func->ch, Long(atoll(c->parser.pre.start)));
+    emit_constant(c, Long(atoll(c->parser.pre.start)));
 }
 static void ch(Compiler *c)
 {
-    emit_constant(&c->func->ch, Char(*++c->parser.pre.start));
+    emit_constant(c, Char(*++c->parser.pre.start));
 }
 
 static void boolean(Compiler *c)
 {
     if (*c->parser.pre.start == 'n')
-        emit_byte(&c->func->ch, OP_NULL);
+        emit_byte(c, OP_NULL);
     else
-        emit_constant(&c->func->ch, Bool(*c->parser.pre.start == 't' ? true : false));
+        emit_constant(c, Bool(*c->parser.pre.start == 't' ? true : false));
 }
 static void cstr(Compiler *c)
 {
@@ -782,7 +784,7 @@ static void cstr(Compiler *c)
     char *ch = (char *)++c->parser.pre.start;
     ch[c->parser.pre.size - 2] = '\0';
 
-    emit_constant(&c->func->ch, String(ch));
+    emit_constant(c, String(ch));
 }
 
 static void parse_native_argc0(Compiler *c)
@@ -790,7 +792,7 @@ static void parse_native_argc0(Compiler *c)
     char *ch = (char *)c->parser.pre.start;
     ch[c->parser.pre.size] = '\0';
     int arg = add_constant(&c->func->ch, OBJ(native_name(ch)));
-    emit_bytes(&c->func->ch, OP_GET_NATIVE, (uint8_t)arg);
+    emit_bytes(c, OP_GET_NATIVE, (uint8_t)arg);
     consume(TOKEN_CH_LPAREN, "Expect `(` prior to function call", &c->parser);
     call_expect_arity(c, 0);
 }
@@ -801,7 +803,7 @@ static void parse_native_argc1(Compiler *c)
     char *ch = (char *)c->parser.pre.start;
     ch[c->parser.pre.size] = '\0';
     int arg = add_constant(&c->func->ch, OBJ(native_name(ch)));
-    emit_bytes(&c->func->ch, OP_GET_NATIVE, (uint8_t)arg);
+    emit_bytes(c, OP_GET_NATIVE, (uint8_t)arg);
     consume(TOKEN_CH_LPAREN, "Expect `(` prior to function call", &c->parser);
     call_expect_arity(c, 1);
 }
@@ -853,20 +855,20 @@ static Arena get_id(Compiler *c)
     args.listof.Ints[1] = get;
 
     if (pre_inc)
-        emit_bytes(&c->func->ch, get == OP_GET_LOCAL ? OP_INC_LOC : OP_INC_GLO, (uint8_t)arg);
+        emit_bytes(c, get == OP_GET_LOCAL ? OP_INC_LOC : OP_INC_GLO, (uint8_t)arg);
     else if (pre_dec)
-        emit_bytes(&c->func->ch, get == OP_GET_LOCAL ? OP_DEC_LOC : OP_DEC_GLO, (uint8_t)arg);
+        emit_bytes(c, get == OP_GET_LOCAL ? OP_DEC_LOC : OP_DEC_GLO, (uint8_t)arg);
     else if (match(TOKEN_OP_DEC, &c->parser))
-        emit_bytes(&c->func->ch, get == OP_GET_LOCAL ? OP_DEC_LOC : OP_DEC_GLO, (uint8_t)arg);
+        emit_bytes(c, get == OP_GET_LOCAL ? OP_DEC_LOC : OP_DEC_GLO, (uint8_t)arg);
     else if (match(TOKEN_OP_INC, &c->parser))
-        emit_bytes(&c->func->ch, get == OP_GET_LOCAL ? OP_INC_LOC : OP_INC_GLO, (uint8_t)arg);
+        emit_bytes(c, get == OP_GET_LOCAL ? OP_INC_LOC : OP_INC_GLO, (uint8_t)arg);
     else if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
         expression(c);
-        emit_bytes(&c->func->ch, set, (uint8_t)arg);
+        emit_bytes(c, set, (uint8_t)arg);
     }
     else
-        emit_bytes(&c->func->ch, get, (uint8_t)arg);
+        emit_bytes(c, get, (uint8_t)arg);
     return args;
 }
 
@@ -905,7 +907,7 @@ static void id(Compiler *c)
     if (arg != -1)
     {
 
-        emit_bytes(&c->func->ch, OP_GET_CLOSURE, (uint8_t)arg);
+        emit_bytes(c, OP_GET_CLOSURE, (uint8_t)arg);
         return;
     }
 
@@ -936,20 +938,20 @@ static void id(Compiler *c)
     }
 
     if (pre_inc)
-        emit_bytes(&c->func->ch, get == OP_GET_LOCAL ? OP_INC_LOC : OP_INC_GLO, (uint8_t)arg);
+        emit_bytes(c, get == OP_GET_LOCAL ? OP_INC_LOC : OP_INC_GLO, (uint8_t)arg);
     else if (pre_dec)
-        emit_bytes(&c->func->ch, get == OP_GET_LOCAL ? OP_DEC_LOC : OP_DEC_GLO, (uint8_t)arg);
+        emit_bytes(c, get == OP_GET_LOCAL ? OP_DEC_LOC : OP_DEC_GLO, (uint8_t)arg);
     else if (match(TOKEN_OP_DEC, &c->parser))
-        emit_bytes(&c->func->ch, get == OP_GET_LOCAL ? OP_DEC_LOC : OP_DEC_GLO, (uint8_t)arg);
+        emit_bytes(c, get == OP_GET_LOCAL ? OP_DEC_LOC : OP_DEC_GLO, (uint8_t)arg);
     else if (match(TOKEN_OP_INC, &c->parser))
-        emit_bytes(&c->func->ch, get == OP_GET_LOCAL ? OP_INC_LOC : OP_INC_GLO, (uint8_t)arg);
+        emit_bytes(c, get == OP_GET_LOCAL ? OP_INC_LOC : OP_INC_GLO, (uint8_t)arg);
     else if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
         expression(c);
-        emit_bytes(&c->func->ch, set, (uint8_t)arg);
+        emit_bytes(c, set, (uint8_t)arg);
     }
     else
-        emit_bytes(&c->func->ch, get, (uint8_t)arg);
+        emit_bytes(c, get, (uint8_t)arg);
 }
 
 static int parse_var(Compiler *c, Arena ar)
@@ -1057,14 +1059,12 @@ static Function *end_compile(Compiler *a)
 {
     Function *f = a->func;
 
-    emit_return(&f->ch);
-#ifndef DEBUG_PRINT_CODE
-    if (!c->parser.err)
+    emit_return(a);
+#ifdef DEBUG_PRINT_CODE
+    if (!a->parser.err)
         disassemble_chunk(
-            &c->func->ch,
-            !c->func->name.as.String
-                ? "script"
-                : c->func->name.as.String);
+            &a->func->ch,
+            a->func->name.as.String);
 #endif
     if (a->enclosing)
     {

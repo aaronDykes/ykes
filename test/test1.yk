@@ -1,17 +1,19 @@
 sr n()
 {
-    var al = 100;
-
-    sr f()
-    {
-      return al;
-    }
     var be = 10;
 
-    sr set()
+      sr set()
+      {
+        be = be + 69;
+      }
+    
+    var al = 100;
+    sr f()
     {
-      be = be + 69;
+      set();
+      return al;
     }
+
     
     sr g()
     {
@@ -26,7 +28,6 @@ sr n()
 
     sr sum()
     {
-        set();
         return f() + g() + h(); 
     }
 

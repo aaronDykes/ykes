@@ -67,8 +67,30 @@ void insert_entry(Table **t, Table entry)
         }
     return;
 END:
+    FREE_ENTRY(ptr->val);
     ptr->val = entry.val;
 }
+
+void free_entry(Element el)
+{
+
+    switch (el.type)
+    {
+    case ARENA:
+        ARENA_FREE(&el.arena);
+        break;
+    case NATIVE:
+        FREE_NATIVE(el.native);
+        break;
+    case CLOSURE:
+        FREE_CLOSURE(el.closure);
+        break;
+    case SCRIPT:
+    case NULL_OBJ:
+        break;
+    }
+}
+
 void delete_func_entry(Table **t, Arena key)
 {
     Table *a = *t;
@@ -309,7 +331,7 @@ Native *find_native_entry(Table **t, Arena *hash)
         return NULL;
 
     if (strcmp(entry.key.as.String, hash->as.String) == 0)
-        return entry.val.n;
+        return entry.val.native;
 
     Table *tmp = entry.next;
 
@@ -321,7 +343,7 @@ Native *find_native_entry(Table **t, Arena *hash)
         case ARENA_FUNC:
         case ARENA_VAR:
             if (strcmp(tmp->key.as.String, hash->as.String) == 0)
-                return tmp->val.n;
+                return tmp->val.native;
             break;
         case ARENA_INT:
         case ARENA_DOUBLE:
@@ -352,7 +374,7 @@ Closure *find_func_entry(Table **t, Arena *hash)
         return NULL;
 
     if (strcmp(entry.key.as.String, hash->as.String) == 0)
-        return entry.val.c;
+        return entry.val.closure;
 
     Table *tmp = entry.next;
 
@@ -363,7 +385,7 @@ Closure *find_func_entry(Table **t, Arena *hash)
         case ARENA_FUNC:
         case ARENA_STR:
             if (strcmp(tmp->key.as.String, hash->as.String) == 0)
-                return tmp->val.c;
+                return tmp->val.closure;
             break;
         case ARENA_INT:
         case ARENA_DOUBLE:
@@ -395,7 +417,7 @@ Arena find_arena_entry(Table **t, Arena *hash)
         return Null();
 
     if (strcmp(entry.key.as.String, hash->as.String) == 0)
-        return entry.val.a;
+        return entry.val.arena;
 
     Table *tmp = entry.next;
 
@@ -407,7 +429,7 @@ Arena find_arena_entry(Table **t, Arena *hash)
         case ARENA_STR:
         case ARENA_NATIVE:
             if (strcmp(tmp->key.as.String, hash->as.String) == 0)
-                return tmp->val.a;
+                return tmp->val.arena;
             break;
         case ARENA_INT:
         case ARENA_DOUBLE:

@@ -2,7 +2,6 @@
 
 void write_table(Table *t, Arena a, Element b)
 {
-    Element el;
 
     if (b.type == CLOSURE)
     {

@@ -6,7 +6,6 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 
-#define OFFSET sizeof(Free)
 #define PAGE_SIZE \
     (PAGE * OFFSET)
 
@@ -24,11 +23,9 @@ void initialize_global_memory(size_t size)
         -1, 0);
 
     mem.mem->size = sizeof(Free);
-    mem.mem->prev = NULL;
     mem.mem->next = mem.mem + mem.mem->size;
     mem.mem->next->size = (size * sizeof(Free)) - (sizeof(Free) * 2);
     mem.mem->next->next = NULL;
-    mem.mem->next->prev = mem.mem;
     mem.remains = mem.mem->next->size;
     mem.current = (sizeof(Free) * 2);
 }
@@ -95,32 +92,33 @@ void arena_free(Arena *ar)
     if (!ar)
         return;
 
-    Free *new = NULL;
+    void *new = NULL;
     size_t new_size = ar->size + OFFSET;
 
     switch (ar->type)
     {
     case ARENA_BYTES:
-        new = (Free *)ar->listof.Bytes - OFFSET;
+
+        new = (void *)ar->listof.Bytes;
         ar->listof.Bytes = NULL;
         break;
     case ARENA_STR:
     case ARENA_FUNC:
     case ARENA_NATIVE:
     case ARENA_VAR:
-        new = (Free *)ar->as.String - OFFSET;
+        new = (void *)ar->as.String;
         ar->as.String = NULL;
         break;
     case ARENA_INTS:
-        new = (Free *)ar->listof.Ints - OFFSET;
+        new = (void *)ar->listof.Ints;
         ar->listof.Ints = NULL;
         break;
     case ARENA_DOUBLES:
-        new = (Free *)ar->listof.Doubles - OFFSET;
+        new = (void *)ar->listof.Doubles;
         ar->listof.Doubles = NULL;
         break;
     case ARENA_LONGS:
-        new = (Free *)ar->listof.Longs - OFFSET;
+        new = (void *)ar->listof.Longs;
         ar->listof.Longs = NULL;
         break;
     case ARENA_STRS:
@@ -135,53 +133,7 @@ void arena_free(Arena *ar)
         return;
     }
 
-    if (!new)
-        return;
-
-    for (; new->next; new = new->next)
-        ;
-
-    for (Free *f = mem.mem; f; f = f->next)
-
-        if (new == f->next)
-        {
-
-            Free *next = f->next->next;
-            size_t tmp = new_size + f->next->size;
-
-            f->next = new;
-            f->next->size = new_size;
-            f->next->prev = f;
-
-            if (!next)
-            {
-                f->next->size = tmp;
-                f->next->next = NULL;
-            }
-            else
-            {
-                f->next->next = next;
-                f->next->next->prev = f->next;
-            }
-
-            mem.remains += new_size;
-            mem.current -= new_size;
-
-            return;
-        }
-
-    Free *next = mem.mem->next;
-
-    mem.mem->next = new;
-    mem.mem->next->size = new_size;
-    mem.mem->next->prev = mem.mem;
-    mem.mem->next->next = next;
-    if (next)
-        mem.mem->next->next->prev = mem.mem->next;
-
-    mem.current -= new_size;
-    mem.remains += new_size;
-
+    FREE(new, new_size);
     ar = NULL;
 }
 
@@ -190,34 +142,121 @@ void destroy_global_memory()
     munmap(mem.mem, PAGE_SIZE);
 }
 
+void free_ptr(Free *new, size_t size)
+{
+
+    if (!new)
+        return;
+    Free *p = NULL;
+    for (p = mem.mem; p->next; p = p->next)
+        ;
+
+    mem.remains += size;
+    mem.current -= size;
+    p->size = mem.remains;
+    p = NULL;
+
+    Free *prev = NULL;
+    Free *f = NULL;
+
+    for (; new->next; new = new->next)
+        ;
+
+    for (f = mem.mem; f && f < new; f = f->next)
+        prev = f;
+
+    if (f && new == f)
+    {
+
+        Free *next = f->next;
+        size_t tmp = size + f->size;
+
+        f = new;
+        f->size = tmp;
+
+        if (!next)
+        {
+            f->next = NULL;
+        }
+        else
+            f->next = next;
+        prev->next = f;
+        return;
+    }
+
+    if (prev)
+    {
+        Free *next = prev->next;
+        prev->next = new;
+        prev->next->size = size;
+        prev->next->next = next;
+        if (!next)
+            prev->next->size = mem.remains;
+    }
+    else
+    {
+        Free *tmp = f->next;
+        f->next = new;
+        f->next->size = size;
+        f->next->next = tmp;
+        if (!tmp)
+            mem.mem->next->size = mem.remains;
+    }
+
+    prev = NULL;
+    f = NULL;
+    new = NULL;
+}
+
 void *alloc_ptr(size_t size)
 {
 
     size_t new_size = size + OFFSET;
 
     mem.current += new_size;
-    for (Free *f = mem.mem; f; f = f->next)
-        if (f->size >= new_size)
-        {
+    mem.remains -= new_size;
+    Free *p = NULL;
+    Free *f = NULL;
+    Free *fr = NULL;
 
-            void *ptr = f + OFFSET;
-            Free *prev = f->prev;
+    for (fr = mem.mem; fr->next; fr = fr->next)
+        ;
+    fr->size = mem.remains;
+    fr = NULL;
 
-            size_t tmp =
-                (!f->next)
-                    ? f->size - new_size
-                    : f->next->size + (f->size - new_size);
+    for (f = mem.mem; f && f->size < new_size; f = f->next)
+        p = f;
 
-            f->next = f + new_size;
-            f->next->size = tmp;
-            f = f->next;
+    if (f && f->size >= new_size)
+    {
 
-            prev->next = f;
-            f->prev = prev;
+        Free *ptr = f + OFFSET;
+        ptr->next = NULL;
 
-            mem.remains -= size;
-            return (void *)ptr;
-        }
+        size_t tmp =
+            (!f->next)
+                ? f->size - new_size
+                : f->next->size + (f->size - new_size);
+
+        f->next = f + new_size;
+        f->next->size = tmp;
+
+        p->next = f->next;
+        f = f->next;
+        f = NULL;
+
+        return (void *)ptr;
+    }
+
+    if (p)
+    {
+        void *ptr = p + OFFSET;
+        size_t tmp = p->size - new_size;
+        p->next = p + tmp;
+        p->next->size = tmp;
+        p = p->next;
+        return (void *)ptr;
+    }
 
     return NULL;
 }
@@ -286,46 +325,7 @@ void arena_free_arena(Arena *ar)
             break;
         }
 
-    Free *f = (Free *)(ar - 1) - OFFSET;
-
-    if (!f)
-        return;
-
-    for (; f->next; f = f->next)
-        ;
-
-    for (Free *p = mem.mem; p; p = p->next)
-    {
-        if (p == f)
-        {
-            Free *next = p->next;
-
-            size_t tmp = new_size + p->size;
-
-            // if (next)
-            // tmp += p->next->size;
-            p = f;
-            p->size = new_size;
-            p->prev = p;
-            // p->prev->next = p->next;
-
-            if (!next)
-            {
-                p->size = tmp;
-                p->next = NULL;
-            }
-            else
-            {
-                p->next = next;
-                p->next->prev = p->next;
-            }
-
-            mem.remains += new_size;
-            mem.current -= new_size;
-
-            return;
-        }
-    }
+    FREE((void *)(ar - 1), new_size);
 }
 
 Arena arena_alloc(size_t size, T type)
@@ -498,7 +498,7 @@ Stack *realloc_stack(Stack *st, size_t size)
         }
     s->count = st->count;
     s->top += s->count;
-    free_stack(&st);
+    FREE_STACK(&st);
     return s;
 }
 void free_stack(Stack **stack)
@@ -525,63 +525,34 @@ void free_stack(Stack **stack)
         case NULL_OBJ:
             break;
         }
-
-    Free *f = (Free *)((*stack) - 1) - OFFSET;
-
-    if (!f)
-        return;
-
-    for (; f->next; f = f->next)
-        ;
-
-    for (Free *p = mem.mem; p; p = p->next)
-    {
-        if (p == f)
-        {
-            Free *next = p->next;
-
-            size_t tmp = new_size + p->size;
-
-            p = f;
-            p->size = new_size;
-            p->prev = p;
-
-            if (!next)
-            {
-                p->size = tmp;
-                p->next = NULL;
-            }
-            else
-            {
-                p->next = next;
-                p->next->prev = p->next;
-            }
-
-            mem.remains += new_size;
-            mem.current -= new_size;
-
-            return;
-        }
-    }
-    tmp = NULL;
+    FREE((void *)((*stack) - 1), new_size);
 }
 
 Upval **indices(size_t size)
 {
     Upval **up = ALLOC((sizeof(Upval *) * size) + sizeof(Upval *));
 
-    for (size_t i = 0; i < size; i++)
+    *up = ALLOC(sizeof(Upval));
+
+    (*up)->size = size;
+    for (size_t i = 1; i < size; i++)
         up[i] = NULL;
 
-    return up;
+    return up + 1;
 }
 
 void free_indices(Upval **up)
 {
+    if (!up)
+        return;
+    if (!(*up))
+        return;
+    if (!((*up) - 1))
+        return;
     for (size_t i = 0; i < ((*up) - 1)->size; i++)
-        FREE_STACK((*up)[i].index);
+        (*up)[i].index = NULL;
 
-    up = NULL;
+    FREE((void *)((*up) - 1), ((*up) - 1)->size + OFFSET);
 }
 
 Element Obj(Arena ar)
@@ -633,7 +604,8 @@ void free_function(Function *func)
     if (func->name.type != ARENA_NULL)
         FREE_ARRAY(&func->name);
     free_chunk(&func->ch);
-    func = NULL;
+
+    FREE((void *)func, sizeof(Function) + OFFSET);
 }
 
 Native *native(NativeFn func, Arena ar)
@@ -649,9 +621,10 @@ void free_native(Native *native)
 
     if (!native)
         return;
-    native->fn = NULL;
 
-    FREE_ARRAY(&native->obj);
+    ARENA_FREE(&native->obj);
+
+    FREE((void *)native, sizeof(Native) + OFFSET);
 }
 Closure *new_closure(Function *func)
 {
@@ -668,7 +641,9 @@ void free_closure(Closure *closure)
 {
     if (!closure)
         return;
-    closure = NULL;
+
+    FREE_UPVALS(closure->upvals);
+    FREE((void *)closure, sizeof(Closure) + OFFSET);
 }
 
 Upval *upval(Stack *index)
@@ -691,11 +666,13 @@ void init_chunk(Chunk *c)
     c->op_codes.len = 0;
     c->op_codes.count = 0;
     c->op_codes.listof.Bytes = NULL;
+    c->lines.len = 0;
+    c->lines.count = 0;
+    c->lines.listof.Ints = NULL;
     c->cases.len = 0;
     c->cases.count = 0;
     c->cases.listof.Ints = NULL;
     c->cases.len = 0;
-    c->line = 0;
     c->constants = GROW_STACK(NULL, STACK_SIZE);
 }
 
@@ -710,6 +687,8 @@ void free_chunk(Chunk *c)
         FREE_ARRAY(&c->op_codes);
     if (c->cases.listof.Ints)
         FREE_ARRAY(&c->cases);
+    if (c->lines.listof.Ints)
+        FREE_ARRAY(&c->lines);
     c->constants = NULL;
     init_chunk(c);
 }
@@ -764,24 +743,19 @@ void arena_free_table(Table *t)
     size_t size = (t - 1)->size;
 
     for (size_t i = 0; i < size; i++)
-    {
         FREE_TABLE_ENTRY(&t[i]);
-        t[i].size = 0;
-    }
 
-    (t - 1)->size = 0;
-    --t;
-    t = NULL;
+    FREE((void *)(t - 1), (t - 1)->size + OFFSET);
 }
 
 void arena_free_entry(Table *entry)
 {
     if (entry->type == ARENA)
-        FREE_ARRAY(&entry->val.a);
+        FREE_ARRAY(&entry->val.arena);
     else if (entry->type == NATIVE)
-        FREE_NATIVE(entry->val.n);
+        FREE_NATIVE(entry->val.native);
     else
-        FREE_CLOSURE(entry->val.c);
+        FREE_CLOSURE(entry->val.closure);
 
     FREE_ARRAY(&entry->key);
     entry->next = NULL;
@@ -813,13 +787,13 @@ Table new_entry(Table t)
     switch (t.type)
     {
     case ARENA:
-        el.val.a = t.val.a;
+        el.val.arena = t.val.arena;
         break;
     case NATIVE:
-        el.val.n = t.val.n;
+        el.val.native = t.val.native;
         break;
     case CLOSURE:
-        el.val.c = t.val.c;
+        el.val.closure = t.val.closure;
         break;
     case SCRIPT:
     case NULL_OBJ:
@@ -852,7 +826,7 @@ Table arena_entry(Arena key, Arena val)
 {
     Table el;
     el.key = key;
-    el.val.a = val;
+    el.val.arena = val;
     el.next = NULL;
     el.prev = NULL;
     el.size = key.size + val.size;
@@ -863,7 +837,7 @@ Table func_entry(Closure *clos)
 {
     Table el;
     el.key = clos->func->name;
-    el.val.c = clos;
+    el.val.closure = clos;
     el.next = NULL;
     el.prev = NULL;
     el.size = el.key.size;
@@ -874,7 +848,7 @@ Table native_entry(Native *func)
 {
     Table el;
     el.key = func->obj;
-    el.val.n = func;
+    el.val.native = func;
     el.next = NULL;
     el.prev = NULL;
     el.size = el.key.size;
@@ -960,6 +934,10 @@ size_t hash(Arena key)
         break;
     }
     return index;
+}
+
+void collect()
+{
 }
 
 void print_arena(Arena ar)

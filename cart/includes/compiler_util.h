@@ -107,8 +107,8 @@ static void block(Compiler *c);
 static void comment(Compiler *c);
 
 static void emit_loop(Compiler *c, int byte);
-static int emit_jump_long(Chunk *ch, int byte);
-static int emit_jump(Chunk *ch, int byte);
+static int emit_jump_long(Compiler *c, int byte);
+static int emit_jump(Compiler *c, int byte);
 
 static void patch_jump_long(Compiler *c, int begin, int byte);
 static void patch_jump(Compiler *c, int byte);
@@ -149,10 +149,10 @@ static void current_err(const char *err, Parser *parser);
 static void error(const char *err, Parser *parser);
 static void error_at(Token t, Parser *parser, const char *err);
 
-static void emit_byte(Chunk *ch, uint8_t byte);
-static void emit_bytes(Chunk *ch, uint8_t b1, uint8_t b2);
-static void emit_constant(Chunk *ch, Arena ar);
-static void emit_return(Chunk *ch);
+static void emit_byte(Compiler *c, uint8_t byte);
+static void emit_bytes(Compiler *c, uint8_t b1, uint8_t b2);
+static void emit_constant(Compiler *c, Arena ar);
+static void emit_return(Compiler *c);
 
 static void dval(Compiler *c);
 static void ival(Compiler *c);

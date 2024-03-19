@@ -15,9 +15,13 @@
 #define TABLE_SIZE 50
 #define IP_SIZE 100
 #define MEM_OFFSET 1
+#define OFFSET sizeof(Free)
 
 #define ALLOC(size) \
     alloc_ptr(size)
+#define FREE(ptr, size) \
+    free_ptr((Free *)ptr - OFFSET, size)
+
 #define GROW_CAPACITY(capacity) \
     ((capacity) < CAPACITY ? CAPACITY : capacity * INC)
 
@@ -44,7 +48,7 @@
 #define GROW_STACK(st, size) \
     realloc_stack(st, size)
 #define FREE_STACK(st) \
-    realloc_stack(st, 0)
+    free_stack(st)
 
 #define FREE_FUNCTION(func) \
     free_function(func)
@@ -52,6 +56,8 @@
     free_native(nat)
 #define FREE_CLOSURE(clos) \
     free_closure(clos)
+#define FREE_UPVALS(up) \
+    free_indices(up)
 
 #define FREE_UPVAL(up) \
     free_upval(up)
@@ -78,7 +84,7 @@ union Free
     {
         size_t size;
         Free *next;
-        Free *prev;
+        // Free *prev;
     };
     Align align;
 };
@@ -99,6 +105,7 @@ Arena *arena_realloc_arena(Arena *ar, size_t size);
 void arena_free_arena(Arena *ar);
 
 void *alloc_ptr(size_t size);
+void free_ptr(Free *new, size_t size);
 
 Arena arena_init(void *data, size_t size, T type);
 Arena arena_alloc(size_t size, T type);
@@ -137,7 +144,6 @@ void free_function(Function *func);
 Closure *new_closure(Function *func);
 void free_closure(Closure *closure);
 
-Upval *new_upval(Stack *index);
 Upval *upval(Stack *index);
 void free_upval(Upval *up);
 
@@ -162,5 +168,7 @@ void arena_free_entry(Table *entry);
 Arena Var(const char *str);
 Arena func_name(const char *str);
 Arena native_name(const char *str);
+
+void collect();
 
 #endif

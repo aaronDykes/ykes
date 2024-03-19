@@ -183,12 +183,10 @@ struct Arena
 
 struct Chunk
 {
-
-    int line;
-
+    // int line;
     Arena cases;
     Arena op_codes;
-
+    Arena lines;
     Stack *constants;
 };
 
@@ -256,13 +254,7 @@ struct Table
     int count;
     int len;
 
-    union
-    {
-        Native *n;
-        Closure *c;
-        Arena a;
-    } val;
-
+    Element val;
     Table *next;
     Table *prev;
 };

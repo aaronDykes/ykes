@@ -43,7 +43,6 @@ void disassemble_chunk(Chunk *c, const char *name)
 
     printf("==== chunk: `%s` ====\n", name);
 
-    c->line = 1;
     for (int i = 0; i < c->op_codes.len;)
         i = disassemble_instruction(c, i);
 }
@@ -51,7 +50,7 @@ void disassemble_chunk(Chunk *c, const char *name)
 int disassemble_instruction(Chunk *c, int offset)
 {
 
-    printf("%d: %04d ", c->line++, offset);
+    printf("%d: %04d ", c->lines.listof.Ints[offset], offset);
 
     switch (c->op_codes.listof.Bytes[offset])
     {
@@ -65,6 +64,8 @@ int disassemble_instruction(Chunk *c, int offset)
         print(c->constants[constant].as);
 
         Closure *clos = c->constants[constant].as.closure;
+        if (!clos)
+            return offset;
         for (int j = 0; j < clos->upval_count; j++)
         {
             int isLocal = c->op_codes.listof.Bytes[offset++];

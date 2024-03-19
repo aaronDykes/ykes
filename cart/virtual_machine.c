@@ -21,9 +21,9 @@ void initVM()
 void freeVM()
 {
     FREE_TABLE(machine.glob);
-    FREE_STACK(machine.stack);
-    FREE_STACK(machine.call_stack);
-    FREE_STACK(machine.native_calls);
+    FREE_STACK(&machine.stack);
+    FREE_STACK(&machine.call_stack);
+    FREE_STACK(&machine.native_calls);
     destroy_global_memory();
 }
 
@@ -46,7 +46,7 @@ static void runtime_error(const char *format, ...)
 
         CallFrame *frame = &machine.frames[i];
         Function *func = frame->closure->func;
-        int line = frame->closure->func->ch.line;
+        int line = frame->closure->func->ch.lines.listof.Ints[i];
 
         if (!func->name.as.String)
             fprintf(stderr, "script\n");
@@ -243,7 +243,6 @@ Interpretation run()
         {
             Closure *c = READ_CONSTANT().closure;
             CPUSH(CLOSURE(c));
-            char *s = c->func->name.as.String;
 
             for (int i = 0; i < c->upval_count; i++)
             {
@@ -253,7 +252,7 @@ Interpretation run()
                 if (is_local)
                     c->upvals[i] = capture_upvalue(frame->slots + index);
                 else
-                    c->upvals[i] = frame->closure->upvals[index]->index;
+                    c->upvals[i] = frame->closure->upvals[index];
             }
         }
         break;
