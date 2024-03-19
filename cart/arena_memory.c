@@ -159,8 +159,8 @@ void free_ptr(Free *new, size_t size)
     Free *prev = NULL;
     Free *f = NULL;
 
-    for (; new->next; new = new->next)
-        ;
+    // for (; new->next; new = new->next)
+    //     ;
 
     for (f = mem.mem; f && f < new; f = f->next)
         prev = f;
@@ -211,7 +211,7 @@ void free_ptr(Free *new, size_t size)
 void *alloc_ptr(size_t size)
 {
 
-    size_t new_size = size + OFFSET;
+    size_t new_size = size + OFFSET + 1;
 
     mem.current += new_size;
     mem.remains -= new_size;
@@ -230,8 +230,7 @@ void *alloc_ptr(size_t size)
     if (f && f->size >= new_size)
     {
 
-        Free *ptr = f + OFFSET;
-        ptr->next = NULL;
+        void *ptr = f + OFFSET + 1;
 
         size_t tmp =
             (!f->next)
@@ -245,12 +244,12 @@ void *alloc_ptr(size_t size)
         f = f->next;
         f = NULL;
 
-        return (void *)ptr;
+        return ptr;
     }
 
     if (p)
     {
-        void *ptr = p + OFFSET;
+        void *ptr = p + OFFSET + 1;
         size_t tmp = p->size - new_size;
         p->next = p + tmp;
         p->next->size = tmp;

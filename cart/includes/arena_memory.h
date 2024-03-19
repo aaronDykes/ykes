@@ -20,7 +20,7 @@
 #define ALLOC(size) \
     alloc_ptr(size)
 #define FREE(ptr, size) \
-    free_ptr((Free *)ptr - OFFSET, size)
+    free_ptr((Free *)ptr - OFFSET - 1, size)
 
 #define GROW_CAPACITY(capacity) \
     ((capacity) < CAPACITY ? CAPACITY : capacity * INC)
