@@ -1,6 +1,5 @@
 #include "virtual_machine.h"
 #include "vm_util.h"
-#include "common.h"
 #include <stdarg.h>
 #include <time.h>
 #include <stdio.h>
@@ -9,7 +8,7 @@
 void initVM()
 {
 
-    initialize_global_memory(PAGE);
+    initialize_global_memory();
     machine.stack = GROW_STACK(NULL, STACK_SIZE);
     machine.call_stack = GROW_STACK(NULL, STACK_SIZE);
     machine.native_calls = GROW_STACK(NULL, NATIVE_STACK_SIZE);

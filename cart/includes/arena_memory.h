@@ -3,19 +3,22 @@
 
 #include <string.h>
 #include "arena.h"
+#include "common.h"
 
 #define LOAD_FACTOR 0.75
 
 #define CAPACITY 50
 #define INC 2
-#define PAGE 16384 * 10
+#define PAGE 16384
+#define PAGE_COUNT 16
+#define INIT_GLOBAL \
+    (PAGE * PAGE_COUNT)
 #define ARENA_SIZE 50
 #define STACK_SIZE 50
 #define NATIVE_STACK_SIZE 4
 #define TABLE_SIZE 50
 #define IP_SIZE 100
 #define MEM_OFFSET 1
-#define OFFSET sizeof(Free)
 
 #define ALLOC(size) \
     alloc_ptr(size + OFFSET)
@@ -74,8 +77,6 @@
     closure(c)
 
 typedef union Free Free;
-typedef struct Memory Memory;
-
 typedef long long int Align;
 
 union Free
@@ -84,21 +85,14 @@ union Free
     {
         size_t size;
         Free *next;
-        // Free *prev;
     };
     Align align;
 };
 
-struct Memory
-{
-    size_t current;
-    size_t remains;
-    Free *mem;
-};
+static Free *mem;
 
-static Memory mem;
-
-void initialize_global_memory(size_t size);
+void initialize_global_memory();
+void destroy_global_memory();
 
 Arena *arena_alloc_arena(size_t size);
 Arena *arena_realloc_arena(Arena *ar, size_t size);
@@ -121,7 +115,6 @@ Arena Bool(bool boolean);
 Arena Null();
 
 void arena_free(Arena *ar);
-void destroy_global_memory();
 
 void init_chunk(Chunk *c);
 void free_chunk(Chunk *c);

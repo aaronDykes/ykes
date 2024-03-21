@@ -122,7 +122,7 @@ static Arena append_int_to_str(Arena s, Arena i)
     int ival = i.as.Int;
     if (ival < 0)
         ++len;
-    int new = len + 1 + s.as.len;
+    int new = len + s.as.len;
 
     i = GROW_ARRAY(NULL, sizeof(char) * len, ARENA_STR);
     i.as.String = itoa(i.as.String, ival);

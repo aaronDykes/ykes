@@ -23,7 +23,7 @@ sr print()
     }
 
     var start = clock();
-    print_prime(100000);
+    print_prime(1000);
     pout clock() - start;
 
 }

@@ -1,12 +1,16 @@
-sr print_prime(n) {
+sr pr()
+{
 
-    for (var i = 3; i < n; i++)
-        if (prime(i))
-            pout i;
+    sr print_prime(n)
+    {
+        for (var i = 3; i < n; i++)
+            if (prime(i))
+                pout i;
+    }
+
+    var start = clock();
+    print_prime(10000000);
+    pout clock() - start;
 }
 
-var start = clock();
-
-print_prime(10000000);
-
-pout clock() - start;
+pr();

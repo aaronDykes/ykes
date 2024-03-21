@@ -1,34 +1,60 @@
 #include "arena_memory.h"
 #include <stdio.h>
-#include <stdio.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <stdlib.h>
 
-#define PAGE_SIZE \
-    (PAGE * OFFSET)
+#ifdef DEBUG_LOG_GC
+#include "debug.h"
+#endif
 
-void initialize_global_memory(size_t size)
+#define OFFSET sizeof(Free)
+
+static void partition_global_memory()
 {
 
-    mem.mem = mmap(
-        0,
-        PAGE_SIZE,
+    mem->size = PAGE;
+    size_t max = PAGE_COUNT - 1;
+    Free *f = mem;
+    for (size_t i = 0; i < max; i++, f = f->next)
+    {
+        f->next = f + PAGE;
+        f->next->size = PAGE;
+    }
+    f->next = NULL;
+}
+static void *request_system_memory(size_t size)
+{
+    return mmap(
+        NULL,
+        size,
         PROT_READ | PROT_WRITE,
-        POSIX_MADV_RANDOM |
-            POSIX_MADV_SEQUENTIAL |
-            POSIX_MADV_WILLNEED |
+        MADV_RANDOM |
+            MADV_NORMAL |
+            MADV_WILLNEED |
             MAP_PRIVATE |
             MAP_ANON,
         -1, 0);
+}
+void initialize_global_memory()
+{
 
-    mem.current = OFFSET;
-    mem.mem->size = OFFSET;
-    mem.mem->next = mem.mem + mem.mem->size;
-    mem.mem->next->size = ((size * OFFSET) - OFFSET);
-    mem.mem->next->next = NULL;
-    mem.remains = mem.mem->next->size;
+    mem = request_system_memory(PAGE * OFFSET);
+
+    mem->size = PAGE;
+    mem->next = NULL;
+}
+
+void destroy_global_memory()
+{
+
+    while (mem)
+    {
+        Free *tmp = mem->next;
+        munmap(mem, mem->size);
+        mem = tmp;
+    }
 }
 
 Arena arena_init(void *data, size_t size, T type)
@@ -100,26 +126,26 @@ void arena_free(Arena *ar)
     {
     case ARENA_BYTES:
 
-        new = (void *)ar->listof.Bytes;
+        new = ar->listof.Bytes;
         ar->listof.Bytes = NULL;
         break;
     case ARENA_STR:
     case ARENA_FUNC:
     case ARENA_NATIVE:
     case ARENA_VAR:
-        new = (void *)ar->as.String;
+        new = ar->as.String;
         ar->as.String = NULL;
         break;
     case ARENA_INTS:
-        new = (void *)ar->listof.Ints;
+        new = ar->listof.Ints;
         ar->listof.Ints = NULL;
         break;
     case ARENA_DOUBLES:
-        new = (void *)ar->listof.Doubles;
+        new = ar->listof.Doubles;
         ar->listof.Doubles = NULL;
         break;
     case ARENA_LONGS:
-        new = (void *)ar->listof.Longs;
+        new = ar->listof.Longs;
         ar->listof.Longs = NULL;
         break;
     case ARENA_STRS:
@@ -138,9 +164,37 @@ void arena_free(Arena *ar)
     ar = NULL;
 }
 
-void destroy_global_memory()
+static void mark_roots()
 {
-    munmap(mem.mem, PAGE_SIZE);
+}
+
+void collect()
+{
+
+#ifdef DEBUG_LOG_GC
+    printf("-- BEGIN: 'gc' --\n");
+#endif
+
+    mark_roots();
+#ifdef DEBUG_LOG_GC
+    printf("-- END: 'gc' --\n");
+#endif
+}
+
+static void merge_list()
+{
+
+    Free *free = NULL, *prev = NULL, *next = NULL;
+
+    for (free = mem; free->next; free = free->next)
+    {
+        prev = free;
+        if (prev + prev->size == free->next)
+        {
+            prev->size += free->next->size;
+            prev->next = free->next->next;
+        }
+    }
 }
 
 void free_ptr(Free *new, size_t size)
@@ -148,95 +202,85 @@ void free_ptr(Free *new, size_t size)
 
     if (!new)
         return;
-    Free *p = NULL;
-    for (p = mem.mem->next; p->next; p = p->next)
-        ;
 
-    mem.remains += size;
-    mem.current -= size;
-    p->size = mem.remains;
-    p = NULL;
+#ifdef DEBUG_LOG_GC
+    printf("FREE: %p\n", (void *)new);
+#endif
 
-    Free *prev = NULL;
-    Free *f = NULL;
+    Free *free = NULL, *prev = NULL, *next = NULL;
 
-    for (f = mem.mem->next; f && f < new; f = f->next)
-        prev = f;
+    for (free = mem; free && free < new; free = free->next)
+        prev = free;
 
-    if (f && new == f)
-    {
+    if (free && free == new)
         return;
-    }
+    if (prev && prev == new)
+        return;
 
-    if (prev)
+    if (free && free < new)
     {
-        Free *next = prev->next;
+
+        next = free->next;
+        free->next = new;
+        free->size = size;
+        free->next->next = next;
+    }
+    else if (prev && prev == new)
+    {
+        next = prev->next;
         prev->next = new;
-        prev->next->size = size;
+        prev->size = size;
         prev->next->next = next;
-        if (!next)
-            prev->next->size = mem.remains;
-    }
-    else
-    {
-        Free *tmp = f;
-        f = new;
-        f->size = size;
-        f->next = tmp;
-        if (!f->next)
-            f->size = mem.remains;
     }
 
-    prev = NULL;
-    f = NULL;
+    merge_list();
+
     new = NULL;
+    prev = NULL;
+    free = NULL;
 }
 
 void *alloc_ptr(size_t size)
 {
 
-    mem.current += size;
-    mem.remains -= size;
-    Free *p = NULL;
-    Free *f = NULL;
-    Free *fr = NULL;
+    Free *prev = NULL;
+    Free *free = NULL;
 
-    for (fr = mem.mem->next; fr->next; fr = fr->next)
-        ;
-    fr->size = mem.remains;
-    fr = NULL;
+    for (free = mem; free && free->size < size; free = free->next)
+        prev = free;
 
-    for (f = mem.mem; f && f->size < size; f = f->next)
-        p = f;
-
-    if (f && f->size >= size)
+    if (free && free->size >= size)
     {
 
-        void *ptr = f + OFFSET;
+        void *ptr = free + OFFSET;
 
-        size_t tmp =
-            (!f->next)
-                ? f->size - size
-                : f->next->size + (f->size - size);
+#ifdef DEBUG_LOG_GC
+        printf("ALLOC: %zu for %d\n", size, ptr);
+#endif
+        size_t tmp = free->size - size;
+        Free *next = free->next;
 
-        f->next = f + size;
-        f->next->size = tmp;
+        free += size;
+        free->size = tmp;
+        free->next = next;
 
-        p->next = f->next;
-        f = NULL;
+        if (prev && tmp == 0)
+            prev->next = free->next;
+        else if (prev)
+            prev->next = free;
+        else
+            mem = free;
 
         return ptr;
     }
 
-    if (p)
+    if (prev)
     {
-        Free *next = p->next;
-        void *ptr = p + OFFSET;
-        size_t tmp = p->size - size;
-        p->next = p + size;
-        p->next->size = tmp;
-        p->next->next = next;
-        return (void *)ptr;
+        prev->next = request_system_memory(PAGE * OFFSET);
+        void *ptr = prev->next + OFFSET;
+        prev->next += size;
+        prev->next->size = PAGE - size;
+        return ptr;
     }
 
     return NULL;
@@ -306,7 +350,7 @@ void arena_free_arena(Arena *ar)
             break;
         }
 
-    FREE((void *)(ar - 1), new_size);
+    FREE((ar - 1), new_size);
 }
 
 Arena arena_alloc(size_t size, T type)
@@ -321,13 +365,16 @@ Arena arena_realloc(Arena *ar, size_t size, T type)
 
     if (size == 0)
     {
-        arena_free(ar);
+        ARENA_FREE(ar);
         return Null();
     }
 
     void *ptr = ALLOC(size);
     if (!ar && size != 0)
         return arena_init(ptr, size, type);
+
+    if (size > ar->size)
+        collect();
 
     size_t new_size = (size >= ar->size) ? ar->size : size;
 
@@ -506,7 +553,7 @@ void free_stack(Stack **stack)
         case NULL_OBJ:
             break;
         }
-    FREE((void *)((*stack) - 1), new_size);
+    FREE(((*stack) - 1), new_size);
 }
 
 Upval **upvals(size_t size)
@@ -534,7 +581,7 @@ void free_upvals(Upval **up)
     for (size_t i = 0; i < ((*up) - 1)->size; i++)
         (*up)[i].index = NULL;
 
-    FREE((void *)((*up) - 1), ((*up) - 1)->size);
+    FREE(((*up) - 1), ((*up) - 1)->size);
 }
 
 Element Obj(Arena ar)
@@ -587,7 +634,7 @@ void free_function(Function *func)
         FREE_ARRAY(&func->name);
     free_chunk(&func->ch);
 
-    FREE((void *)func, sizeof(Function));
+    FREE(func, sizeof(Function));
 }
 
 Native *native(NativeFn func, Arena ar)
@@ -606,7 +653,7 @@ void free_native(Native *native)
 
     ARENA_FREE(&native->obj);
 
-    FREE((void *)native, sizeof(Native));
+    FREE(native, sizeof(Native));
 }
 Closure *new_closure(Function *func)
 {
@@ -625,7 +672,7 @@ void free_closure(Closure *closure)
         return;
 
     FREE_UPVALS(closure->upvals);
-    FREE((void *)closure, sizeof(Closure));
+    FREE(closure, sizeof(Closure));
 }
 
 Upval *upval(Stack *index)
@@ -728,7 +775,7 @@ void arena_free_table(Table *t)
     for (size_t i = 0; i < size; i++)
         FREE_TABLE_ENTRY(&t[i]);
 
-    FREE((void *)(t - 1), (t - 1)->size);
+    FREE((t - 1), (t - 1)->size);
 }
 
 void arena_free_entry(Table *entry)
@@ -917,10 +964,6 @@ size_t hash(Arena key)
         break;
     }
     return index;
-}
-
-void collect()
-{
 }
 
 void print_arena(Arena ar)
