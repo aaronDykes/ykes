@@ -88,6 +88,8 @@ static void call_expect_arity(Compiler *c, int arity);
 
 static int argument_list(Compiler *c);
 
+static void class_declaration(Compiler *c);
+
 static void func_declaration(Compiler *c);
 static void func_body(Compiler *c, ObjType type, Arena ar);
 static void func_var(Compiler *c);
@@ -115,6 +117,8 @@ static void patch_jump(Compiler *c, int byte);
 
 static void for_statement(Compiler *c);
 static void while_statement(Compiler *c);
+
+static void rm_statement(Compiler *c);
 
 static void consume_if(Compiler *c);
 static void consume_elif(Compiler *c);
@@ -160,6 +164,7 @@ static void llint(Compiler *c);
 static void ch(Compiler *c);
 static void boolean(Compiler *c);
 static void cstr(Compiler *c);
+static void string(Compiler *c);
 
 static int resolve_local(Compiler *c, Arena *name);
 static int resolve_upvalue(Compiler *c, Arena *name);
@@ -182,11 +187,16 @@ static void add_local(Compiler *c, Arena *ar);
 static PRule rules[] = {
     [TOKEN_CH_LPAREN] = {grouping, call, PREC_CALL},
     [TOKEN_CH_RPAREN] = {NULL, NULL, PREC_NONE},
+
     [TOKEN_CH_LCURL] = {NULL, NULL, PREC_NONE},
     [TOKEN_CH_RCURL] = {NULL, NULL, PREC_NONE},
+
+    [TOKEN_CH_LSQUARE] = {NULL, NULL, PREC_NONE},
+    [TOKEN_CH_RSQUARE] = {NULL, NULL, PREC_NONE},
+
     [TOKEN_CH_COMMA] = {NULL, NULL, PREC_NONE},
     [TOKEN_CH_SEMI] = {NULL, NULL, PREC_NONE},
-    [TOKEN_CH_DOT] = {NULL, NULL, PREC_NONE},
+    [TOKEN_CH_DOT] = {NULL, NULL, PREC_CALL},
 
     [TOKEN_OP_INC] = {id, NULL, PREC_TERM},
     [TOKEN_OP_DEC] = {NULL, NULL, PREC_TERM},
@@ -199,6 +209,14 @@ static PRule rules[] = {
     [TOKEN_OP_MUL] = {NULL, binary, PREC_FACTOR},
 
     [TOKEN_OP_ASSIGN] = {NULL, NULL, PREC_ASSIGNMENT},
+    [TOKEN_ADD_ASSIGN] = {NULL, NULL, PREC_ASSIGNMENT},
+    [TOKEN_SUB_ASSIGN] = {NULL, NULL, PREC_ASSIGNMENT},
+    [TOKEN_MUL_ASSIGN] = {NULL, NULL, PREC_ASSIGNMENT},
+    [TOKEN_DIV_ASSIGN] = {NULL, NULL, PREC_ASSIGNMENT},
+    [TOKEN_MOD_ASSIGN] = {NULL, NULL, PREC_ASSIGNMENT},
+    [TOKEN_AND_ASSIGN] = {NULL, NULL, PREC_ASSIGNMENT},
+    [TOKEN_OR__ASSIGN] = {NULL, NULL, PREC_ASSIGNMENT},
+
     [TOKEN_OP_BANG] = {unary, NULL, PREC_TERM},
     [TOKEN_OP_SNE] = {NULL, binary, PREC_EQUALITY},
     [TOKEN_OP_SEQ] = {NULL, binary, PREC_EQUALITY},
@@ -220,6 +238,7 @@ static PRule rules[] = {
 
     [TOKEN_ID] = {id, NULL, PREC_NONE},
     [TOKEN_STR] = {cstr, NULL, PREC_NONE},
+    [TOKEN_ALLOC_STR] = {string, NULL, PREC_NONE},
     [TOKEN_BTYE] = {NULL, NULL, PREC_NONE},
 
     [TOKEN_CHAR] = {ch, NULL, PREC_NONE},

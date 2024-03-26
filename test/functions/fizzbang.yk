@@ -2,16 +2,29 @@
 sr hello()
 {
 
-
+    var str;
     for (var i = 1; i < 100; i++)
         if ((i % 15) == 0)
-           pout "FIZZBANG: " + i;
+        {
+            str = String("FIZZBANG: ") + i;
+            pout str;
+            rm(str);
+        }
         elif ((i % 5) == 0)
-            pout "BANG: " + i;
+        {
+            str = String("BANG: ") + i;
+            pout str;
+            rm(str);
+        }
         elif ((i % 3) == 0)
-            pout "FIZZ: " + i;
+        {
+
+            str = String("FIZZ: ") + i;
+            pout str;
+            rm(str);
+        }
         else 
-            pout i; 
+            pout i;
 
 }
 

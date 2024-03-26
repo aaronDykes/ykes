@@ -6,24 +6,31 @@
 #include "common.h"
 
 #define LOAD_FACTOR 0.75
-
+#define FRAMES_MAX 500
+#define TAKE_OUT_THE_TRASH 250
 #define CAPACITY 50
 #define INC 2
 #define PAGE 16384
 #define PAGE_COUNT 16
 #define INIT_GLOBAL \
     (PAGE * PAGE_COUNT)
-#define ARENA_SIZE 50
 #define STACK_SIZE 50
-#define NATIVE_STACK_SIZE 4
+#define NATIVE_STACK_SIZE 25
 #define TABLE_SIZE 50
 #define IP_SIZE 100
 #define MEM_OFFSET 1
 
 #define ALLOC(size) \
     alloc_ptr(size + OFFSET)
-#define FREE(ptr, size) \
-    free_ptr((Free *)ptr - OFFSET, size + OFFSET)
+
+#define PTR(ptr) \
+    ((Free *)ptr - OFFSET)
+
+#define DPTR(ptr) \
+    ((Free **)ptr)
+
+#define FREE(ptr) \
+    free_ptr(PTR(ptr))
 
 #define GROW_CAPACITY(capacity) \
     ((capacity) < CAPACITY ? CAPACITY : capacity * INC)
@@ -75,12 +82,20 @@
     native_fn(n)
 #define CLOSURE(c) \
     closure(c)
+#define UPVAL(c) \
+    upval_el(c)
+#define CLASS(c) \
+    new_class(class(c))
+#define FREE_CLASS(c) \
+    free_class(c)
 
 typedef union Free Free;
+typedef struct Garbage Garbage;
 typedef long long int Align;
 
 union Free
 {
+
     struct
     {
         size_t size;
@@ -89,6 +104,37 @@ union Free
     Align align;
 };
 
+struct Garbage
+{
+    Free *obj;
+};
+
+struct CallFrame
+{
+    Closure *closure;
+    uint8_t *ip;
+    uint8_t *ip_start;
+    Stack *slots;
+};
+typedef struct CallFrame CallFrame;
+
+struct vm
+{
+    int frame_count;
+    int garbage_count;
+    int garbage_len;
+    CallFrame frames[FRAMES_MAX];
+    Stack *stack;
+    Stack *call_stack;
+    Stack *native_calls;
+    Upval *open_upvals;
+    Table *glob;
+    Garbage *garbage;
+};
+typedef struct vm vm;
+typedef vm *Vm;
+
+vm machine;
 static Free *mem;
 
 void initialize_global_memory();
@@ -99,7 +145,8 @@ Arena *arena_realloc_arena(Arena *ar, size_t size);
 void arena_free_arena(Arena *ar);
 
 void *alloc_ptr(size_t size);
-void free_ptr(Free *new, size_t size);
+void free_ptr(Free *new);
+void free_garbage(Free **new);
 
 Arena arena_init(void *data, size_t size, T type);
 Arena arena_alloc(size_t size, T type);
@@ -111,7 +158,9 @@ Arena Byte(uint8_t byte);
 Arena Long(long long int llint);
 Arena Double(double dval);
 Arena String(const char *str);
+Arena CString(const char *str);
 Arena Bool(bool boolean);
+Arena Size(size_t Size);
 Arena Null();
 
 void arena_free(Arena *ar);
@@ -126,9 +175,13 @@ void free_stack(Stack **stack);
 Upval **upvals(size_t size);
 void free_upvals(Upval **up);
 
+Stack value(Element el);
 Element Obj(Arena ar);
+Element Func(Function *f);
+Element upval_el(Upval *up);
 Element native_fn(Native *native);
 Element closure(Closure *clos);
+Element new_class(Class *classc);
 Element null_obj();
 
 Function *function(Arena name);
@@ -143,10 +196,11 @@ void free_upval(Upval *up);
 Native *native(NativeFn native, Arena ar);
 void free_native(Native *native);
 
-void print_arena(Arena ar);
+void print(Element ar);
 
 Table Entry(Arena key, Element val);
 Table arena_entry(Arena key, Arena val);
+Table class_entry(Class *c);
 Table func_entry(Closure *c);
 Table native_entry(Native *func);
 Table new_entry(Table t);
@@ -162,6 +216,10 @@ Arena Var(const char *str);
 Arena func_name(const char *str);
 Arena native_name(const char *str);
 
-void collect();
+Class *class(Arena name);
+void free_class(Class *c);
+
+Instance *instance(Class *c);
+void free_instance(Instance *ic);
 
 #endif

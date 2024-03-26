@@ -15,6 +15,12 @@ void write_table(Table *t, Arena a, Element b)
         if (find_entry(&t, &b.native->obj).type != NULL_OBJ)
             goto OVERWRITE;
     }
+    else if (b.type == CLASS)
+    {
+        b.classc->name.as.hash %= (t - 1)->len;
+        if (find_entry(&t, &b.classc->name).type != NULL_OBJ)
+            goto OVERWRITE;
+    }
     else
     {
         a.as.hash %= (t - 1)->len;
@@ -26,8 +32,7 @@ void write_table(Table *t, Arena a, Element b)
 
     if (load_capacity < (t - 1)->count + 1)
     {
-        --t;
-        t->len *= INC;
+        (t - 1)->len *= INC;
         t = GROW_TABLE(t, t->len);
     }
     (t - 1)->count++;

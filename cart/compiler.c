@@ -63,6 +63,8 @@ static void declaration(Compiler *c)
 
     if (match(TOKEN_FUNC, &c->parser))
         func_declaration(c);
+    else if (match(TOKEN_CLASS, &c->parser))
+        class_declaration(c);
     else if (match(TOKEN_VAR, &c->parser))
         var_dec(c);
     else
@@ -70,6 +72,19 @@ static void declaration(Compiler *c)
 
     if (c->parser.panic)
         synchronize(&c->parser);
+}
+
+static void class_declaration(Compiler *c)
+{
+    consume(TOKEN_CLASS, "Expect class keyword.", &c->parser);
+    consume(TOKEN_ID, "Expect class name.", &c->parser);
+
+    Arena ar = parse_id(c);
+    int arg = parse_var(c, ar);
+
+    emit_bytes(c, OP_CLASS, arg);
+    consume(TOKEN_CH_LCURL, "Expect ze curl brace", &c->parser);
+    // block(c);
 }
 
 static void call(Compiler *c)
@@ -131,6 +146,8 @@ static void func_body(Compiler *c, ObjType type, Arena ar)
         } while (match(TOKEN_CH_COMMA, &c->parser));
     consume(TOKEN_CH_RPAREN, "Expect `)` after function parameters.", &c->parser);
     consume(TOKEN_CH_LCURL, "Expect `{` prior to function body.", &c->parser);
+
+    c->func->params = GROW_TABLE(NULL, c->func->arity + 1);
 
     block(c);
 
@@ -234,6 +251,8 @@ static void statement(Compiler *c)
 
     if (match(TOKEN_PRINT, &c->parser))
         print_statement(c);
+    else if (match(TOKEN_OP_REM, &c->parser))
+        rm_statement(c);
     else if (match(TOKEN_IF, &c->parser))
         if_statement(c);
     else if (match(TOKEN_WHILE, &c->parser))
@@ -250,6 +269,31 @@ static void statement(Compiler *c)
         comment(c);
     else
         return default_expression(c);
+}
+
+static void rm_statement(Compiler *c)
+{
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to rm expression.", &c->parser);
+    if (match(TOKEN_ID, &c->parser))
+        ;
+
+    Arena ar = parse_id(c);
+    uint8_t get;
+    int arg = resolve_local(c, &ar);
+
+    if (arg != -1)
+        get = OP_GET_LOCAL;
+    else if ((arg = resolve_upvalue(c, &ar)) != -1)
+        get = OP_GET_UPVALUE;
+    else
+    {
+        arg = add_constant(&c->func->ch, OBJ(ar));
+        get = OP_GET_GLOBAL;
+    }
+    emit_bytes(c, get, (uint8_t)arg);
+    emit_byte(c, OP_RM);
+    consume(TOKEN_CH_RPAREN, "Expect `)` after rm statement", &c->parser);
+    consume(TOKEN_CH_SEMI, "Expect `;` at end of statement", &c->parser);
 }
 
 static inline bool is_comment(Parser *parser)
@@ -784,7 +828,17 @@ static void cstr(Compiler *c)
     char *ch = (char *)++c->parser.pre.start;
     ch[c->parser.pre.size - 2] = '\0';
 
+    emit_constant(c, CString(ch));
+}
+static void string(Compiler *c)
+{
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to string declaration.", &c->parser);
+    consume(TOKEN_STR, "Expect string declaration", &c->parser);
+    char *ch = (char *)++c->parser.pre.start;
+    ch[c->parser.pre.size - 2] = '\0';
+
     emit_constant(c, String(ch));
+    consume(TOKEN_CH_RPAREN, "Expect `)` after string declaration.", &c->parser);
 }
 
 static void parse_native_argc0(Compiler *c)
@@ -814,12 +868,14 @@ static Arena parse_func_id(Compiler *c)
     ch[c->parser.pre.size] = '\0';
     return func_name(ch);
 }
+
 static Arena parse_id(Compiler *c)
 {
     char *ch = (char *)c->parser.pre.start;
     ch[c->parser.pre.size] = '\0';
     return Var(ch);
 }
+
 static Arena get_id(Compiler *c)
 {
     bool pre_inc = (c->parser.pre.type == TOKEN_OP_INC);
@@ -950,6 +1006,56 @@ static void id(Compiler *c)
         expression(c);
         emit_bytes(c, set, (uint8_t)arg);
     }
+    else if (match(TOKEN_ADD_ASSIGN, &c->parser))
+    {
+        expression(c);
+        emit_bytes(c, get, (uint8_t)arg);
+        emit_byte(c, OP_ADD);
+        emit_bytes(c, set, (uint8_t)arg);
+    }
+    else if (match(TOKEN_SUB_ASSIGN, &c->parser))
+    {
+        expression(c);
+        emit_bytes(c, get, (uint8_t)arg);
+        emit_byte(c, OP_SUB);
+        emit_bytes(c, set, (uint8_t)arg);
+    }
+    else if (match(TOKEN_MUL_ASSIGN, &c->parser))
+    {
+
+        expression(c);
+        emit_bytes(c, get, (uint8_t)arg);
+        emit_byte(c, OP_MUL);
+        emit_bytes(c, set, (uint8_t)arg);
+    }
+    else if (match(TOKEN_DIV_ASSIGN, &c->parser))
+    {
+        expression(c);
+        emit_bytes(c, get, (uint8_t)arg);
+        emit_byte(c, OP_DIV);
+        emit_bytes(c, set, (uint8_t)arg);
+    }
+    else if (match(TOKEN_MOD_ASSIGN, &c->parser))
+    {
+        expression(c);
+        emit_bytes(c, get, (uint8_t)arg);
+        emit_byte(c, OP_MOD);
+        emit_bytes(c, set, (uint8_t)arg);
+    }
+    else if (match(TOKEN_AND_ASSIGN, &c->parser))
+    {
+        expression(c);
+        emit_bytes(c, get, (uint8_t)arg);
+        emit_byte(c, OP_AND);
+        emit_bytes(c, set, (uint8_t)arg);
+    }
+    else if (match(TOKEN_OR__ASSIGN, &c->parser))
+    {
+        expression(c);
+        emit_bytes(c, get, (uint8_t)arg);
+        emit_byte(c, OP_OR);
+        emit_bytes(c, set, (uint8_t)arg);
+    }
     else
         emit_bytes(c, get, (uint8_t)arg);
 }
@@ -1059,6 +1165,7 @@ static Function *end_compile(Compiler *a)
 {
     Function *f = a->func;
 
+    // mark_compiler_roots(a);
     emit_return(a);
 #ifdef DEBUG_PRINT_CODE
     if (!a->parser.err)
@@ -1076,6 +1183,7 @@ static Function *end_compile(Compiler *a)
 
     return f;
 }
+
 Function *compile(const char *src)
 {
     Compiler c;

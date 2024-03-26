@@ -1,31 +1,37 @@
-sr print()
+sr all()
 {
-    sr is_prime(l)
+    sr print()
     {
-        if (l == 9) 
-            return false;
-        for (var i = 2; i < square(l); i++)
-            if (l % i == 0)
-                return false;
-
-        return true;
-
-    }
-
-    sr print_prime(n)
-    {
-        for (var i = 3; i < n; i++)
+        sr is_prime(l)
         {
-            if (is_prime(i))
-                pout i;
+            if (l == 9) 
+                return false;
+            for (var i = 2; i < square(l); i++)
+                if (l % i == 0)
+                    return false;
+
+            return true;
 
         }
+
+        sr print_prime(n)
+        {
+            for (var i = 3; i < n; i++)
+            {
+                if (is_prime(i))
+                    pout i;
+
+            }
+        }
+
+        var start = clock();
+        print_prime(100000);
+        pout clock() - start;
+
     }
-
-    var start = clock();
-    print_prime(1000);
-    pout clock() - start;
-
+    return print; 
 }
     
-print();
+var hello = all();
+
+hello();

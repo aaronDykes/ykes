@@ -122,7 +122,7 @@ static Arena append_int_to_str(Arena s, Arena i)
     int ival = i.as.Int;
     if (ival < 0)
         ++len;
-    int new = len + s.as.len;
+    int new = len + s.as.len + 1;
 
     i = GROW_ARRAY(NULL, sizeof(char) * len, ARENA_STR);
     i.as.String = itoa(i.as.String, ival);
@@ -177,22 +177,9 @@ Arena append(Arena s, Arena ar)
         return append_int_to_str(s, ar);
     case ARENA_LONG:
         return append_long_to_str(s, ar);
-    case ARENA_BYTE:
-    case ARENA_DOUBLE:
-    case ARENA_BOOL:
-    case ARENA_NULL:
-    case ARENA_BYTES:
-    case ARENA_INTS:
-    case ARENA_DOUBLES:
-    case ARENA_LONGS:
-    case ARENA_BOOLS:
-    case ARENA_STRS:
-    case ARENA_FUNC:
-    case ARENA_NATIVE:
-    case ARENA_VAR:
-        break;
+    default:
+        return ar;
     }
-    return ar;
 }
 
 Arena ltoa_eqcmp(long long int llint, Arena ar)
@@ -241,22 +228,9 @@ Arena string_eq(Arena s, Arena c)
         return itoa_eqcmp(c.as.Int, s);
     case ARENA_LONG:
         return ltoa_eqcmp(c.as.Int, s);
-    case ARENA_BYTE:
-    case ARENA_DOUBLE:
-    case ARENA_CHAR:
-    case ARENA_BOOL:
-    case ARENA_BYTES:
-    case ARENA_INTS:
-    case ARENA_DOUBLES:
-    case ARENA_LONGS:
-    case ARENA_BOOLS:
-    case ARENA_STRS:
-    case ARENA_FUNC:
-    case ARENA_NATIVE:
-    case ARENA_VAR:
-        break;
+    default:
+        return Bool(false);
     }
-    return Bool(false);
 }
 Arena string_ne(Arena s, Arena c)
 {
@@ -270,22 +244,9 @@ Arena string_ne(Arena s, Arena c)
         return itoa_eqcmp(c.as.Int, s);
     case ARENA_LONG:
         return ltoa_eqcmp(c.as.Int, s);
-    case ARENA_BYTE:
-    case ARENA_DOUBLE:
-    case ARENA_CHAR:
-    case ARENA_BOOL:
-    case ARENA_BYTES:
-    case ARENA_INTS:
-    case ARENA_DOUBLES:
-    case ARENA_LONGS:
-    case ARENA_BOOLS:
-    case ARENA_STRS:
-    case ARENA_FUNC:
-    case ARENA_NATIVE:
-    case ARENA_VAR:
-        break;
+    default:
+        return Bool(true);
     }
-    return Bool(true);
 }
 Arena string_gt(Arena s, Arena c)
 {

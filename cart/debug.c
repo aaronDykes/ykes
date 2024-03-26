@@ -76,6 +76,8 @@ int disassemble_instruction(Chunk *c, int offset)
 
         return offset;
     }
+    case OP_CLASS:
+        return constant_instruction("OP_CLASS", c, offset);
     case OP_CLOSE_UPVAL:
         return simple_instruction("OP_CLOSE_UPVAL", offset);
     case OP_GET_UPVALUE:
@@ -139,6 +141,9 @@ int disassemble_instruction(Chunk *c, int offset)
         return byte_instruction("OP_GET_LOCAL", c, offset);
     case OP_SET_LOCAL:
         return byte_instruction("OP_SET_LOCAL", c, offset);
+
+    case OP_RM:
+        return byte_instruction("OP_RM", c, offset);
     case OP_GET_GLOBAL:
         return simple_instruction("OP_GET_GLOBAL", offset);
     case OP_SET_GLOBAL:

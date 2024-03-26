@@ -7,11 +7,13 @@ typedef enum
 {
 
     ARENA_BYTE,
+    ARENA_SIZE,
     ARENA_INT,
     ARENA_DOUBLE,
     ARENA_LONG,
     ARENA_CHAR,
     ARENA_STR,
+    ARENA_CSTR,
     ARENA_BOOL,
     ARENA_NULL,
     ARENA_BYTES,
@@ -19,10 +21,12 @@ typedef enum
     ARENA_DOUBLES,
     ARENA_LONGS,
     ARENA_BOOLS,
+    ARENA_SIZES,
     ARENA_STRS,
     ARENA_FUNC,
     ARENA_NATIVE,
-    ARENA_VAR
+    ARENA_VAR,
+    ARENA_CLASS
 
 } T;
 
@@ -38,9 +42,12 @@ typedef enum
     OP_CLOSURE,
     OP_PRINT,
 
+    OP_CLASS,
+
     OP_POP,
     OP_POPN,
     OP_PUSH,
+    OP_RM,
     OP_CLOSE_UPVAL,
 
     OP_FIND_CLOSURE,
@@ -62,6 +69,14 @@ typedef enum
     OP_SET_UPVALUE,
 
     OP_ASSIGN,
+    OP_ADD_ASSIGN,
+    OP_SUB_ASSIGN,
+    OP_MUL_ASSIGN,
+    OP_DIV_ASSIGN,
+    OP_MOD_ASSIGN,
+    OP_AND_ASSIGN,
+    OP__OR_ASSIGN,
+
     OP_NEG,
 
     OP_INC_LOC,
@@ -71,6 +86,7 @@ typedef enum
 
     OP_INC,
     OP_DEC,
+
     OP_ADD,
     OP_SUB,
     OP_MUL,
@@ -112,7 +128,11 @@ typedef enum
 {
     ARENA,
     NATIVE,
+    CLASS,
+    INSTANCE,
     CLOSURE,
+    FUNCTION,
+    UPVAL,
     SCRIPT,
     NULL_OBJ
 } ObjType;
@@ -129,6 +149,8 @@ typedef struct Upval Upval;
 typedef struct Native Native;
 typedef struct Element Element;
 typedef struct Stack Stack;
+typedef struct Class Class;
+typedef struct Instance Instance;
 typedef struct Table Table;
 typedef Element (*NativeFn)(int argc, Stack *argv);
 
@@ -141,6 +163,7 @@ union Vector
     char **Strings;
     bool *Bools;
     void *Void;
+    size_t Sizes;
 };
 
 union Value
@@ -154,6 +177,7 @@ union Value
         char *String;
     };
 
+    size_t Size;
     uint8_t Byte;
     int Int;
     double Double;
@@ -183,7 +207,6 @@ struct Arena
 
 struct Chunk
 {
-    // int line;
     Arena cases;
     Arena op_codes;
     Arena lines;
@@ -222,8 +245,24 @@ struct Element
         Arena arena;
         Native *native;
         Closure *closure;
+        Function *function;
+        Upval *upval;
+        Class *classc;
+        Instance *instance;
         void *null;
     };
+};
+
+struct Class
+{
+    Stack *obj;
+    Arena name;
+};
+
+struct Instance
+{
+    Class *classc;
+    Table *fields;
 };
 
 struct Stack
@@ -282,6 +321,8 @@ switch (type)
     case ARENA_FUNC:
     case ARENA_NATIVE:
     case ARENA_VAR:
+    case ARENA_SIZE:
+    case ARENA_SIZES:
 break;
 }
 

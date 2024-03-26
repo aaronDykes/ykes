@@ -7,6 +7,13 @@ static Arena sub_arena_char(char ch, Arena ar);
 static Arena mul_arena_char(char ch, Arena ar);
 static Arena div_arena_char(char ch, Arena ar);
 static Arena mod_arena_char(char ch, Arena ar);
+
+static Arena add_arena_size(size_t size, Arena ar);
+static Arena sub_arena_size(size_t size, Arena ar);
+static Arena mul_arena_size(size_t size, Arena ar);
+static Arena div_arena_size(size_t size, Arena ar);
+static Arena mod_arena_size(size_t size, Arena ar);
+
 static Arena add_arena_int(int ival, Arena ar);
 static Arena sub_arena_int(int ival, Arena ar);
 static Arena mul_arena_int(int ival, Arena ar);
@@ -51,5 +58,12 @@ static Arena double_lt(double dval, Arena ar);
 static Arena double_le(double dval, Arena ar);
 static Arena double_gt(double dval, Arena ar);
 static Arena double_ge(double dval, Arena ar);
+
+static Arena size_eq(size_t size, Arena ar);
+static Arena size_ne(size_t size, Arena ar);
+static Arena size_lt(size_t size, Arena ar);
+static Arena size_le(size_t size, Arena ar);
+static Arena size_gt(size_t size, Arena ar);
+static Arena size_ge(size_t size, Arena ar);
 
 #endif

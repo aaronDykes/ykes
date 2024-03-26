@@ -38,6 +38,10 @@ token scan_token()
         return make_token(TOKEN_CH_LPAREN);
     case ')':
         return make_token(TOKEN_CH_RPAREN);
+    case '[':
+        return make_token(TOKEN_CH_LSQUARE);
+    case ']':
+        return make_token(TOKEN_CH_RSQUARE);
     case '{':
         return make_token(TOKEN_CH_LCURL);
     case '}':
@@ -51,20 +55,34 @@ token scan_token()
     case ':':
         return make_token(TOKEN_CH_COLON);
     case '/':
+        if (match('='))
+            return make_token(TOKEN_DIV_ASSIGN);
         if (check('/') || check('*'))
             return skip_comment();
         return make_token(TOKEN_OP_DIV);
     case '*':
+        if (match('='))
+            return make_token(TOKEN_MUL_ASSIGN);
         return make_token(TOKEN_OP_MUL);
     case '-':
+        if (match('='))
+            return make_token(TOKEN_SUB_ASSIGN);
         return make_token(match('-') ? TOKEN_OP_DEC : TOKEN_OP_SUB);
     case '+':
+        if (match('='))
+            return make_token(TOKEN_ADD_ASSIGN);
         return make_token(match('+') ? TOKEN_OP_INC : TOKEN_OP_ADD);
     case '%':
+        if (match('='))
+            return make_token(TOKEN_MOD_ASSIGN);
         return make_token(TOKEN_OP_MOD);
     case '&':
+        if (match('='))
+            return make_token(TOKEN_AND_ASSIGN);
         return make_token(match('&') ? TOKEN_SC_AND : TOKEN_LG_AND);
     case '|':
+        if (match('='))
+            return make_token(TOKEN_OR__ASSIGN);
         return make_token(match('|') ? TOKEN_SC_OR : TOKEN_LG_OR);
     case '!':
         if (check('=') && check_peek(1, '='))
@@ -173,6 +191,8 @@ static int id_type()
             case 'r':
                 return check_keyword(2, 3, "eak", TOKEN_BREAK);
             }
+    case 'B':
+        return check_keyword(1, 4, "ools", TOKEN_ALLOC_BOOLS);
     case 'c':
 
         if (scan.current - scan.start > 1)
@@ -193,6 +213,8 @@ static int id_type()
             }
     case 'd':
         return check_keyword(1, 6, "efault", TOKEN_DEFAULT);
+    case 'D':
+        return check_keyword(1, 6, "oubles", TOKEN_ALLOC_DOUBLES);
     case 'e':
         if (scan.current - scan.start > 1)
             switch (scan.start[1])
@@ -214,9 +236,13 @@ static int id_type()
                 return check_keyword(2, 1, "r", TOKEN_FOR);
             case 'a':
                 return check_keyword(2, 3, "lse", TOKEN_FALSE);
+            case 'r':
+                return check_keyword(2, 2, "ee", TOKEN_OP_FREE);
             }
     case 'i':
         return check_keyword(1, 1, "f", TOKEN_IF);
+    case 'I':
+        return check_keyword(1, 3, "nts", TOKEN_ALLOC_INTS);
     case 'l':
         if (scan.current - scan.start > 1)
             switch (scan.start[1])
@@ -226,6 +252,8 @@ static int id_type()
             case 'i':
                 return check_keyword(2, 2, "nt", TOKEN_LINT);
             }
+    case 'L':
+        return check_keyword(1, 4, "ongs", TOKEN_ALLOC_LONGS);
     case 'n':
         return check_keyword(1, 3, "ull", TOKEN_NULL);
     case 'o':
@@ -240,7 +268,13 @@ static int id_type()
                 return check_keyword(2, 2, "ut", TOKEN_PRINT);
             }
     case 'r':
-        return check_keyword(1, 5, "eturn", TOKEN_RETURN);
+        if (scan.current - scan.start > 1)
+            switch (scan.start[1])
+            {
+            case 'e':
+                return check_keyword(2, 4, "turn", TOKEN_RETURN);
+            }
+        return check_keyword(1, 1, "m", TOKEN_OP_REM);
     case 's':
         if (scan.current - scan.start > 1)
             switch (scan.start[1])
@@ -254,6 +288,8 @@ static int id_type()
             }
 
         return check_keyword(1, 1, "r", TOKEN_FUNC);
+    case 'S':
+        return check_keyword(1, 5, "tring", TOKEN_ALLOC_STR);
     case 't':
         if (scan.current - scan.start > 1)
             switch (scan.start[1])

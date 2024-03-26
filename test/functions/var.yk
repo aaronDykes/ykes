@@ -10,6 +10,6 @@ sr outer()
 
   return inner;
 }
-var hello = outer();
+hello = outer();
 
 hello();

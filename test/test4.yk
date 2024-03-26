@@ -1,0 +1,20 @@
+
+
+sr mem_alloc()
+{
+    var str = "hello"; 
+    pout str; 
+ /* rm(str);    # This should produce an error */
+
+    var s = String("hello world"); 
+
+
+    pout s;
+    rm(s);
+
+
+
+}
+
+mem_alloc();
+

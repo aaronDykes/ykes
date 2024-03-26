@@ -11,6 +11,4 @@ void popn(Stack **s, int ival);
 void reset_stack(Stack *s);
 void check_stack_size(Stack *s);
 
-void print(Element ar);
-
 #endif

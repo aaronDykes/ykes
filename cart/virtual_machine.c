@@ -1,4 +1,5 @@
 #include "virtual_machine.h"
+#include "compiler.h"
 #include "vm_util.h"
 #include <stdarg.h>
 #include <time.h>
@@ -16,6 +17,11 @@ void initVM()
     define_native(native_name("clock"), clock_native);
     define_native(native_name("square"), square_native);
     define_native(native_name("prime"), prime_native);
+    define_native(native_name("String"), prime_native);
+    define_native(native_name("Ints"), prime_native);
+    define_native(native_name("Doubles"), prime_native);
+    define_native(native_name("Longs"), prime_native);
+    define_native(native_name("Bools"), prime_native);
 }
 void freeVM()
 {
@@ -194,6 +200,29 @@ Native *traverse_stack_native(Arena *ar)
     return NULL;
 }
 
+static void free_asterisk(Element el)
+{
+    switch (el.type)
+    {
+    case ARENA:
+        ARENA_FREE(&el.arena);
+        break;
+    case SCRIPT:
+    case CLOSURE:
+        FREE_CLOSURE(el.closure);
+        break;
+    case FUNCTION:
+        FREE_FUNCTION(el.function);
+        break;
+        // case CLASS:
+    case NATIVE:
+        FREE_NATIVE(el.native);
+    case UPVAL:
+    default:
+        return;
+    }
+}
+
 Interpretation run()
 {
 
@@ -219,6 +248,8 @@ Interpretation run()
 #define FIND_PARAM(ar) (find(frame->closure->func->params, ar))
 #define WRITE_GLOB(a, b) (write_table(machine.glob, a, b))
 #define WRITE_PARAM(a, b) (write_table(frame->closure->func->params, a, b))
+#define RM() \
+    free_asterisk(POP())
 #define POP() \
     (--machine.stack->count, (--machine.stack->top)->as)
 #define CPOP() \
@@ -264,9 +295,7 @@ Interpretation run()
         case OP_NEG:
             (--machine.stack->top)->as = OBJ(_neg((machine.stack->top++)->as.arena));
             break;
-        case OP_INC:
-            (--machine.stack->top)->as = OBJ(_inc((machine.stack->top++)->as.arena));
-            break;
+
         case OP_INC_GLO:
         {
             Element key = READ_CONSTANT();
@@ -299,6 +328,9 @@ Interpretation run()
             PUSH(el);
             break;
         }
+        case OP_INC:
+            (--machine.stack->top)->as = OBJ(_inc((machine.stack->top++)->as.arena));
+            break;
         case OP_DEC:
             (--machine.stack->top)->as = OBJ(_dec((machine.stack->top++)->as.arena));
             break;
@@ -408,6 +440,12 @@ Interpretation run()
         case OP_GET_NATIVE:
             PUSH(GET_NATIVE(READ_CONSTANT().arena));
             break;
+        case OP_CLASS:
+            PUSH(CLASS(READ_CONSTANT().arena));
+            break;
+        case OP_RM:
+            RM();
+            break;
         case OP_NOOP:
             break;
         case OP_GET_GLOBAL:
@@ -458,11 +496,12 @@ Interpretation run()
             PUSH(el);
 
             frame = &machine.frames[machine.frame_count - 1];
-
             break;
         }
         }
     }
+
+#undef RM
 #undef CPOP
 #undef POP
 #undef WRITE_GLOB
