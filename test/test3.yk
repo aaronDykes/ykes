@@ -1,10 +1,5 @@
 
-sr compound_assign()
-{
+class compound_assign {}
 
+pout compound_assign();
 
-
-     
-}
-
-compound_assign();

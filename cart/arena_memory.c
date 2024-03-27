@@ -454,7 +454,7 @@ Class *class(Arena name)
     Class *c = NULL;
     c = ALLOC(sizeof(Class));
     c->name = name;
-    c->obj = NULL;
+    c->obj = GROW_STACK(NULL, STACK_SIZE);
     return c;
 }
 
@@ -647,6 +647,14 @@ Element new_class(Class *classc)
     el.type = CLASS;
     return el;
 }
+
+Element new_instance(Instance *ci)
+{
+    Element el;
+    el.instance = ci;
+    el.type = INSTANCE;
+    return el;
+}
 Element null_obj()
 {
     Element el;
@@ -664,7 +672,6 @@ Function *function(Arena name)
     func->name = name;
     init_chunk(&func->ch);
     func->params = NULL;
-    // func->params = GROW_TABLE(NULL, TABLE_SIZE);
 
     return func;
 }
@@ -878,9 +885,7 @@ Table new_entry(Table t)
         break;
     case UPVAL:
 
-    case FUNCTION:
-    case SCRIPT:
-    case NULL_OBJ:
+    default:
         break;
     }
     el.next = t.next;
@@ -1059,7 +1064,7 @@ void print(Element ar)
     }
     else if (ar.type == INSTANCE)
     {
-        printf("<instance: %s>\n", ar.instance->classc->name);
+        printf("<instance: %s>\n", ar.instance->classc->name.as.String);
         return;
     }
     switch (a.type)

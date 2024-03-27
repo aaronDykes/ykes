@@ -85,7 +85,9 @@
 #define UPVAL(c) \
     upval_el(c)
 #define CLASS(c) \
-    new_class(class(c))
+    new_class(c)
+#define INSTANCE(c) \
+    new_instance(c)
 #define FREE_CLASS(c) \
     free_class(c)
 
@@ -182,6 +184,7 @@ Element upval_el(Upval *up);
 Element native_fn(Native *native);
 Element closure(Closure *clos);
 Element new_class(Class *classc);
+Element new_instance(Instance *ci);
 Element null_obj();
 
 Function *function(Arena name);

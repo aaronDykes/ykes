@@ -24,6 +24,7 @@ void write_chunk(Chunk *c, uint8_t byte, int line)
     c->lines.listof.Ints[c->lines.count++] = line;
     c->op_codes.listof.Bytes[c->op_codes.count++] = byte;
 }
+
 int add_constant(Chunk *c, Element ar)
 {
     push(&c->constants, ar);

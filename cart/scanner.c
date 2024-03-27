@@ -207,7 +207,7 @@ static int id_type()
                     {
                     case 'o':
                         return check_keyword(3, 2, "ck", TOKEN_CLOCK);
-                    case 's':
+                    case 'a':
                         return check_keyword(3, 2, "ss", TOKEN_CLASS);
                     }
             }

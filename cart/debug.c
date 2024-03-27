@@ -179,6 +179,10 @@ int disassemble_instruction(Chunk *c, int offset)
         return simple_instruction("OP_PRINT", offset);
     case OP_RETURN:
         return simple_instruction("OP_RETURN", offset);
+    case OP_GET_PROP:
+        return byte_instruction("OP_GET_PROP", c, offset);
+    case OP_SET_PROP:
+        return byte_instruction("OP_SET_PROP", c, offset);
     default:
         printf("Unkown opcode: %d\n", offset);
         return ++offset;

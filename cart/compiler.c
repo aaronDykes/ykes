@@ -29,6 +29,7 @@ static void init_compiler(Compiler *a, Compiler *b, ObjType type, Arena name)
     a->param_count = 0;
     a->upvalue_count = 0;
     a->func = function(name);
+
     a->type = type;
 
     local->depth = 0;
@@ -76,15 +77,29 @@ static void declaration(Compiler *c)
 
 static void class_declaration(Compiler *c)
 {
-    consume(TOKEN_CLASS, "Expect class keyword.", &c->parser);
     consume(TOKEN_ID, "Expect class name.", &c->parser);
 
     Arena ar = parse_id(c);
-    int arg = parse_var(c, ar);
+    Class *classc = class(ar);
 
-    emit_bytes(c, OP_CLASS, arg);
-    consume(TOKEN_CH_LCURL, "Expect ze curl brace", &c->parser);
-    // block(c);
+    emit_bytes(c, OP_CLASS, add_constant(&c->func->ch, new_class(classc)));
+    consume(TOKEN_CH_LCURL, "Expect ze `{` curl brace", &c->parser);
+
+    c->base->calls[c->base->call_count++] = ar;
+    /*
+        c->base->classc[c->base->class_count] = classc;
+        while (match(TOKEN_VAR, &c->parser))
+        {
+            push(c->base->classc[c->base->class_count]->obj, OBJ(parse_id(c)));
+            write_field(&c->base->classc[c->base->class_count]->fields, c->base->classc[c->base->class_count]->obj->count - 1);
+            if (!check(TOKEN_CH_SEMI, &c->parser))
+                expression(c);
+            consume(TOKEN_CH_SEMI, "Expect semi colon after field declaration.", &c->parser);
+        }
+
+        c->base->class_count++;
+    */
+    consume(TOKEN_CH_RCURL, "Expect ze `}` curl brace", &c->parser);
 }
 
 static void call(Compiler *c)
@@ -947,6 +962,25 @@ static int resolve_call_param(Compiler *c, Arena *ar)
     return -1;
 }
 
+static void dot(Compiler *c)
+{
+    consume(TOKEN_CH_DOT, "Expect property name after `.`.", &c->parser);
+    if (match(TOKEN_ID, &c->parser))
+        ;
+
+    Arena ar = parse_id(c);
+
+    int arg = add_constant(&c->func->ch, OBJ(ar));
+
+    if (match(TOKEN_OP_ASSIGN, &c->parser))
+    {
+        expression(c);
+        emit_bytes(c, OP_SET_PROP, (uint8_t)arg);
+    }
+    else
+        emit_bytes(c, OP_GET_PROP, (uint8_t)arg);
+}
+
 static void id(Compiler *c)
 {
     bool pre_inc = (c->parser.pre.type == TOKEN_OP_INC);
@@ -957,12 +991,10 @@ static void id(Compiler *c)
 
     Arena ar = parse_func_id(c);
     uint8_t get, set;
-    int arg = 0;
-    arg = resolve_call(c, &ar);
+    int arg = resolve_call(c, &ar);
 
     if (arg != -1)
     {
-
         emit_bytes(c, OP_GET_CLOSURE, (uint8_t)arg);
         return;
     }

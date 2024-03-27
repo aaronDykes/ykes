@@ -5,6 +5,7 @@
 #define MAX_ELIF 10
 #define LOCAL_COUNT 500
 #define CALL_COUNT 255
+#define CLASS_COUNT 50
 #define PTR_SIZE(X) sizeof(X) / sizeof(X[0])
 
 struct Parser
@@ -66,8 +67,10 @@ struct Compiler
 
     Compiler *base;
     Compiler *enclosing;
+
     Arena call_params[CALL_COUNT];
     Arena calls[CALL_COUNT];
+
     Local locals[LOCAL_COUNT];
     Upvalue upvalues[LOCAL_COUNT];
 };
@@ -175,6 +178,8 @@ static Arena parse_func_id(Compiler *c);
 static void parse_native_argc0(Compiler *c);
 static void parse_native_argc1(Compiler *c);
 
+static void dot(Compiler *c);
+
 static Arena parse_id(Compiler *c);
 static int parse_var(Compiler *c, Arena ar);
 static void id(Compiler *c);
@@ -196,7 +201,7 @@ static PRule rules[] = {
 
     [TOKEN_CH_COMMA] = {NULL, NULL, PREC_NONE},
     [TOKEN_CH_SEMI] = {NULL, NULL, PREC_NONE},
-    [TOKEN_CH_DOT] = {NULL, NULL, PREC_CALL},
+    [TOKEN_CH_DOT] = {NULL, dot, PREC_CALL},
 
     [TOKEN_OP_INC] = {id, NULL, PREC_TERM},
     [TOKEN_OP_DEC] = {NULL, NULL, PREC_TERM},

@@ -146,6 +146,9 @@ static bool call_value(Element el, uint8_t argc)
         push(&machine.stack, res);
         return true;
     }
+    case CLASS:
+        machine.stack->top[-1 - argc].as = el;
+        return true;
     default:
         break;
     }
@@ -269,6 +272,7 @@ Interpretation run()
         case OP_CONSTANT:
             PUSH(READ_CONSTANT());
             break;
+
         case OP_CLOSURE:
         {
             Closure *c = READ_CONSTANT().closure;
@@ -407,6 +411,14 @@ Interpretation run()
         case OP_JMPL:
             frame->ip = frame->ip_start + JUMP();
             break;
+        case OP_SET_PROP:
+            break;
+        case OP_GET_PROP:
+        {
+            Instance *ic = instance(READ_CONSTANT().classc);
+            PUSH(INSTANCE(ic));
+        }
+        break;
         case OP_CALL:
         {
             uint8_t argc = READ_BYTE();
@@ -441,7 +453,7 @@ Interpretation run()
             PUSH(GET_NATIVE(READ_CONSTANT().arena));
             break;
         case OP_CLASS:
-            PUSH(CLASS(READ_CONSTANT().arena));
+            CPUSH(READ_CONSTANT());
             break;
         case OP_RM:
             RM();

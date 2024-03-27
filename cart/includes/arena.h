@@ -50,6 +50,9 @@ typedef enum
     OP_RM,
     OP_CLOSE_UPVAL,
 
+    OP_GET_PROP,
+    OP_SET_PROP,
+
     OP_FIND_CLOSURE,
     OP_GET_CLOSURE,
     OP_GET_NATIVE,
@@ -257,6 +260,8 @@ struct Class
 {
     Stack *obj;
     Arena name;
+    // Arena fields;
+    // Table *fields;
 };
 
 struct Instance

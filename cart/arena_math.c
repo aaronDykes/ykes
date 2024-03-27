@@ -1498,6 +1498,8 @@ Arena _gt(Arena a, Arena b)
         return char_gt(b.as.Char, a);
     case ARENA_STR:
         return string_gt(b, a);
+    case ARENA_SIZE:
+        return size_gt(b.as.Size, a);
     default:
         return b;
     }

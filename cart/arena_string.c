@@ -170,6 +170,7 @@ Arena append(Arena s, Arena ar)
     switch (ar.type)
     {
     case ARENA_STR:
+    case ARENA_CSTR:
         return append_str_to_str(s, ar);
     case ARENA_CHAR:
         return append_char_to_str(s, ar);
