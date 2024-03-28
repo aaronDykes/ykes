@@ -106,6 +106,8 @@ void arena_free(Arena *ar)
     {
     case ARENA_BYTES:
 
+        if (!ar->listof.Bytes)
+            return;
         new = ar->listof.Bytes;
         ar->listof.Bytes = NULL;
         break;
@@ -113,18 +115,29 @@ void arena_free(Arena *ar)
     case ARENA_FUNC:
     case ARENA_NATIVE:
     case ARENA_VAR:
+    {
+        if (ar->as.String == NULL)
+            return;
+
         new = ar->as.String;
         ar->as.String = NULL;
         break;
+    }
     case ARENA_INTS:
+        if (!ar->listof.Ints)
+            return;
         new = ar->listof.Ints;
         ar->listof.Ints = NULL;
         break;
     case ARENA_DOUBLES:
+        if (!ar->listof.Doubles)
+            return;
         new = ar->listof.Doubles;
         ar->listof.Doubles = NULL;
         break;
     case ARENA_LONGS:
+        if (!ar->listof.Longs)
+            return;
         new = ar->listof.Longs;
         ar->listof.Longs = NULL;
         break;
@@ -146,7 +159,8 @@ static void merge_list()
         prev = free;
         if (free->next && ((prev->size + prev) == free->next))
         {
-            prev->size += free->next->size;
+            if (free->next->size == 0)
+                prev->size += free->next->size;
             prev->next = free->next->next;
         }
     }
@@ -201,8 +215,6 @@ void *alloc_ptr(size_t size)
     if (free && free->size >= size)
     {
 
-        void *ptr = free + OFFSET;
-
 #ifdef DEBUG_LOG_GC
         printf("ALLOC: %zu for %p\n", size, ptr);
 #endif
@@ -210,6 +222,7 @@ void *alloc_ptr(size_t size)
         Free *next = free->next;
 
         free->size = size;
+        void *ptr = free + OFFSET;
 
         free += size;
         free->size = tmp;
@@ -230,8 +243,8 @@ void *alloc_ptr(size_t size)
     if (prev)
     {
         prev->next = request_system_memory(PAGE * OFFSET);
-        void *ptr = prev->next + OFFSET;
         prev->next->size = size;
+        void *ptr = prev->next + OFFSET;
         prev->next += size;
         prev->next->size = PAGE - size;
         return ptr;
@@ -534,32 +547,33 @@ Stack *realloc_stack(Stack *st, size_t size)
 }
 void free_stack(Stack **stack)
 {
-    Stack *tmp = *stack;
-    if (!(tmp - 1))
-        return;
-    if (!tmp)
+    if (!(*stack - 1))
         return;
 
-    for (size_t i = 0; i < (tmp - 1)->size; i++)
-        switch (tmp[i].as.type)
+    for (size_t i = 0; i < (*stack - 1)->size; i++)
+        switch ((*stack)[i].as.type)
         {
         case ARENA:
-            ARENA_FREE(&tmp[i].as.arena);
+            ARENA_FREE(&(*stack)[i].as.arena);
             break;
         case NATIVE:
-            FREE_NATIVE(tmp[i].as.native);
+            FREE_NATIVE((*stack)[i].as.native);
+            break;
+        case CLASS:
+            FREE_CLASS((*stack)[i].as.classc);
             break;
         case CLOSURE:
-            FREE_CLOSURE(tmp[i].as.closure);
+            FREE_CLOSURE(&(*stack)[i].as.closure);
             break;
         case FUNCTION:
-            FREE_FUNCTION(tmp[i].as.function);
+            FREE_FUNCTION((*stack)[i].as.function);
+            break;
         case UPVAL:
-            FREE_UPVAL(tmp[i].as.upval);
+            FREE_UPVAL((*stack)[i].as.upval);
+            break;
         default:
-            continue;
+            break;
         }
-    tmp = NULL;
     FREE(PTR(((*stack) - 1)));
 }
 
@@ -579,8 +593,6 @@ Upval **upvals(size_t size)
 void free_upvals(Upval **up)
 {
     if (!up)
-        return;
-    if (!(*up))
         return;
     if (!((*up) - 1))
         return;
@@ -710,19 +722,25 @@ Closure *new_closure(Function *func)
     Closure *closure = ALLOC(sizeof(Closure));
     closure->func = func;
     if (!func)
+    {
+        closure->upval_count = 0;
         return closure;
-    closure->upvals = upvals(func->upvalue_count);
+    }
+    if (func->upvalue_count > 0)
+        closure->upvals = upvals(func->upvalue_count);
+    else
+        closure->upvals = NULL;
     closure->upval_count = func->upvalue_count;
 
     return closure;
 }
 
-void free_closure(Closure *closure)
+void free_closure(Closure **closure)
 {
-    if (!closure)
+    if (!(*closure))
         return;
 
-    FREE_UPVALS(closure->upvals);
+    FREE_UPVALS((*closure)->upvals);
     FREE(PTR(closure));
 }
 
@@ -841,8 +859,12 @@ void arena_free_entry(Table *entry)
         FREE_ARRAY(&entry->val.arena);
     else if (entry->type == NATIVE)
         FREE_NATIVE(entry->val.native);
+    else if (entry->type == CLASS)
+        FREE_CLASS(entry->val.classc);
+    else if (entry->type == INSTANCE)
+        FREE_INSTANCE(entry->val.instance);
     else
-        FREE_CLOSURE(entry->val.closure);
+        FREE_CLOSURE(&entry->val.closure);
 
     FREE_ARRAY(&entry->key);
 
@@ -906,6 +928,8 @@ Table Entry(Arena key, Element val)
         return func_entry(val.closure);
     case CLASS:
         return class_entry(val.classc);
+    case INSTANCE:
+        return instance_entry(key, val.instance);
     default:
         break;
     }
@@ -953,7 +977,18 @@ Table class_entry(Class *c)
     el.next = NULL;
     el.prev = NULL;
     el.size = el.key.size;
-    el.type = NATIVE;
+    el.type = CLASS;
+    return el;
+}
+Table instance_entry(Arena ar, Instance *c)
+{
+    Table el;
+    el.key = ar;
+    el.val.instance = c;
+    el.next = NULL;
+    el.prev = NULL;
+    el.size = el.key.size;
+    el.type = INSTANCE;
     return el;
 }
 

@@ -14,6 +14,7 @@ static void init_compiler(Compiler *a, Compiler *b, ObjType type, Arena name)
     a->local_count = 0;
     a->scope_depth = 0;
     a->call_count = 0;
+    a->class_count = 0;
 
     if (b)
     {
@@ -28,6 +29,7 @@ static void init_compiler(Compiler *a, Compiler *b, ObjType type, Arena name)
 
     a->param_count = 0;
     a->upvalue_count = 0;
+    a->func = NULL;
     a->func = function(name);
 
     a->type = type;
@@ -83,22 +85,9 @@ static void class_declaration(Compiler *c)
     Class *classc = class(ar);
 
     emit_bytes(c, OP_CLASS, add_constant(&c->func->ch, new_class(classc)));
-    consume(TOKEN_CH_LCURL, "Expect ze `{` curl brace", &c->parser);
-
     c->base->calls[c->base->call_count++] = ar;
-    /*
-        c->base->classc[c->base->class_count] = classc;
-        while (match(TOKEN_VAR, &c->parser))
-        {
-            push(c->base->classc[c->base->class_count]->obj, OBJ(parse_id(c)));
-            write_field(&c->base->classc[c->base->class_count]->fields, c->base->classc[c->base->class_count]->obj->count - 1);
-            if (!check(TOKEN_CH_SEMI, &c->parser))
-                expression(c);
-            consume(TOKEN_CH_SEMI, "Expect semi colon after field declaration.", &c->parser);
-        }
 
-        c->base->class_count++;
-    */
+    consume(TOKEN_CH_LCURL, "Expect ze `{` curl brace", &c->parser);
     consume(TOKEN_CH_RCURL, "Expect ze `}` curl brace", &c->parser);
 }
 
@@ -964,7 +953,7 @@ static int resolve_call_param(Compiler *c, Arena *ar)
 
 static void dot(Compiler *c)
 {
-    consume(TOKEN_CH_DOT, "Expect property name after `.`.", &c->parser);
+    // consume(TOKEN_CH_DOT, "Expect property name after `.`.", &c->parser);
     if (match(TOKEN_ID, &c->parser))
         ;
 
@@ -1197,7 +1186,6 @@ static Function *end_compile(Compiler *a)
 {
     Function *f = a->func;
 
-    // mark_compiler_roots(a);
     emit_return(a);
 #ifdef DEBUG_PRINT_CODE
     if (!a->parser.err)

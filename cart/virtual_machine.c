@@ -17,11 +17,6 @@ void initVM()
     define_native(native_name("clock"), clock_native);
     define_native(native_name("square"), square_native);
     define_native(native_name("prime"), prime_native);
-    define_native(native_name("String"), prime_native);
-    define_native(native_name("Ints"), prime_native);
-    define_native(native_name("Doubles"), prime_native);
-    define_native(native_name("Longs"), prime_native);
-    define_native(native_name("Bools"), prime_native);
 }
 void freeVM()
 {
@@ -90,13 +85,13 @@ static bool call(Closure *c, uint8_t argc)
     if (c->func->arity != argc)
     {
 
-        runtime_error("Expected `%d` args, but got `%d`.", c->func->arity, argc);
+        runtime_error("ERROR: Expected `%d` args, but got `%d`.", c->func->arity, argc);
         return false;
     }
 
     if (machine.frame_count == FRAMES_MAX)
     {
-        runtime_error("Stack overflow.");
+        runtime_error("ERROR: Stack overflow.");
         return false;
     }
 
@@ -147,12 +142,12 @@ static bool call_value(Element el, uint8_t argc)
         return true;
     }
     case CLASS:
-        machine.stack->top[-1 - argc].as = el;
+        machine.stack->top[-1 - argc].as = INSTANCE(instance(el.classc));
         return true;
     default:
         break;
     }
-    runtime_error("Can only call functions and classes.");
+    runtime_error("ERROR: Can only call functions and classes.");
     return false;
 }
 
@@ -212,15 +207,15 @@ static void free_asterisk(Element el)
         break;
     case SCRIPT:
     case CLOSURE:
-        FREE_CLOSURE(el.closure);
+        FREE_CLOSURE(&el.closure);
         break;
-    case FUNCTION:
-        FREE_FUNCTION(el.function);
+    case CLASS:
+        FREE_CLASS(el.classc);
         break;
-        // case CLASS:
-    case NATIVE:
-        FREE_NATIVE(el.native);
-    case UPVAL:
+    case INSTANCE:
+        FREE_INSTANCE(el.instance);
+        break;
+
     default:
         return;
     }
@@ -275,18 +270,18 @@ Interpretation run()
 
         case OP_CLOSURE:
         {
-            Closure *c = READ_CONSTANT().closure;
-            CPUSH(CLOSURE(c));
+            Element e = READ_CONSTANT();
+            CPUSH(e);
 
-            for (int i = 0; i < c->upval_count; i++)
+            for (int i = 0; i < e.closure->upval_count; i++)
             {
                 uint8_t is_local = READ_BYTE();
                 uint8_t index = READ_BYTE();
 
                 if (is_local)
-                    c->upvals[i] = capture_upvalue(frame->slots + index);
+                    e.closure->upvals[i] = capture_upvalue(frame->slots + index);
                 else
-                    c->upvals[i] = frame->closure->upvals[index];
+                    e.closure->upvals[i] = frame->closure->upvals[index];
             }
         }
         break;
@@ -412,21 +407,46 @@ Interpretation run()
             frame->ip = frame->ip_start + JUMP();
             break;
         case OP_SET_PROP:
+        {
+            Element inst = NPEEK(1);
+            Element el = PEEK();
+            Element str = READ_CONSTANT();
+            write_table(inst.instance->fields, str.arena, el);
+            Element res = POP();
+            POP();
+            PUSH(res);
             break;
+        }
         case OP_GET_PROP:
         {
-            Instance *ic = instance(READ_CONSTANT().classc);
-            PUSH(INSTANCE(ic));
+            if (PEEK().type != INSTANCE)
+            {
+
+                runtime_error("ERROR: Only instances contain properties.");
+                return INTERPRET_RUNTIME_ERR;
+            }
+            Instance *inst = POP().instance;
+            Element el = READ_CONSTANT();
+            el.arena.as.hash %= (inst->fields - 1)->len;
+            Element n = find_entry(&inst->fields, &el.arena);
+
+            if (n.type != NULL_OBJ)
+            {
+                PUSH(n);
+                break;
+            }
+
+            runtime_error("ERROR: Undefined property '%s'.", el.arena.as.String);
+            return INTERPRET_RUNTIME_ERR;
         }
-        break;
         case OP_CALL:
         {
             uint8_t argc = READ_BYTE();
             if (!call_value(NPEEK(argc), argc))
                 return INTERPRET_RUNTIME_ERR;
             frame = (machine.frames + (machine.frame_count - 1));
+            break;
         }
-        break;
         case OP_JMPT:
             frame->ip += (READ_SHORT() * !FALSEY());
             break;
@@ -471,6 +491,10 @@ Interpretation run()
 
             if (res.type == CLOSURE)
                 res.closure->func->name = el.arena;
+            else if (res.type == CLASS)
+                res.classc->name = el.arena;
+            // else if (res.type == INSTANCE)
+            // res.instance->name = el.arena;
             WRITE_GLOB(el.arena, res);
         }
         break;
@@ -482,6 +506,8 @@ Interpretation run()
 
             if (res.type == CLOSURE)
                 res.closure->func->name = el.arena;
+            else if (res.type == CLASS)
+                res.classc->name = el.arena;
             WRITE_PARAM(el.arena, res);
         }
         break;

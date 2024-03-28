@@ -260,8 +260,6 @@ struct Class
 {
     Stack *obj;
     Arena name;
-    // Arena fields;
-    // Table *fields;
 };
 
 struct Instance

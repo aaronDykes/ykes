@@ -1,5 +1,6 @@
 
 class compound_assign {}
-
-pout compound_assign();
+var hello = compound_assign();
+hello.okay = "okay";
+pout hello.okay;
 

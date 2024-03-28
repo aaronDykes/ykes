@@ -30,7 +30,7 @@
     ((Free **)ptr)
 
 #define FREE(ptr) \
-    free_ptr(PTR(ptr))
+    free_ptr(ptr)
 
 #define GROW_CAPACITY(capacity) \
     ((capacity) < CAPACITY ? CAPACITY : capacity * INC)
@@ -86,10 +86,12 @@
     upval_el(c)
 #define CLASS(c) \
     new_class(c)
-#define INSTANCE(c) \
-    new_instance(c)
 #define FREE_CLASS(c) \
     free_class(c)
+#define INSTANCE(c) \
+    new_instance(c)
+#define FREE_INSTANCE(c) \
+    free_instance(c)
 
 typedef union Free Free;
 typedef struct Garbage Garbage;
@@ -191,7 +193,7 @@ Function *function(Arena name);
 void free_function(Function *func);
 
 Closure *new_closure(Function *func);
-void free_closure(Closure *closure);
+void free_closure(Closure **closure);
 
 Upval *upval(Stack *index);
 void free_upval(Upval *up);
@@ -204,6 +206,7 @@ void print(Element ar);
 Table Entry(Arena key, Element val);
 Table arena_entry(Arena key, Arena val);
 Table class_entry(Class *c);
+Table instance_entry(Arena ar, Instance *c);
 Table func_entry(Closure *c);
 Table native_entry(Native *func);
 Table new_entry(Table t);

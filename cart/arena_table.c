@@ -46,6 +46,13 @@ void insert_entry(Table **t, Table entry)
             ALLOC_ENTRY(&tmp[entry.key.as.hash].next, entry);
         return;
     }
+    else if (entry.type == INSTANCE)
+    {
+        Instance *c = find_instance_entry(t, &entry.key);
+        if (!c)
+            ALLOC_ENTRY(&tmp[entry.key.as.hash].next, entry);
+        return;
+    }
     for (; ptr; ptr = ptr->next)
         switch (ptr->key.type)
         {
@@ -77,11 +84,13 @@ void free_entry(Element el)
         FREE_NATIVE(el.native);
         break;
     case CLOSURE:
-        FREE_CLOSURE(el.closure);
+        FREE_CLOSURE(&el.closure);
         break;
     case CLASS:
         FREE_CLASS(el.classc);
         break;
+    case INSTANCE:
+        FREE_INSTANCE(el.instance);
     default:
         break;
     }
@@ -262,7 +271,12 @@ Element find_entry(Table **t, Arena *hash)
     else if (entry.type == CLASS)
     {
         Class *c = find_class_entry(t, hash);
-        return !c ? el : new_class(c);
+        return !c ? el : CLASS(c);
+    }
+    else if (entry.type == INSTANCE)
+    {
+        Instance *c = find_instance_entry(t, hash);
+        return !c ? el : INSTANCE(c);
     }
     return el;
 }
@@ -321,6 +335,37 @@ Class *find_class_entry(Table **t, Arena *hash)
         case ARENA_CLASS:
             if (tmp->key.as.String == hash->as.String)
                 return tmp->val.classc;
+            break;
+        default:
+            break;
+        }
+
+    return NULL;
+}
+
+Instance *find_instance_entry(Table **t, Arena *hash)
+{
+    Table *a = *t;
+    size_t index = hash->as.hash;
+    Table entry = a[index];
+
+    if (entry.key.type == ARENA_NULL)
+        return NULL;
+
+    if (entry.key.as.hash == hash->as.hash)
+        return entry.val.instance;
+
+    Table *tmp = entry.next;
+
+    for (; tmp; tmp = tmp->next)
+        switch (tmp->key.type)
+        {
+        case ARENA_VAR:
+        case ARENA_FUNC:
+        case ARENA_NATIVE:
+        case ARENA_CLASS:
+            if (tmp->key.as.String == hash->as.String)
+                return tmp->val.instance;
             break;
         default:
             break;

@@ -59,6 +59,7 @@ struct Compiler
     int upvalue_count;
     int call_count;
     int param_count;
+    int class_count;
 
     ObjType type;
     Function *func;
@@ -68,6 +69,7 @@ struct Compiler
     Compiler *base;
     Compiler *enclosing;
 
+    Class *classes[CLASS_COUNT];
     Arena call_params[CALL_COUNT];
     Arena calls[CALL_COUNT];
 
