@@ -1,20 +1,17 @@
-
-
-sr mem_alloc()
-{
-    var str = "hello"; 
-    pout str; 
- /* rm(str);    # This should produce an error */
-
-    var s = String("hello world"); 
-
-
-    pout s;
-    rm(s);
-
-
-
+class Scone {
+    
+    topping(first, second, third)
+    {
+        var str = third + " scones with " + first + "and " + second;
+        pout str;
+        rm(str);
+    }
+    
 }
+    
+var scone = Scone();
+scone.topping(String("strawberries "), String("cream"), 69); 
 
-mem_alloc();
+
+    
 

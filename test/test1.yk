@@ -2,10 +2,10 @@ sr n()
 {
     var be = 10;
 
-      sr set()
-      {
-        be = be + 69;
-      }
+    sr set()
+    {
+      be = be + 69;
+    }
     
     var al = 100;
     sr f()

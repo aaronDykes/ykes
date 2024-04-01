@@ -6,20 +6,20 @@ sr hello()
     for (var i = 1; i < 100; i++)
         if ((i % 15) == 0)
         {
-            str = String("FIZZBANG: ") + i;
+            str = "FIZZBANG: " + i;
             pout str;
             rm(str);
         }
         elif ((i % 5) == 0)
         {
-            str = String("BANG: ") + i;
+            str = "BANG: " + i;
             pout str;
             rm(str);
         }
         elif ((i % 3) == 0)
         {
 
-            str = String("FIZZ: ") + i;
+            str = "FIZZ: " + i;
             pout str;
             rm(str);
         }

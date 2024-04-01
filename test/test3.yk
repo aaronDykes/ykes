@@ -1,6 +1,24 @@
 
-class compound_assign {}
-var hello = compound_assign();
-hello.okay = "okay";
-pout hello.okay;
+class CoffeeMaker 
+{
+
+    init(coffee)
+    {
+        this.coffee = coffee;
+        var str = this.coffee + ". It very nice";
+        this.coffee = str + " brew"; 
+    }
+
+    brew() 
+    {
+        var str = "Enjoy your " + this.coffee; 
+        pout str;
+    }
+
+
+  
+}
+
+var maker = CoffeeMaker("coffee and chicory");
+maker.brew();
 

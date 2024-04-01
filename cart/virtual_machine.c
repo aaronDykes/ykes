@@ -12,7 +12,10 @@ void initVM()
     initialize_global_memory();
     machine.stack = GROW_STACK(NULL, STACK_SIZE);
     machine.call_stack = GROW_STACK(NULL, STACK_SIZE);
+    machine.class_stack = GROW_STACK(NULL, STACK_SIZE);
     machine.native_calls = GROW_STACK(NULL, NATIVE_STACK_SIZE);
+    machine.argc = 0;
+    machine.cargc = 0;
     machine.glob = GROW_TABLE(NULL, TABLE_SIZE);
     define_native(native_name("clock"), clock_native);
     define_native(native_name("square"), square_native);
@@ -23,6 +26,7 @@ void freeVM()
     FREE_TABLE(machine.glob);
     FREE_STACK(&machine.stack);
     FREE_STACK(&machine.call_stack);
+    FREE_STACK(&machine.class_stack);
     FREE_STACK(&machine.native_calls);
     destroy_global_memory();
 }
@@ -84,7 +88,6 @@ static bool call(Closure *c, uint8_t argc)
 
     if (c->func->arity != argc)
     {
-
         runtime_error("ERROR: Expected `%d` args, but got `%d`.", c->func->arity, argc);
         return false;
     }
@@ -101,6 +104,7 @@ static bool call(Closure *c, uint8_t argc)
     frame->ip = c->func->ch.op_codes.listof.Bytes;
     frame->ip_start = c->func->ch.op_codes.listof.Bytes;
     frame->slots = machine.stack->top - argc - 1;
+    frame->slots->top = machine.stack->top - 1;
     return true;
 }
 
@@ -117,7 +121,7 @@ Interpretation interpret(const char *src)
 
     push(&machine.stack, closure(clos));
 
-    close_upvalues(machine.stack->top - 1);
+    // close_upvalues(machine.stack->top - 1);
     Interpretation res = run();
     return res;
 }
@@ -131,6 +135,9 @@ static bool call_value(Element el, uint8_t argc)
 {
     switch (el.type)
     {
+    case BOUND_CLOSURE:
+        machine.stack->top[-1 - argc].as = el.bound_closure->receiver;
+        return call(el.bound_closure->method, argc);
     case CLOSURE:
         return call(el.closure, argc);
     case NATIVE:
@@ -141,6 +148,9 @@ static bool call_value(Element el, uint8_t argc)
         push(&machine.stack, res);
         return true;
     }
+    case INSTANCE:
+        return true;
+        // break;
     case CLASS:
         machine.stack->top[-1 - argc].as = INSTANCE(instance(el.classc));
         return true;
@@ -215,7 +225,6 @@ static void free_asterisk(Element el)
     case INSTANCE:
         FREE_INSTANCE(el.instance);
         break;
-
     default:
         return;
     }
@@ -234,7 +243,7 @@ Interpretation run()
 #define GET_NATIVE(ar) \
     (NATIVE(traverse_stack_native(&ar)))
 #define PEEK() ((machine.stack->top - 1)->as)
-#define NPEEK(N) ((machine.stack->top + (-1 + -N))->as)
+#define NPEEK(N) ((machine.stack->top + (-1 - N))->as)
 #define CPEEK(N) ((machine.call_stack->top + (-1 + -N))->as)
 #define FALSEY() (!PEEK().arena.as.Bool)
 #define POPN(n) (popn(&machine.stack, n))
@@ -242,6 +251,7 @@ Interpretation run()
 #define JUMP() (*(frame->closure->func->ch.cases.listof.Ints + READ_SHORT()))
 #define PUSH(ar) (push(&machine.stack, ar))
 #define CPUSH(ar) (push(&machine.call_stack, ar))
+#define PPUSH(ar) (push(&machine.class_stack, ar))
 #define FIND_GLOB(ar) (find(machine.glob, ar))
 #define FIND_PARAM(ar) (find(frame->closure->func->params, ar))
 #define WRITE_GLOB(a, b) (write_table(machine.glob, a, b))
@@ -274,15 +284,10 @@ Interpretation run()
             CPUSH(e);
 
             for (int i = 0; i < e.closure->upval_count; i++)
-            {
-                uint8_t is_local = READ_BYTE();
-                uint8_t index = READ_BYTE();
-
-                if (is_local)
-                    e.closure->upvals[i] = capture_upvalue(frame->slots + index);
-                else
-                    e.closure->upvals[i] = frame->closure->upvals[index];
-            }
+                e.closure->upvals[i] =
+                    (READ_BYTE())
+                        ? capture_upvalue(frame->slots + READ_BYTE())
+                        : frame->closure->upvals[READ_BYTE()];
         }
         break;
         case OP_GET_UPVALUE:
@@ -291,6 +296,7 @@ Interpretation run()
         case OP_SET_UPVALUE:
             ((*frame->closure->upvals + READ_BYTE()))->closed = *(machine.stack->top - 1);
             break;
+
         case OP_NEG:
             (--machine.stack->top)->as = OBJ(_neg((machine.stack->top++)->as.arena));
             break;
@@ -408,12 +414,12 @@ Interpretation run()
             break;
         case OP_SET_PROP:
         {
-            Element inst = NPEEK(1);
+            Element inst = NPEEK(1); /* (frame->slots - 1)->as */
             Element el = PEEK();
             Element str = READ_CONSTANT();
             write_table(inst.instance->fields, str.arena, el);
             Element res = POP();
-            POP();
+            PEEK() = res;
             PUSH(res);
             break;
         }
@@ -432,7 +438,10 @@ Interpretation run()
 
             if (n.type != NULL_OBJ)
             {
-                PUSH(n);
+                if (n.type == CLOSURE)
+                    PUSH(BOUND(BCLOSURE(INSTANCE(inst), n.closure)));
+                else
+                    PUSH(n);
                 break;
             }
 
@@ -444,7 +453,11 @@ Interpretation run()
             uint8_t argc = READ_BYTE();
             if (!call_value(NPEEK(argc), argc))
                 return INTERPRET_RUNTIME_ERR;
+
             frame = (machine.frames + (machine.frame_count - 1));
+            machine.argc = (argc == 0) ? 1 : argc;
+            machine.cargc = 1;
+
             break;
         }
         case OP_JMPT:
@@ -466,6 +479,9 @@ Interpretation run()
         case OP_SET_LOCAL:
             LOCAL() = PEEK();
             break;
+        case OP_SET_LOCAL_PARAM:
+            LOCAL() = (machine.cargc < machine.argc) ? (frame->slots + machine.cargc++)->as : PEEK();
+            break;
         case OP_GET_CLOSURE:
             PUSH((machine.call_stack + READ_BYTE())->as);
             break;
@@ -473,7 +489,13 @@ Interpretation run()
             PUSH(GET_NATIVE(READ_CONSTANT().arena));
             break;
         case OP_CLASS:
-            CPUSH(READ_CONSTANT());
+            PPUSH(INSTANCE(instance(READ_CONSTANT().classc)));
+            break;
+        case OP_GET_CLASS:
+            PUSH((machine.class_stack + READ_BYTE())->as);
+            break;
+        case OP_GET_INSTANCE:
+            PUSH(INSTANCE(instance((machine.class_stack + READ_BYTE())->as.classc)));
             break;
         case OP_RM:
             RM();
@@ -491,10 +513,6 @@ Interpretation run()
 
             if (res.type == CLOSURE)
                 res.closure->func->name = el.arena;
-            else if (res.type == CLASS)
-                res.classc->name = el.arena;
-            // else if (res.type == INSTANCE)
-            // res.instance->name = el.arena;
             WRITE_GLOB(el.arena, res);
         }
         break;
@@ -502,12 +520,10 @@ Interpretation run()
         case OP_FUNC_VAR_DEF:
         {
             Element el = READ_CONSTANT();
-            Element res = POP();
+            Element res = (machine.cargc < machine.argc) ? (frame->slots + machine.cargc++)->as : POP();
 
             if (res.type == CLOSURE)
                 res.closure->func->name = el.arena;
-            else if (res.type == CLASS)
-                res.classc->name = el.arena;
             WRITE_PARAM(el.arena, res);
         }
         break;
@@ -546,6 +562,7 @@ Interpretation run()
 #undef WRITE_PARAM
 #undef FIND_GLOB
 #undef FIND_PARAM
+#undef PPUSH
 #undef CPUSH
 #undef PUSH
 #undef JUMP

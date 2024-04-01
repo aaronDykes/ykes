@@ -37,6 +37,9 @@ void reset_stack(Stack *s)
 }
 void check_stack_size(Stack *s)
 {
+
+    if (!s)
+        return;
     if (s->count + 1 > s->len)
     {
         s->len = GROW_CAPACITY(s->len);
@@ -56,6 +59,14 @@ void push(Stack **s, Element e)
 
     Stack *st = *s;
     check_stack_size(st);
+
+    if (!st)
+    {
+        st = GROW_STACK(NULL, STACK_SIZE);
+        *s = st;
+        reset_stack(*s);
+    }
+
     (st->top++)->as = e;
     st->count++;
 }

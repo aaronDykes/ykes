@@ -15,6 +15,7 @@ static void init_compiler(Compiler *a, Compiler *b, ObjType type, Arena name)
     a->scope_depth = 0;
     a->call_count = 0;
     a->class_count = 0;
+    a->class_compiler = NULL;
 
     if (b)
     {
@@ -22,7 +23,9 @@ static void init_compiler(Compiler *a, Compiler *b, ObjType type, Arena name)
         a->parser = b->parser;
         a->enclosing = b;
         a->scope_depth = b->scope_depth;
-        local = &b->locals[b->local_count];
+        a->class_compiler = b->class_compiler;
+        a->class_count = b->class_count;
+        local = &b->locals[b->local_count++];
     }
     else
         local = &a->locals[a->local_count++];
@@ -35,7 +38,11 @@ static void init_compiler(Compiler *a, Compiler *b, ObjType type, Arena name)
     a->type = type;
 
     local->depth = 0;
-    local->name = Null();
+    local->captured = false;
+
+    local->name = (type == METHOD)
+                      ? String("this")
+                      : Null();
 }
 
 static void consume(int t, const char *err, Parser *parser)
@@ -79,16 +86,88 @@ static void declaration(Compiler *c)
 
 static void class_declaration(Compiler *c)
 {
-    consume(TOKEN_ID, "Expect class name.", &c->parser);
+    consume(TOKEN_ID, "ERROR: Expect class name.", &c->parser);
 
     Arena ar = parse_id(c);
     Class *classc = class(ar);
+    ClassCompiler *class = ALLOC(sizeof(ClassCompiler));
 
-    emit_bytes(c, OP_CLASS, add_constant(&c->func->ch, new_class(classc)));
+    c->base->classes[c->base->class_count++] = classc;
+    class->instance_name = ar;
+
+    class->enclosing = c->class_compiler;
+    c->class_compiler = class;
+
+    emit_bytes(c, OP_CLASS, add_constant(&c->func->ch, CLASS(classc)));
+
+    consume(TOKEN_CH_LCURL, "ERROR: Expect ze `{` curl brace", &c->parser);
+
+    while (!check(TOKEN_CH_RCURL, &c->parser) && !check(TOKEN_EOF, &c->parser))
+        method(c, classc);
+
+    consume(TOKEN_CH_RCURL, "ERROR: Expect ze `}` curl brace", &c->parser);
+    c->class_compiler = c->class_compiler->enclosing;
+}
+
+static void method(Compiler *c, Class *class)
+{
+    consume(TOKEN_ID, "ERROR: Expect method identifier.", &c->parser);
+    Arena ar = parse_func_id(c);
+
+    ObjType type = INIT;
+
+    if (ar.as.hash != c->base->init_func.as.hash)
+        type = METHOD;
     c->base->calls[c->base->call_count++] = ar;
+    // {
+    // }
 
-    consume(TOKEN_CH_LCURL, "Expect ze `{` curl brace", &c->parser);
-    consume(TOKEN_CH_RCURL, "Expect ze `}` curl brace", &c->parser);
+    method_body(c, type, ar, &class);
+}
+
+static void method_body(Compiler *c, ObjType type, Arena ar, Class **class)
+{
+    Compiler co;
+    init_compiler(&co, c, type, ar);
+
+    c = &co;
+    consume(TOKEN_CH_LPAREN, "Expect `(` after function name.", &c->parser);
+    if (!check(TOKEN_CH_RPAREN, &c->parser))
+        do
+        {
+            c->func->arity++;
+            if (c->func->arity > 255)
+                current_err("Cannot declare more than 255 function parameters", &c->parser);
+            func_var(c);
+
+        } while (match(TOKEN_CH_COMMA, &c->parser));
+    consume(TOKEN_CH_RPAREN, "Expect `)` after function parameters.", &c->parser);
+    consume(TOKEN_CH_LCURL, "Expect `{` prior to function body.", &c->parser);
+
+    block(c);
+
+    Compiler *tmp = c;
+    Function *f = end_compile(c);
+
+    Closure *clos = new_closure(f);
+
+    if (type == INIT)
+        (*class)->init = clos;
+
+    c = c->enclosing;
+
+    emit_bytes(
+        c, OP_CLOSURE,
+        add_constant(&c->func->ch, CLOSURE(clos)));
+
+    for (int i = 0; i < tmp->upvalue_count; i++)
+    {
+        uint8_t local = tmp->upvalues[i].islocal ? 1 : 0;
+        uint8_t index = (uint8_t)tmp->upvalues[i].index;
+
+        emit_byte(c, local);
+        emit_byte(c, index);
+    }
 }
 
 static void call(Compiler *c)
@@ -101,7 +180,7 @@ static void call_expect_arity(Compiler *c, int arity)
 {
     uint8_t argc = argument_list(c);
     if ((int)argc != arity)
-        error("Incorrect number of args.", &c->parser);
+        error("ERROR: Incorrect number of args.", &c->parser);
     emit_bytes(c, OP_CALL, argc);
 }
 
@@ -151,8 +230,6 @@ static void func_body(Compiler *c, ObjType type, Arena ar)
     consume(TOKEN_CH_RPAREN, "Expect `)` after function parameters.", &c->parser);
     consume(TOKEN_CH_LCURL, "Expect `{` prior to function body.", &c->parser);
 
-    c->func->params = GROW_TABLE(NULL, c->func->arity + 1);
-
     block(c);
 
     Compiler *tmp = c;
@@ -184,18 +261,15 @@ static void func_var(Compiler *c)
 
     int glob = parse_var(c, ar);
 
-    uint8_t set = 0;
-    if (glob != -1)
-        set = OP_FUNC_VAR_DEF;
-    else
+    uint8_t set = OP_SET_FUNC_VAR;
+
+    if (glob == -1)
     {
         glob = resolve_local(c, &ar);
-        set = OP_SET_LOCAL;
+        set = OP_SET_LOCAL_PARAM;
     }
-
-    c->base->call_params[c->base->param_count++] = ar;
-    if (match(TOKEN_OP_ASSIGN, &c->parser))
-        expression(c);
+    else
+        c->base->call_params[c->base->param_count++] = ar;
     emit_bytes(c, set, (uint8_t)glob);
 }
 
@@ -494,14 +568,16 @@ static void elif_statement(Compiler *c)
 static void return_statement(Compiler *c)
 {
     if (c->type == SCRIPT)
-        error("Unable to return from top of script.", &c->parser);
+        error("ERROR: Unable to return from top of script.", &c->parser);
 
     else if (match(TOKEN_CH_SEMI, &c->parser))
         emit_return(c);
     else
     {
+        if (c->type == INIT)
+            error("ERROR: Unable to return value from initializer.", &c->parser);
         expression(c);
-        consume(TOKEN_CH_SEMI, "Expect semi colon after return statement.", &c->parser);
+        consume(TOKEN_CH_SEMI, "ERROR: Expect semi colon after return statement.", &c->parser);
         emit_byte(c, OP_RETURN);
     }
 }
@@ -513,7 +589,7 @@ static void patch_jump_long(Compiler *c, int count, int offset)
     int j2 = (c->func->ch.op_codes.count) - offset - 4;
 
     if (j1 >= INT16_MAX)
-        error("To great a distance ", &c->parser);
+        error("ERROR: To great a distance ", &c->parser);
 
     c->func->ch.op_codes.listof.Bytes[offset] = (uint8_t)((j2 >> 8) & 0xFF);
     c->func->ch.op_codes.listof.Bytes[offset + 1] = (uint8_t)(j2 & 0xFF);
@@ -528,7 +604,7 @@ static void patch_jump(Compiler *c, int offset)
     int jump = c->func->ch.op_codes.count - offset - 2;
 
     if (jump >= INT16_MAX)
-        error("To great a distance ", &c->parser);
+        error("ERROR: To great a distance ", &c->parser);
 
     c->func->ch.op_codes.listof.Bytes[offset] = (uint8_t)((jump >> 8) & 0xFF);
     c->func->ch.op_codes.listof.Bytes[offset + 1] = (uint8_t)(jump & 0xFF);
@@ -584,7 +660,7 @@ static void end_scope(Compiler *c)
     c->scope_depth--;
 
     if (c->local_count > 0 && (c->locals[c->local_count - 1].depth > c->scope_depth))
-        emit_bytes(c, OP_POPN, add_constant(&c->func->ch, OBJ(Int(c->local_count))));
+        emit_bytes(c, OP_POPN, add_constant(&c->func->ch, OBJ(Int(c->local_count - 1))));
 
     while (c->local_count > 0 && (c->locals[c->local_count - 1].depth > c->scope_depth))
     {
@@ -642,7 +718,7 @@ static void parse_precedence(Precedence prec, Compiler *c)
 
     if (!prefix_rule)
     {
-        error("Expect expression.", &c->parser);
+        error("ERROR: Expect expression.", &c->parser);
         return;
     }
 
@@ -782,7 +858,10 @@ static void error_at(Token toke, Parser *parser, const char *err)
 
 static void emit_return(Compiler *c)
 {
-    emit_byte(c, OP_NULL);
+    if (c->type == INIT)
+        emit_bytes(c, OP_GET_LOCAL, 0);
+    else
+        emit_byte(c, OP_NULL);
     emit_byte(c, OP_RETURN);
 }
 static void emit_byte(Compiler *c, uint8_t byte)
@@ -951,15 +1030,28 @@ static int resolve_call_param(Compiler *c, Arena *ar)
     return -1;
 }
 
+static int resolve_instance(Compiler *c, Arena ar)
+{
+    for (int i = 0; i < c->base->class_count; i++)
+        if (idcmp(c->base->classes[i]->name, ar))
+            return i;
+    return -1;
+}
+
 static void dot(Compiler *c)
 {
-    // consume(TOKEN_CH_DOT, "Expect property name after `.`.", &c->parser);
-    if (match(TOKEN_ID, &c->parser))
-        ;
+    match(TOKEN_ID, &c->parser);
 
     Arena ar = parse_id(c);
 
-    int arg = add_constant(&c->func->ch, OBJ(ar));
+    int arg = resolve_call(c, &ar);
+    if (arg != -1)
+    {
+        emit_bytes(c, OP_GET_CLOSURE, (uint8_t)arg);
+        return;
+    }
+
+    arg = add_constant(&c->func->ch, OBJ(ar));
 
     if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
@@ -970,13 +1062,30 @@ static void dot(Compiler *c)
         emit_bytes(c, OP_GET_PROP, (uint8_t)arg);
 }
 
+static void _this(Compiler *c)
+{
+    if (!c->class_compiler)
+    {
+        error("ERROR: can't use `this` keyword outside of a class body.", &c->parser);
+        return;
+    }
+
+    int arg = resolve_instance(c, c->class_compiler->instance_name);
+
+    emit_bytes(
+        c, OP_GET_CLASS,
+        (uint8_t)arg);
+
+    if (match(TOKEN_CH_DOT, &c->parser))
+        dot(c);
+}
+
 static void id(Compiler *c)
 {
     bool pre_inc = (c->parser.pre.type == TOKEN_OP_INC);
     bool pre_dec = (c->parser.pre.type == TOKEN_OP_DEC);
 
-    if (match(TOKEN_ID, &c->parser))
-        ;
+    match(TOKEN_ID, &c->parser);
 
     Arena ar = parse_func_id(c);
     uint8_t get, set;
@@ -985,6 +1094,19 @@ static void id(Compiler *c)
     if (arg != -1)
     {
         emit_bytes(c, OP_GET_CLOSURE, (uint8_t)arg);
+        return;
+    }
+
+    if ((arg = resolve_instance(c, ar)) != -1)
+    {
+
+        if (c->base->classes[arg]->init)
+        {
+            emit_bytes(c, OP_CONSTANT, (uint8_t)add_constant(&c->func->ch, CLOSURE(c->base->classes[arg]->init)));
+            consume(TOKEN_CH_LPAREN, "Expect `(` prior to function body", &c->parser);
+            call(c);
+        }
+        emit_bytes(c, OP_GET_CLASS, (uint8_t)arg);
         return;
     }
 
@@ -1003,7 +1125,6 @@ static void id(Compiler *c)
     }
     else if ((arg = resolve_call_param(c, &ar)) != -1)
     {
-        arg = add_constant(&c->func->ch, OBJ(ar));
         set = OP_SET_FUNC_VAR;
         get = OP_GET_FUNC_VAR;
     }
@@ -1141,7 +1262,7 @@ static int add_upvalue(Compiler *c, int index, bool islocal)
 
     if (count > LOCAL_COUNT)
     {
-        error("To many closure variables in function.", &c->parser);
+        error("ERROR: To many closure variables in function.", &c->parser);
         return 0;
     }
 
@@ -1164,7 +1285,7 @@ static void declare_var(Compiler *c, Arena ar)
             break;
 
         else if (idcmp(ar, local->name))
-            error("Duplicate variable identifiers in scope", &c->parser);
+            error("ERROR: Duplicate variable identifiers in scope", &c->parser);
     }
 
     add_local(c, &ar);
@@ -1174,7 +1295,7 @@ static void add_local(Compiler *c, Arena *ar)
 {
     if (c->local_count == LOCAL_COUNT)
     {
-        error("Too many local variables in function.", &c->parser);
+        error("ERROR: Too many local variables in function.", &c->parser);
         return;
     }
     c->locals[c->local_count].name = *ar;
@@ -1210,6 +1331,8 @@ Function *compile(const char *src)
 
     init_scanner(src);
     init_compiler(&c, NULL, SCRIPT, func_name("SCRIPT"));
+
+    c.init_func = String("init");
     c.base = &c;
 
     c.parser.panic = false;

@@ -36,6 +36,7 @@ typedef struct Parser Parser;
 typedef struct Local Local;
 typedef struct Upvalue Upvalue;
 typedef struct Compiler Compiler;
+typedef struct ClassCompiler ClassCompiler;
 typedef void (*parse_fn)(Compiler *);
 typedef struct parse_rule PRule;
 
@@ -50,6 +51,12 @@ struct Upvalue
 {
     uint8_t index;
     bool islocal;
+};
+
+struct ClassCompiler
+{
+    ClassCompiler *enclosing;
+    Arena instance_name;
 };
 
 struct Compiler
@@ -68,8 +75,10 @@ struct Compiler
 
     Compiler *base;
     Compiler *enclosing;
+    Arena init_func;
+    ClassCompiler *class_compiler;
 
-    Class *classes[CLASS_COUNT];
+    Class *classes[CALL_COUNT];
     Arena call_params[CALL_COUNT];
     Arena calls[CALL_COUNT];
 
@@ -94,6 +103,8 @@ static void call_expect_arity(Compiler *c, int arity);
 static int argument_list(Compiler *c);
 
 static void class_declaration(Compiler *c);
+static void method(Compiler *c, Class *class);
+static void method_body(Compiler *c, ObjType type, Arena ar, Class **class);
 
 static void func_declaration(Compiler *c);
 static void func_body(Compiler *c, ObjType type, Arena ar);
@@ -181,6 +192,7 @@ static void parse_native_argc0(Compiler *c);
 static void parse_native_argc1(Compiler *c);
 
 static void dot(Compiler *c);
+static void _this(Compiler *c);
 
 static Arena parse_id(Compiler *c);
 static int parse_var(Compiler *c, Arena ar);
@@ -270,7 +282,7 @@ static PRule rules[] = {
     [TOKEN_PRINT] = {NULL, NULL, PREC_NONE},
     [TOKEN_RETURN] = {NULL, NULL, PREC_NONE},
     [TOKEN_SUPER] = {NULL, NULL, PREC_NONE},
-    [TOKEN_THIS] = {NULL, NULL, PREC_NONE},
+    [TOKEN_THIS] = {_this, NULL, PREC_NONE},
     [TOKEN_VAR] = {NULL, NULL, PREC_NONE},
     [TOKEN_WHILE] = {NULL, NULL, PREC_NONE},
     [TOKEN_ERR] = {NULL, NULL, PREC_NONE},

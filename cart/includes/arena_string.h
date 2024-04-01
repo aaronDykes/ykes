@@ -20,6 +20,7 @@ Arena prepend_char_to_str(Arena s, Arena a);
 Arena prepend_long_to_str(Arena s, Arena a);
 
 Arena append(Arena s, Arena ar);
+Arena append_to_cstr(Arena s, Arena ar);
 
 Arena string_eq(Arena s, Arena c);
 Arena string_ne(Arena s, Arena c);

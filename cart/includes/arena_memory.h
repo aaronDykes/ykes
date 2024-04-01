@@ -19,19 +19,15 @@
 #define TABLE_SIZE 50
 #define IP_SIZE 100
 #define MEM_OFFSET 1
+#define OFFSET sizeof(Free)
 
 #define ALLOC(size) \
-    alloc_ptr(size + OFFSET)
+    alloc_ptr(size)
 
 #define PTR(ptr) \
     ((Free *)ptr - OFFSET)
-
-#define DPTR(ptr) \
-    ((Free **)ptr)
-
 #define FREE(ptr) \
     free_ptr(ptr)
-
 #define GROW_CAPACITY(capacity) \
     ((capacity) < CAPACITY ? CAPACITY : capacity * INC)
 
@@ -86,15 +82,24 @@
     upval_el(c)
 #define CLASS(c) \
     new_class(c)
-#define FREE_CLASS(c) \
-    free_class(c)
+#define BOUND(c) \
+    bound_closure_el(c)
 #define INSTANCE(c) \
     new_instance(c)
+
+#define FREE_CLASS(c) \
+    free_class(c)
 #define FREE_INSTANCE(c) \
     free_instance(c)
 
+#define BCLOSURE(el, c) \
+    bound_closure(el, c)
+#define FREE_BCLOSURE(bc) \
+    free__bound_closure(bc)
+
 typedef union Free Free;
-typedef struct Garbage Garbage;
+typedef struct CallFrame CallFrame;
+typedef struct vm vm;
 typedef long long int Align;
 
 union Free
@@ -108,11 +113,6 @@ union Free
     Align align;
 };
 
-struct Garbage
-{
-    Free *obj;
-};
-
 struct CallFrame
 {
     Closure *closure;
@@ -120,23 +120,22 @@ struct CallFrame
     uint8_t *ip_start;
     Stack *slots;
 };
-typedef struct CallFrame CallFrame;
 
 struct vm
 {
     int frame_count;
     int garbage_count;
     int garbage_len;
+    int argc;
+    int cargc;
     CallFrame frames[FRAMES_MAX];
     Stack *stack;
     Stack *call_stack;
+    Stack *class_stack;
     Stack *native_calls;
     Upval *open_upvals;
     Table *glob;
-    Garbage *garbage;
 };
-typedef struct vm vm;
-typedef vm *Vm;
 
 vm machine;
 static Free *mem;
@@ -185,6 +184,7 @@ Element Func(Function *f);
 Element upval_el(Upval *up);
 Element native_fn(Native *native);
 Element closure(Closure *clos);
+Element bound_closure_el(BoundClosure *bc);
 Element new_class(Class *classc);
 Element new_instance(Instance *ci);
 Element null_obj();
@@ -227,5 +227,8 @@ void free_class(Class *c);
 
 Instance *instance(Class *c);
 void free_instance(Instance *ic);
+
+BoundClosure *bound_closure(Element el, Closure *method);
+void free__bound_closure(BoundClosure *bc);
 
 #endif

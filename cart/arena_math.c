@@ -253,6 +253,7 @@ static Arena add_arena_int(int ival, Arena ar)
 {
     switch (ar.type)
     {
+    case ARENA_CSTR:
     case ARENA_STR:
         return prepend_int_to_str(Int(ival), ar);
     case ARENA_INT:
@@ -1184,6 +1185,8 @@ Arena _add(Arena a, Arena b)
         return add_arena_long(b.as.Long, a);
     case ARENA_STR:
         return append(b, a);
+    case ARENA_CSTR:
+        return append_to_cstr(b, a);
     case ARENA_SIZE:
         return add_arena_size(b.as.Size, a);
     default:

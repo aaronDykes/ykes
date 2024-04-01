@@ -76,18 +76,23 @@ int disassemble_instruction(Chunk *c, int offset)
 
         return offset;
     }
+    case OP_METHOD:
+        return constant_instruction("OP_METHOD", c, offset);
     case OP_CLASS:
         return constant_instruction("OP_CLASS", c, offset);
+    case OP_GET_INSTANCE:
+        return constant_instruction("OP_GET_INSTANCE", c, offset);
     case OP_CLOSE_UPVAL:
         return simple_instruction("OP_CLOSE_UPVAL", offset);
     case OP_GET_UPVALUE:
         return byte_instruction("OP_GET_UPVALUE", c, offset);
     case OP_SET_UPVALUE:
         return byte_instruction("OP_SET_UPVALUE", c, offset);
-
     case OP_GET_NATIVE:
         return simple_instruction("OP_GET_NATIVE", offset);
     case OP_GET_CLOSURE:
+        return simple_instruction("OP_GET_CLOSURE", offset);
+    case OP_GET_CLASS:
         return simple_instruction("OP_GET_CLOSURE", offset);
     case OP_NEG:
         return simple_instruction("OP_NEG", offset);

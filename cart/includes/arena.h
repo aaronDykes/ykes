@@ -43,6 +43,7 @@ typedef enum
     OP_PRINT,
 
     OP_CLASS,
+    OP_GET_INSTANCE,
 
     OP_POP,
     OP_POPN,
@@ -55,6 +56,7 @@ typedef enum
 
     OP_FIND_CLOSURE,
     OP_GET_CLOSURE,
+    OP_GET_CLASS,
     OP_GET_NATIVE,
 
     OP_GLOBAL_DEF,
@@ -67,6 +69,7 @@ typedef enum
 
     OP_GET_LOCAL,
     OP_SET_LOCAL,
+    OP_SET_LOCAL_PARAM,
 
     OP_GET_UPVALUE,
     OP_SET_UPVALUE,
@@ -119,6 +122,7 @@ typedef enum
     OP_LOOP,
 
     OP_CALL,
+    OP_METHOD,
 
     OP_NOOP,
     OP_NULL,
@@ -133,8 +137,11 @@ typedef enum
     NATIVE,
     CLASS,
     INSTANCE,
+    BOUND_CLOSURE,
     CLOSURE,
     FUNCTION,
+    METHOD,
+    INIT,
     UPVAL,
     SCRIPT,
     NULL_OBJ
@@ -153,6 +160,7 @@ typedef struct Native Native;
 typedef struct Element Element;
 typedef struct Stack Stack;
 typedef struct Class Class;
+typedef struct BoundClosure BoundClosure;
 typedef struct Instance Instance;
 typedef struct Table Table;
 typedef Element (*NativeFn)(int argc, Stack *argv);
@@ -252,20 +260,28 @@ struct Element
         Upval *upval;
         Class *classc;
         Instance *instance;
+        BoundClosure *bound_closure;
         void *null;
     };
 };
 
 struct Class
 {
-    Stack *obj;
+    Closure *init;
     Arena name;
+    Table *methods;
 };
 
 struct Instance
 {
     Class *classc;
     Table *fields;
+};
+
+struct BoundClosure
+{
+    Element receiver;
+    Closure *method;
 };
 
 struct Stack

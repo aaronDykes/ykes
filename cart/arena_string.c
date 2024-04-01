@@ -82,6 +82,16 @@ char *lltoa(char *c, long long int n)
     return c;
 }
 
+void str_cat(char *d, char *s)
+{
+
+    char *dst = d, *src = s;
+
+    int i = 0;
+    while (*src)
+        *dst++ = *src++;
+}
+
 Arena prepend_int_to_str(Arena s, Arena a)
 {
     int len = intlen(s.as.Int);
@@ -125,10 +135,12 @@ static Arena append_int_to_str(Arena s, Arena i)
     int new = len + s.as.len + 1;
 
     i = GROW_ARRAY(NULL, sizeof(char) * len, ARENA_STR);
-    i.as.String = itoa(i.as.String, ival);
+    itoa(i.as.String, ival);
+    int tmp = s.size;
     s = GROW_ARRAY(&s, sizeof(char) * new, ARENA_STR);
-    strcat(s.as.String, i.as.String);
+    str_cat(s.as.String + tmp, i.as.String);
     ARENA_FREE(&i);
+
     return s;
 }
 static Arena append_str_to_str(Arena s, Arena str)
@@ -167,6 +179,25 @@ static Arena append_long_to_str(Arena s, Arena i)
 }
 Arena append(Arena s, Arena ar)
 {
+    switch (ar.type)
+    {
+    case ARENA_STR:
+    case ARENA_CSTR:
+        return append_str_to_str(s, ar);
+    case ARENA_CHAR:
+        return append_char_to_str(s, ar);
+    case ARENA_INT:
+        return append_int_to_str(s, ar);
+    case ARENA_LONG:
+        return append_long_to_str(s, ar);
+    default:
+        return ar;
+    }
+}
+
+Arena append_to_cstr(Arena s, Arena ar)
+{
+    s = String(s.as.String);
     switch (ar.type)
     {
     case ARENA_STR:
