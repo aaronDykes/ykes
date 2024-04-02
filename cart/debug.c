@@ -156,13 +156,7 @@ int disassemble_instruction(Chunk *c, int offset)
     case OP_GLOBAL_DEF:
         return simple_instruction("OP_GLOBAL_DEF", offset);
 
-    case OP_GET_FUNC_VAR:
-        return simple_instruction("OP_GET_FUNC_VAR", offset);
-    case OP_SET_FUNC_VAR:
-        return simple_instruction("OP_SET_FUNC_VAR", offset);
-    case OP_FUNC_VAR_DEF:
-        return simple_instruction("OP_FUNC_VAR_DEF", offset);
-    case OP_JMPF:
+     case OP_JMPF:
         return jump_instruction("OP_JMPF", 1, c, offset);
     case OP_JMPT:
         return jump_instruction("OP_JMPT", 1, c, offset);

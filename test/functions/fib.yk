@@ -1,0 +1,18 @@
+sr fib(n) {
+  if (n < 2) return n;
+  return fib(n - 2) + fib(n - 1);
+}
+
+
+sr print_fib(n)
+{
+  for (var i = 1; i < n; i++)
+    pout fib(i);
+}
+
+var start = clock();
+
+print_fib(35);
+
+
+pout clock() - start;

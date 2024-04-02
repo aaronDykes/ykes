@@ -63,8 +63,6 @@ typedef enum
     OP_GET_GLOBAL,
     OP_SET_GLOBAL,
 
-    OP_FUNC_VAR_DEF,
-    OP_GET_FUNC_VAR,
     OP_SET_FUNC_VAR,
 
     OP_GET_LOCAL,
@@ -230,7 +228,6 @@ struct Function
     int upvalue_count;
     Arena name;
     Chunk ch;
-    Table *params;
 };
 
 struct Closure
@@ -256,11 +253,10 @@ struct Element
         Arena arena;
         Native *native;
         Closure *closure;
-        Function *function;
-        Upval *upval;
+        // Function *function;
+        // Upval *upval;
         Class *classc;
         Instance *instance;
-        BoundClosure *bound_closure;
         void *null;
     };
 };
@@ -269,19 +265,12 @@ struct Class
 {
     Closure *init;
     Arena name;
-    Table *methods;
+    Stack *fields;
 };
 
 struct Instance
 {
     Class *classc;
-    Table *fields;
-};
-
-struct BoundClosure
-{
-    Element receiver;
-    Closure *method;
 };
 
 struct Stack

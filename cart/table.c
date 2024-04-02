@@ -5,25 +5,25 @@ void write_table(Table *t, Arena a, Element b)
 
     if (b.type == CLOSURE)
     {
-        b.closure->func->name.as.hash %= (t - 1)->len;
+        // b.closure->func->name.as.hash %= (t - 1)->len;
         if (find_entry(&t, &b.closure->func->name).type != NULL_OBJ)
             goto OVERWRITE;
     }
     else if (b.type == NATIVE)
     {
-        b.native->obj.as.hash %= (t - 1)->len;
+        // b.native->obj.as.hash %= (t - 1)->len;
         if (find_entry(&t, &b.native->obj).type != NULL_OBJ)
             goto OVERWRITE;
     }
     else if (b.type == CLASS)
     {
-        b.classc->name.as.hash %= (t - 1)->len;
+        // b.classc->name.as.hash %= (t - 1)->len;
         if (find_entry(&t, &b.classc->name).type != NULL_OBJ)
             goto OVERWRITE;
     }
     else
     {
-        a.as.hash %= (t - 1)->len;
+        // a.as.hash %= (t - 1)->len;
         if (find_entry(&t, &a).type != NULL_OBJ)
             goto OVERWRITE;
     }

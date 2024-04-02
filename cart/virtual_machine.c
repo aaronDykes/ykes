@@ -121,23 +121,20 @@ Interpretation interpret(const char *src)
 
     push(&machine.stack, closure(clos));
 
-    // close_upvalues(machine.stack->top - 1);
+    close_upvalues(machine.stack->top - 1);
     Interpretation res = run();
     return res;
 }
 
 static Element find(Table *t, Arena ar)
 {
-    ar.as.hash %= (t - 1)->len;
     return find_entry(&t, &ar);
 }
 static bool call_value(Element el, uint8_t argc)
 {
     switch (el.type)
     {
-    case BOUND_CLOSURE:
-        machine.stack->top[-1 - argc].as = el.bound_closure->receiver;
-        return call(el.bound_closure->method, argc);
+
     case CLOSURE:
         return call(el.closure, argc);
     case NATIVE:
@@ -148,11 +145,10 @@ static bool call_value(Element el, uint8_t argc)
         push(&machine.stack, res);
         return true;
     }
-    case INSTANCE:
-        return true;
-        // break;
     case CLASS:
         machine.stack->top[-1 - argc].as = INSTANCE(instance(el.classc));
+        return true;
+    case INSTANCE:
         return true;
     default:
         break;
@@ -237,7 +233,7 @@ Interpretation run()
 
 #define READ_BYTE() (*frame->ip++)
 #define READ_SHORT() (((READ_BYTE() << 8) & 0xFF) | READ_BYTE() & 0xFF)
-#define READ_CONSTANT() (frame->closure->func->ch.constants[READ_BYTE()].as)
+#define READ_CONSTANT() ((frame->closure->func->ch.constants + READ_BYTE())->as)
 #define GET_FUNC(ar) \
     (traverse_stack_closure(&ar))
 #define GET_NATIVE(ar) \
@@ -304,7 +300,7 @@ Interpretation run()
         case OP_INC_GLO:
         {
             Element key = READ_CONSTANT();
-            Element ar = OBJ(_inc(find(frame->closure->func->params, key.arena).arena));
+            Element ar = OBJ(_inc(FIND_GLOB(key.arena).arena));
             WRITE_GLOB(key.arena, ar);
             PUSH(ar);
             break;
@@ -312,7 +308,7 @@ Interpretation run()
         case OP_DEC_GLO:
         {
             Element key = READ_CONSTANT();
-            Element ar = OBJ(_dec(find(frame->closure->func->params, key.arena).arena));
+            Element ar = OBJ(_dec(FIND_GLOB(key.arena).arena));
             WRITE_GLOB(key.arena, ar);
             PUSH(ar);
             break;
@@ -414,10 +410,9 @@ Interpretation run()
             break;
         case OP_SET_PROP:
         {
-            Element inst = NPEEK(1); /* (frame->slots - 1)->as */
+            Element inst = NPEEK(1);
             Element el = PEEK();
-            Element str = READ_CONSTANT();
-            write_table(inst.instance->fields, str.arena, el);
+            inst.instance->classc->fields[READ_BYTE()].as = el;
             Element res = POP();
             PEEK() = res;
             PUSH(res);
@@ -427,25 +422,19 @@ Interpretation run()
         {
             if (PEEK().type != INSTANCE)
             {
-
                 runtime_error("ERROR: Only instances contain properties.");
                 return INTERPRET_RUNTIME_ERR;
             }
             Instance *inst = POP().instance;
-            Element el = READ_CONSTANT();
-            el.arena.as.hash %= (inst->fields - 1)->len;
-            Element n = find_entry(&inst->fields, &el.arena);
+            Element n = (inst->classc->fields + READ_BYTE())->as;
 
             if (n.type != NULL_OBJ)
             {
-                if (n.type == CLOSURE)
-                    PUSH(BOUND(BCLOSURE(INSTANCE(inst), n.closure)));
-                else
-                    PUSH(n);
+                PUSH(n);
                 break;
             }
 
-            runtime_error("ERROR: Undefined property '%s'.", el.arena.as.String);
+            runtime_error("ERROR: Undefined property '%s'.", n.arena.as.String);
             return INTERPRET_RUNTIME_ERR;
         }
         case OP_CALL:
@@ -480,7 +469,9 @@ Interpretation run()
             LOCAL() = PEEK();
             break;
         case OP_SET_LOCAL_PARAM:
-            LOCAL() = (machine.cargc < machine.argc) ? (frame->slots + machine.cargc++)->as : PEEK();
+            LOCAL() = (machine.cargc < machine.argc)
+                          ? (frame->slots + machine.cargc++)->as
+                          : PEEK();
             break;
         case OP_GET_CLOSURE:
             PUSH((machine.call_stack + READ_BYTE())->as);
@@ -493,9 +484,6 @@ Interpretation run()
             break;
         case OP_GET_CLASS:
             PUSH((machine.class_stack + READ_BYTE())->as);
-            break;
-        case OP_GET_INSTANCE:
-            PUSH(INSTANCE(instance((machine.class_stack + READ_BYTE())->as.classc)));
             break;
         case OP_RM:
             RM();
@@ -517,19 +505,17 @@ Interpretation run()
         }
         break;
         case OP_SET_FUNC_VAR:
-        case OP_FUNC_VAR_DEF:
         {
             Element el = READ_CONSTANT();
-            Element res = (machine.cargc < machine.argc) ? (frame->slots + machine.cargc++)->as : POP();
+            Element res = (machine.cargc < machine.argc)
+                              ? (frame->slots + machine.cargc++)->as
+                              : POP();
 
             if (res.type == CLOSURE)
                 res.closure->func->name = el.arena;
-            WRITE_PARAM(el.arena, res);
+            WRITE_GLOB(el.arena, res);
         }
         break;
-        case OP_GET_FUNC_VAR:
-            PUSH(FIND_PARAM(READ_CONSTANT().arena));
-            break;
         case OP_PRINT:
             print(POP());
             break;

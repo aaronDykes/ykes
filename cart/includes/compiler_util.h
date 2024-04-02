@@ -78,9 +78,10 @@ struct Compiler
     Arena init_func;
     ClassCompiler *class_compiler;
 
-    Class *classes[CALL_COUNT];
-    Arena call_params[CALL_COUNT];
-    Arena calls[CALL_COUNT];
+    Table *calls;
+    Table *classes;
+
+    Class *instances[CALL_COUNT];
 
     Local locals[LOCAL_COUNT];
     Upvalue upvalues[LOCAL_COUNT];

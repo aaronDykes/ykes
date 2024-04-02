@@ -1,6 +1,6 @@
 #include "compiler.h"
 #include "compiler_util.h"
-#include "arena_table.h"
+#include "table.h"
 #ifdef DEBUG_TRACE_EXECUTION
 #include "debug.h"
 #endif
@@ -15,7 +15,13 @@ static void init_compiler(Compiler *a, Compiler *b, ObjType type, Arena name)
     a->scope_depth = 0;
     a->call_count = 0;
     a->class_count = 0;
+    a->upvalue_count = 0;
     a->class_compiler = NULL;
+    a->calls = NULL;
+    a->classes = NULL;
+    a->func = NULL;
+    a->func = function(name);
+    a->type = type;
 
     if (b)
     {
@@ -24,18 +30,11 @@ static void init_compiler(Compiler *a, Compiler *b, ObjType type, Arena name)
         a->enclosing = b;
         a->scope_depth = b->scope_depth;
         a->class_compiler = b->class_compiler;
-        a->class_count = b->class_count;
+
         local = &b->locals[b->local_count++];
     }
     else
         local = &a->locals[a->local_count++];
-
-    a->param_count = 0;
-    a->upvalue_count = 0;
-    a->func = NULL;
-    a->func = function(name);
-
-    a->type = type;
 
     local->depth = 0;
     local->captured = false;
@@ -92,7 +91,8 @@ static void class_declaration(Compiler *c)
     Class *classc = class(ar);
     ClassCompiler *class = ALLOC(sizeof(ClassCompiler));
 
-    c->base->classes[c->base->class_count++] = classc;
+    write_table(c->base->classes, classc->name, OBJ(Int(c->base->class_count)));
+    c->base->instances[c->base->class_count++] = classc;
     class->instance_name = ar;
 
     class->enclosing = c->class_compiler;
@@ -118,7 +118,8 @@ static void method(Compiler *c, Class *class)
 
     if (ar.as.hash != c->base->init_func.as.hash)
         type = METHOD;
-    c->base->calls[c->base->call_count++] = ar;
+    write_table(c->base->calls, ar, OBJ(Int(c->base->call_count++)));
+    // c->base->calls[c->base->call_count++] = ar;
     // {
     // }
 
@@ -131,6 +132,7 @@ static void method_body(Compiler *c, ObjType type, Arena ar, Class **class)
     init_compiler(&co, c, type, ar);
 
     c = &co;
+    begin_scope(c);
     consume(TOKEN_CH_LPAREN, "Expect `(` after function name.", &c->parser);
     if (!check(TOKEN_CH_RPAREN, &c->parser))
         do
@@ -144,12 +146,13 @@ static void method_body(Compiler *c, ObjType type, Arena ar, Class **class)
     consume(TOKEN_CH_RPAREN, "Expect `)` after function parameters.", &c->parser);
     consume(TOKEN_CH_LCURL, "Expect `{` prior to function body.", &c->parser);
 
-    block(c);
+    parse_block(c);
 
     Compiler *tmp = c;
     Function *f = end_compile(c);
 
     Closure *clos = new_closure(f);
+    end_scope(c);
 
     if (type == INIT)
         (*class)->init = clos;
@@ -164,7 +167,6 @@ static void method_body(Compiler *c, ObjType type, Arena ar, Class **class)
     {
         uint8_t local = tmp->upvalues[i].islocal ? 1 : 0;
         uint8_t index = (uint8_t)tmp->upvalues[i].index;
-
         emit_byte(c, local);
         emit_byte(c, index);
     }
@@ -207,7 +209,8 @@ static void func_declaration(Compiler *c)
     consume(TOKEN_ID, "Expect function name.", &c->parser);
     Arena ar = parse_func_id(c);
 
-    c->base->calls[c->base->call_count++] = ar;
+    write_table(c->base->calls, ar, OBJ(Int(c->base->call_count++)));
+    // c->base->calls[c->base->call_count++] = ar;
     func_body(c, CLOSURE, ar);
 }
 
@@ -217,6 +220,7 @@ static void func_body(Compiler *c, ObjType type, Arena ar)
     init_compiler(&co, c, type, ar);
 
     c = &co;
+    begin_scope(c);
     consume(TOKEN_CH_LPAREN, "Expect `(` after function name.", &c->parser);
     if (!check(TOKEN_CH_RPAREN, &c->parser))
         do
@@ -230,12 +234,13 @@ static void func_body(Compiler *c, ObjType type, Arena ar)
     consume(TOKEN_CH_RPAREN, "Expect `)` after function parameters.", &c->parser);
     consume(TOKEN_CH_LCURL, "Expect `{` prior to function body.", &c->parser);
 
-    block(c);
+    parse_block(c);
 
     Compiler *tmp = c;
     Function *f = end_compile(c);
 
     Closure *clos = new_closure(f);
+    end_scope(c);
 
     c = c->enclosing;
 
@@ -268,8 +273,6 @@ static void func_var(Compiler *c)
         glob = resolve_local(c, &ar);
         set = OP_SET_LOCAL_PARAM;
     }
-    else
-        c->base->call_params[c->base->param_count++] = ar;
     emit_bytes(c, set, (uint8_t)glob);
 }
 
@@ -1014,27 +1017,20 @@ static Arena get_id(Compiler *c)
 static int resolve_call(Compiler *c, Arena *ar)
 {
 
-    for (int i = 0; i < c->base->call_count; i++)
-        if (idcmp(*ar, c->base->calls[i]))
-            return i;
+    Element el = find_entry(&c->base->calls, ar);
+
+    if (el.type == ARENA && el.arena.type == ARENA_INT)
+        return el.arena.as.Int;
 
     return -1;
 }
-static int resolve_call_param(Compiler *c, Arena *ar)
-{
-
-    for (int i = 0; i < c->base->param_count; i++)
-        if (idcmp(*ar, c->base->call_params[i]))
-            return i;
-
-    return -1;
-}
-
 static int resolve_instance(Compiler *c, Arena ar)
 {
-    for (int i = 0; i < c->base->class_count; i++)
-        if (idcmp(c->base->classes[i]->name, ar))
-            return i;
+    Element el = find_entry(&c->base->classes, &ar);
+
+    if (el.type == ARENA && el.arena.type == ARENA_INT)
+        return el.arena.as.Int;
+
     return -1;
 }
 
@@ -1051,7 +1047,8 @@ static void dot(Compiler *c)
         return;
     }
 
-    arg = add_constant(&c->func->ch, OBJ(ar));
+    arg = c->base->class_count - 1;
+    push(&c->base->instances[arg]->fields, OBJ(ar));
 
     if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
@@ -1100,9 +1097,9 @@ static void id(Compiler *c)
     if ((arg = resolve_instance(c, ar)) != -1)
     {
 
-        if (c->base->classes[arg]->init)
+        if (c->base->instances[arg]->init)
         {
-            emit_bytes(c, OP_CONSTANT, (uint8_t)add_constant(&c->func->ch, CLOSURE(c->base->classes[arg]->init)));
+            emit_bytes(c, OP_CONSTANT, (uint8_t)add_constant(&c->func->ch, CLOSURE(c->base->instances[arg]->init)));
             consume(TOKEN_CH_LPAREN, "Expect `(` prior to function body", &c->parser);
             call(c);
         }
@@ -1123,11 +1120,7 @@ static void id(Compiler *c)
         get = OP_GET_UPVALUE;
         set = OP_SET_UPVALUE;
     }
-    else if ((arg = resolve_call_param(c, &ar)) != -1)
-    {
-        set = OP_SET_FUNC_VAR;
-        get = OP_GET_FUNC_VAR;
-    }
+
     else
     {
         arg = add_constant(&c->func->ch, OBJ(ar));
@@ -1334,6 +1327,8 @@ Function *compile(const char *src)
 
     c.init_func = String("init");
     c.base = &c;
+    c.base->calls = GROW_TABLE(NULL, TABLE_SIZE);
+    c.base->classes = GROW_TABLE(NULL, TABLE_SIZE);
 
     c.parser.panic = false;
     c.parser.err = false;

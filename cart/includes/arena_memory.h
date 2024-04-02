@@ -8,15 +8,15 @@
 #define LOAD_FACTOR 0.75
 #define FRAMES_MAX 500
 #define TAKE_OUT_THE_TRASH 250
-#define CAPACITY 50
+#define CAPACITY 64
 #define INC 2
 #define PAGE 16384
 #define PAGE_COUNT 16
 #define INIT_GLOBAL \
     (PAGE * PAGE_COUNT)
-#define STACK_SIZE 50
-#define NATIVE_STACK_SIZE 25
-#define TABLE_SIZE 50
+#define STACK_SIZE 64
+#define NATIVE_STACK_SIZE 32
+#define TABLE_SIZE 128
 #define IP_SIZE 100
 #define MEM_OFFSET 1
 #define OFFSET sizeof(Free)
@@ -26,8 +26,10 @@
 
 #define PTR(ptr) \
     ((Free *)ptr - OFFSET)
+
 #define FREE(ptr) \
     free_ptr(ptr)
+
 #define GROW_CAPACITY(capacity) \
     ((capacity) < CAPACITY ? CAPACITY : capacity * INC)
 
@@ -91,11 +93,6 @@
     free_class(c)
 #define FREE_INSTANCE(c) \
     free_instance(c)
-
-#define BCLOSURE(el, c) \
-    bound_closure(el, c)
-#define FREE_BCLOSURE(bc) \
-    free__bound_closure(bc)
 
 typedef union Free Free;
 typedef struct CallFrame CallFrame;
@@ -180,11 +177,8 @@ void free_upvals(Upval **up);
 
 Stack value(Element el);
 Element Obj(Arena ar);
-Element Func(Function *f);
-Element upval_el(Upval *up);
 Element native_fn(Native *native);
 Element closure(Closure *clos);
-Element bound_closure_el(BoundClosure *bc);
 Element new_class(Class *classc);
 Element new_instance(Instance *ci);
 Element null_obj();
@@ -227,8 +221,5 @@ void free_class(Class *c);
 
 Instance *instance(Class *c);
 void free_instance(Instance *ic);
-
-BoundClosure *bound_closure(Element el, Closure *method);
-void free__bound_closure(BoundClosure *bc);
 
 #endif

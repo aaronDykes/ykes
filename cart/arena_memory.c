@@ -12,7 +12,6 @@ static void *request_system_memory(size_t size)
         size,
         PROT_READ | PROT_WRITE,
         MADV_RANDOM |
-            MADV_SEQUENTIAL |
             MADV_NORMAL |
             MADV_WILLNEED |
             MAP_PRIVATE |
@@ -55,7 +54,7 @@ Arena arena_init(void *data, size_t size, T type)
     case ARENA_VAR:
     case ARENA_NATIVE:
         ar.as.String = data;
-        // ar.as.hash = hash(ar);
+        ar.as.hash = hash(ar);
         ar.as.len = (int)size;
         ar.as.count = 0;
         break;
@@ -164,7 +163,7 @@ void free_ptr(Free *new)
 
     Free *free = NULL, *prev = NULL;
 
-    for (free = mem->next; free->next && ((free < new) && (free->next > new)); free = free->next)
+    for (free = mem->next; free->next && free < new; free = free->next)
         prev = free->next;
 
     if ((free && free == new) || (prev && prev == new))
@@ -181,8 +180,8 @@ void free_ptr(Free *new)
         prev->next = new;
     }
 
-    merge_list();
-
+    // merge_list();
+    //
     new = NULL;
     prev = NULL;
     free = NULL;
@@ -201,7 +200,6 @@ void *alloc_ptr(size_t size)
     {
 
         size_t tmp = free->size - size;
-        Free *next = free->next;
 
         void *ptr = ((free + OFFSET + free->size) - size);
 
@@ -221,11 +219,15 @@ void *alloc_ptr(size_t size)
 
     if (prev)
     {
-        prev->next = request_system_memory(PAGE * OFFSET);
+        size_t tmp = PAGE;
+        while (size > tmp)
+            tmp *= INC;
+
+        prev->next = request_system_memory(tmp * OFFSET);
         prev->next->size = size;
         void *ptr = prev->next + OFFSET;
         prev->next += size;
-        prev->next->size = PAGE - size;
+        prev->next->size = tmp - size;
         return ptr;
     }
 
@@ -451,8 +453,8 @@ Class *class(Arena name)
     Class *c = NULL;
     c = ALLOC(sizeof(Class));
     c->name = name;
-    c->methods = GROW_TABLE(NULL, STACK_SIZE);
     c->init = NULL;
+    c->fields = GROW_STACK(NULL, STACK_SIZE);
     return c;
 }
 
@@ -460,7 +462,7 @@ void free_class(Class *c)
 {
 
     ARENA_FREE(&c->name);
-    FREE_TABLE(c->methods);
+    FREE_STACK(&c->fields);
     FREE(PTR(c));
 }
 
@@ -468,25 +470,11 @@ Instance *instance(Class *classc)
 {
     Instance *ic = ALLOC(sizeof(Instance));
     ic->classc = classc;
-    ic->fields = GROW_TABLE(NULL, STACK_SIZE);
     return ic;
 }
 void free_instance(Instance *ic)
 {
-    FREE(PTR(ic->fields));
     FREE(PTR(ic));
-}
-
-BoundClosure *bound_closure(Element receiver, Closure *method)
-{
-    BoundClosure *bc = ALLOC(sizeof(BoundClosure));
-    bc->method = method;
-    bc->receiver = receiver;
-    return bc;
-}
-void free__bound_closure(BoundClosure *bc)
-{
-    FREE(PTR(bc));
 }
 
 Stack *stack(size_t size)
@@ -530,10 +518,15 @@ Stack *realloc_stack(Stack *st, size_t size)
         case CLOSURE:
             s[i].as = CLOSURE(st[i].as.closure);
             break;
-        case FUNCTION:
-            s[i].as = FUNC(st[i].as.function);
-        case UPVAL:
-            s[i].as = UPVAL(st[i].as.upval);
+        case INSTANCE:
+            s[i].as = INSTANCE(st[i].as.instance);
+            break;
+            /*
+                    case FUNCTION:
+                        s[i].as = FUNC(st[i].as.function);
+                    case UPVAL:
+                        s[i].as = UPVAL(st[i].as.upval);
+            */
         default:
             continue;
         }
@@ -562,12 +555,15 @@ void free_stack(Stack **stack)
         case CLOSURE:
             FREE_CLOSURE(&(*stack)[i].as.closure);
             break;
-        case FUNCTION:
-            FREE_FUNCTION((*stack)[i].as.function);
+        case INSTANCE:
+            FREE_INSTANCE((*stack)[i].as.instance);
             break;
-        case UPVAL:
-            FREE_UPVAL((*stack)[i].as.upval);
-            break;
+        // case FUNCTION:
+        //     FREE_FUNCTION((*stack)[i].as.function);
+        //     break;
+        // case UPVAL:
+        //     FREE_UPVAL((*stack)[i].as.upval);
+        //     break;
         default:
             break;
         }
@@ -614,22 +610,22 @@ Element Obj(Arena ar)
 
     return s;
 }
-Element Func(Function *fu)
-{
-    Element s;
-    s.function = fu;
-    s.type = FUNCTION;
+// Element Func(Function *fu)
+// {
+//     Element s;
+//     s.function = fu;
+//     s.type = FUNCTION;
 
-    return s;
-}
-Element upval_el(Upval *up)
-{
-    Element s;
-    s.upval = up;
-    s.type = UPVAL;
+//     return s;
+// }
+// Element upval_el(Upval *up)
+// {
+//     Element s;
+//     s.upval = up;
+//     s.type = UPVAL;
 
-    return s;
-}
+//     return s;
+// }
 
 Element native_fn(Native *native)
 {
@@ -649,13 +645,7 @@ Element closure(Closure *closure)
 
     return el;
 }
-Element bound_closure_el(BoundClosure *bc)
-{
-    Element el;
-    el.bound_closure = bc;
-    el.type = BOUND_CLOSURE;
-    return el;
-}
+
 Element new_class(Class *classc)
 {
     Element el;
@@ -687,7 +677,6 @@ Function *function(Arena name)
     func->upvalue_count = 0;
     func->name = name;
     init_chunk(&func->ch);
-    func->params = GROW_TABLE(NULL, NATIVE_STACK_SIZE);
 
     return func;
 }
@@ -699,7 +688,6 @@ void free_function(Function *func)
         FREE_ARRAY(&func->name);
     free_chunk(&func->ch);
 
-    FREE_TABLE(func->params);
     FREE(PTR(func));
 }
 
@@ -865,8 +853,8 @@ void arena_free_entry(Table *entry)
         FREE_NATIVE(entry->val.native);
     else if (entry->type == CLASS)
         FREE_CLASS(entry->val.classc);
-    else if (entry->type == INSTANCE)
-        FREE_INSTANCE(entry->val.instance);
+    // else if (entry->type == INSTANCE)
+    //     FREE_INSTANCE(entry->val.instance);
     else
         FREE_CLOSURE(&entry->val.closure);
 
@@ -1098,23 +1086,19 @@ void print(Element ar)
         printf("<fn: %s>\n", ar.closure->func->name.as.String);
         return;
     }
-    if (ar.type == BOUND_CLOSURE)
-    {
-        printf("<bound_closure: %s>\n", ar.bound_closure->method->func->name.as.String);
-        return;
-    }
+
     if (ar.type == CLASS)
     {
         printf("<class: %s>\n", ar.classc->name.as.String);
         return;
     }
-    if (ar.type == INSTANCE)
-    {
-        if (!ar.instance->classc)
-            return;
-        printf("<instance: %s>\n", ar.instance->classc->name.as.String);
-        return;
-    }
+    // if (ar.type == INSTANCE)
+    // {
+    //     if (!ar.instance->classc)
+    //         return;
+    //     printf("<instance: %s>\n", ar.instance->classc->name.as.String);
+    //     return;
+    // }
     switch (a.type)
     {
     case ARENA_BYTE:
