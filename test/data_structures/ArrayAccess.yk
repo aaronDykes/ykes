@@ -19,10 +19,9 @@ sr string_access()
     var ar = ["Hello", "World", "Vector", "of", "Vectors"];
     var str = "aaron dykes is really coooooool Hhhhhhhh";
 
-    ar[0] = "Aaron"; 
-    ar[sum(1, 0)]  = "Dykes";
 
-
+    for (var i = 0; i < str.len; i++)
+        pout str[i];
 
     pout str, ar; 
 

@@ -390,8 +390,11 @@ Interpretation run()
         case OP_AND:
             PUSH(OBJ(_and(POP().arena, POP().arena)));
             break;
-        case OP_ACCESS:
-            PUSH(OBJ(_access(POP().arena, POP().arena)));
+        case OP_GET_ACCESS:
+            PUSH(OBJ(_get_access(POP().arena, POP().arena)));
+            break;
+        case OP_SET_ACCESS:
+            _set_access(POP(), POP().arena, POP());
             break;
         case OP_LEN:
             PUSH(OBJ(_len(POP().arena)));
@@ -526,9 +529,7 @@ Interpretation run()
             WRITE_GLOB(el.arena, res);
         }
         break;
-        case OP_PRINT_LINE:
-            printf("\n");
-            break;
+
         case OP_PRINT:
             print(POP());
             break;

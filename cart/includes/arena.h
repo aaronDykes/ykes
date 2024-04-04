@@ -41,14 +41,15 @@ typedef enum
     OP_CONSTANT,
     OP_CLOSURE,
     OP_PRINT,
-    OP_PRINT_LINE,
 
     OP_CLASS,
     OP_GET_INSTANCE,
 
     OP_ARRAY,
     OP_GET_ARRAY,
-    OP_ACCESS,
+
+    OP_GET_ACCESS,
+    OP_SET_ACCESS,
     OP_LEN,
 
     OP_POP,

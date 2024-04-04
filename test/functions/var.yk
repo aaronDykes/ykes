@@ -11,6 +11,6 @@ sr outer()
 
   return inner;
 }
-hello = outer();
 
+hello = outer();
 hello();

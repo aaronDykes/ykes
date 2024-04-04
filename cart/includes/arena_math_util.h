@@ -72,4 +72,10 @@ static Arena _access_doubles(double *Doubles, Arena a, int len);
 static Arena _access_string(char *String, Arena a, int len);
 static Arena _access_strings(char **Strings, Arena a, int len);
 
+static void _set_int_index(Arena *a, Arena index, int Int, int len);
+static void _set_long_index(Arena *a, Arena index, long long int Long, int len);
+static void _set_double_index(Arena *a, Arena index, double Double, int len);
+static void _set_string_index(Arena *a, Arena index, char Char, int len);
+static void _set_strings_index(Arena *a, Arena index, char *String, int len);
+
 #endif

@@ -1168,10 +1168,15 @@ static void access(Compiler *c)
 {
 
     expression(c);
-
-    // int arg = resolve_array(c, )
-    emit_byte(c, OP_ACCESS);
     consume(TOKEN_CH_RSQUARE, "Expect closing brace after array access.", &c->parser);
+
+    if (match(TOKEN_OP_ASSIGN, &c->parser))
+    {
+        expression(c);
+        emit_byte(c, OP_SET_ACCESS);
+    }
+    else
+        emit_byte(c, OP_GET_ACCESS);
 }
 
 static void _this(Compiler *c)

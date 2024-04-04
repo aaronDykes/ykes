@@ -1,0 +1,39 @@
+sr n()
+{
+    var be = 10;
+
+    sr set()
+    {
+      be = be + 69;
+    }
+    
+    var al = 100;
+    sr f()
+    {
+      set();
+      return al;
+    }
+
+    
+    sr g()
+    {
+      return be;
+    }
+
+    var cunt = 420;
+    sr h()
+    {
+      return cunt;
+    }
+
+    sr sum()
+    {
+        return f() + g() + h(); 
+    }
+
+   return sum;
+}
+
+
+var hello=n();
+pout hello();

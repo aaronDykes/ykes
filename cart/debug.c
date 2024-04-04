@@ -76,8 +76,10 @@ int disassemble_instruction(Chunk *c, int offset)
 
         return offset;
     }
-    case OP_ACCESS:
-        return constant_instruction("OP_ACCESS", c, offset);
+    case OP_SET_ACCESS:
+        return constant_instruction("OP_SET_ACCESS", c, offset);
+    case OP_GET_ACCESS:
+        return constant_instruction("OP_GET_ACCESS", c, offset);
     case OP_METHOD:
         return constant_instruction("OP_METHOD", c, offset);
     case OP_CLASS:

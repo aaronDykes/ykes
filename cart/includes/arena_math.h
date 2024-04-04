@@ -21,7 +21,8 @@ Arena _and(Arena a, Arena b);
 Arena _inc(Arena b);
 Arena _dec(Arena b);
 
-Arena _access(Arena a, Arena b);
+Arena _get_access(Arena a, Arena b);
+void _set_access(Element val, Arena index, Element el);
 
 Arena _len(Arena a);
 

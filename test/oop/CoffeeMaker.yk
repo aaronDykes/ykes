@@ -1,0 +1,24 @@
+
+class CoffeeMaker 
+{
+
+    init(coffee)
+    {
+        this.coffee = coffee;
+        var str = this.coffee + ". It very nice";
+        this.coffee = str + " brew"; 
+    }
+
+    brew() 
+    {
+        var str = "Enjoy your " + this.coffee; 
+        pout str;
+    }
+
+
+  
+}
+
+var maker = CoffeeMaker("coffee and chicory");
+maker.brew();
+

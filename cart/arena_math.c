@@ -1306,6 +1306,187 @@ ERR:
     exit(1);
 }
 
+static void _set_int_index(Arena *a, Arena index, int Int, int len)
+{
+    switch (index.type)
+    {
+    case ARENA_INT:
+        if (index.as.Int > len - 1)
+            goto ERR;
+        a->listof.Ints[index.as.Int] = Int;
+        return;
+    case ARENA_LONG:
+        if (index.as.Long > len - 1)
+            goto ERR;
+        a->listof.Ints[index.as.Long] = Int;
+        return;
+    case ARENA_BYTE:
+        if (index.as.Byte > len - 1)
+            goto ERR;
+        a->listof.Ints[index.as.Byte] = Int;
+        return;
+    case ARENA_CHAR:
+        if ((int)index.as.Char > len - 1)
+            goto ERR;
+        a->listof.Ints[(int)index.as.Char] = Int;
+        return;
+    case ARENA_SIZE:
+        if ((int)index.as.Size > len - 1)
+            goto ERR;
+        a->listof.Ints[(int)index.as.Size] = Int;
+        return;
+    default:
+        log_err("Invalid indexing type.");
+    }
+ERR:
+    log_err("ERROR: Array index out of bounds.");
+    exit(1);
+}
+static void _set_long_index(Arena *a, Arena index, long long int Long, int len)
+{
+    switch (index.type)
+    {
+    case ARENA_INT:
+        if (index.as.Int > len - 1)
+            goto ERR;
+        a->listof.Longs[index.as.Int] = Long;
+        return;
+    case ARENA_LONG:
+        if (index.as.Long > len - 1)
+            goto ERR;
+        a->listof.Longs[index.as.Long] = Long;
+        return;
+    case ARENA_BYTE:
+        if (index.as.Byte > len - 1)
+            goto ERR;
+        a->listof.Longs[index.as.Byte] = Long;
+        return;
+    case ARENA_CHAR:
+        if ((int)index.as.Char > len - 1)
+            goto ERR;
+        a->listof.Longs[(int)index.as.Char] = Long;
+        return;
+    case ARENA_SIZE:
+        if ((int)index.as.Size > len - 1)
+            goto ERR;
+        a->listof.Longs[(int)index.as.Size] = Long;
+        return;
+    default:
+        log_err("Invalid indexing type.");
+    }
+ERR:
+    log_err("ERROR: Array index out of bounds.");
+    exit(1);
+}
+static void _set_double_index(Arena *a, Arena index, double Double, int len)
+{
+    switch (index.type)
+    {
+    case ARENA_INT:
+        if (index.as.Int > len - 1)
+            goto ERR;
+        a->listof.Doubles[index.as.Int] = Double;
+        return;
+    case ARENA_LONG:
+        if (index.as.Long > len - 1)
+            goto ERR;
+        a->listof.Doubles[index.as.Long] = Double;
+        return;
+    case ARENA_BYTE:
+        if (index.as.Byte > len - 1)
+            goto ERR;
+        a->listof.Doubles[index.as.Byte] = Double;
+        return;
+    case ARENA_CHAR:
+        if ((int)index.as.Char > len - 1)
+            goto ERR;
+        a->listof.Doubles[(int)index.as.Char] = Double;
+        return;
+    case ARENA_SIZE:
+        if ((int)index.as.Size > len - 1)
+            goto ERR;
+        a->listof.Doubles[(int)index.as.Size] = Double;
+        return;
+    default:
+        log_err("Invalid indexing type.");
+    }
+ERR:
+    log_err("ERROR: Array index out of bounds.");
+    exit(1);
+}
+static void _set_string_index(Arena *a, Arena index, char Char, int len)
+{
+    switch (index.type)
+    {
+    case ARENA_INT:
+        if (index.as.Int > len - 1)
+            goto ERR;
+        a->as.String[index.as.Int] = Char;
+        return;
+    case ARENA_LONG:
+        if (index.as.Long > len - 1)
+            goto ERR;
+        a->as.String[index.as.Long] = Char;
+        return;
+    case ARENA_BYTE:
+        if (index.as.Byte > len - 1)
+            goto ERR;
+        a->as.String[index.as.Byte] = Char;
+        return;
+    case ARENA_CHAR:
+        if ((int)index.as.Char > len - 1)
+            goto ERR;
+        a->as.String[(int)index.as.Char] = Char;
+        return;
+    case ARENA_SIZE:
+        if ((int)index.as.Size > len - 1)
+            goto ERR;
+        a->as.String[(int)index.as.Size] = Char;
+        return;
+    default:
+        log_err("Invalid indexing type.");
+    }
+ERR:
+    log_err("ERROR: Array index out of bounds.");
+    exit(1);
+}
+static void _set_strings_index(Arena *a, Arena index, char *String, int len)
+{
+    switch (index.type)
+    {
+    case ARENA_INT:
+        if (index.as.Int > len - 1)
+            goto ERR;
+        a->listof.Strings[index.as.Int] = CString(String).as.String;
+        return;
+    case ARENA_LONG:
+        if (index.as.Long > len - 1)
+            goto ERR;
+        a->listof.Strings[index.as.Long] = CString(String).as.String;
+        return;
+    case ARENA_BYTE:
+        if (index.as.Byte > len - 1)
+            goto ERR;
+        a->listof.Strings[index.as.Byte] = CString(String).as.String;
+        return;
+    case ARENA_CHAR:
+        if ((int)index.as.Char > len - 1)
+            goto ERR;
+        a->listof.Strings[(int)index.as.Char] = CString(String).as.String;
+        return;
+    case ARENA_SIZE:
+        if ((int)index.as.Size > len - 1)
+            goto ERR;
+        a->listof.Strings[(int)index.as.Size] = CString(String).as.String;
+        return;
+    default:
+        log_err("Invalid indexing type.");
+    }
+ERR:
+    log_err("ERROR: Array index out of bounds.");
+    exit(1);
+}
+
 Arena _neg(Arena n)
 {
     Arena ar = n;
@@ -1702,7 +1883,7 @@ Arena _and(Arena a, Arena b)
     return Bool(b.as.Bool && a.as.Bool);
 }
 
-Arena _access(Arena a, Arena b)
+Arena _get_access(Arena a, Arena b)
 {
     switch (b.type)
     {
@@ -1713,6 +1894,7 @@ Arena _access(Arena a, Arena b)
     case ARENA_DOUBLES:
         return _access_doubles(b.listof.Doubles, a, b.count);
     case ARENA_STR:
+    case ARENA_CSTR:
         return _access_string(b.as.String, a, b.count);
     case ARENA_STRS:
         return _access_strings(b.listof.Strings, a, b.count);
@@ -1723,6 +1905,52 @@ Arena _access(Arena a, Arena b)
         return Null();
     }
 }
+void _set_access(Element val, Arena index, Element b)
+{
+    switch (b.type)
+    {
+    case ARENA:
+    {
+        Arena ar = b.arena;
+        switch (ar.type)
+        {
+        case ARENA_INTS:
+            if (val.arena.type != ARENA_INT)
+                goto ERR;
+            _set_int_index(&ar, index, val.arena.as.Int, ar.count);
+            return;
+        case ARENA_LONGS:
+            if (val.arena.type != ARENA_LONG)
+                goto ERR;
+            _set_long_index(&ar, index, val.arena.as.Long, ar.count);
+            return;
+        case ARENA_DOUBLES:
+            if (val.arena.type != ARENA_DOUBLE)
+                goto ERR;
+            _set_double_index(&ar, index, val.arena.as.Double, ar.count);
+            return;
+        case ARENA_STR:
+        case ARENA_CSTR:
+            if (val.arena.type != ARENA_CHAR)
+                goto ERR;
+            _set_string_index(&ar, index, val.arena.as.Char, ar.count);
+            return;
+        case ARENA_STRS:
+            if (val.arena.type != ARENA_STR && val.arena.type != ARENA_CSTR)
+                goto ERR;
+            _set_strings_index(&ar, index, val.arena.as.String, ar.count);
+            return;
+        default:
+            break;
+        }
+        break;
+    }
+    default:
+    ERR:
+        log_err("ERROR: access type mismatch.");
+    }
+}
+
 Arena _len(Arena a)
 {
     switch (a.type)
@@ -1732,8 +1960,9 @@ Arena _len(Arena a)
     case ARENA_DOUBLES:
     case ARENA_STRS:
         return Int(a.count);
+    case ARENA_CSTR:
     case ARENA_STR:
-        return Int(a.as.count);
+        return Int(a.as.len);
     default:
         log_err("ERROR: Invalid object.");
         return Null();
