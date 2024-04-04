@@ -41,6 +41,7 @@ typedef enum
     OP_CONSTANT,
     OP_CLOSURE,
     OP_PRINT,
+    OP_PRINT_LINE,
 
     OP_CLASS,
     OP_GET_INSTANCE,

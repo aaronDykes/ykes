@@ -649,7 +649,13 @@ static void default_expression(Compiler *c)
 
 static void print_statement(Compiler *c)
 {
-    expression(c);
+    do
+    {
+        expression(c);
+        if (check(TOKEN_CH_COMMA, &c->parser))
+            emit_byte(c, OP_PRINT);
+    } while (match(TOKEN_CH_COMMA, &c->parser));
+
     consume(TOKEN_CH_SEMI, "Expect ';' after value.", &c->parser);
     emit_byte(c, OP_PRINT);
 }

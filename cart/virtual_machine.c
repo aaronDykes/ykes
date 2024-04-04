@@ -526,6 +526,9 @@ Interpretation run()
             WRITE_GLOB(el.arena, res);
         }
         break;
+        case OP_PRINT_LINE:
+            printf("\n");
+            break;
         case OP_PRINT:
             print(POP());
             break;
