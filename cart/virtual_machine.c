@@ -10,13 +10,17 @@ void initVM()
 {
 
     initialize_global_memory();
+
     machine.stack = GROW_STACK(NULL, STACK_SIZE);
     machine.call_stack = GROW_STACK(NULL, STACK_SIZE);
     machine.class_stack = GROW_STACK(NULL, STACK_SIZE);
     machine.native_calls = GROW_STACK(NULL, NATIVE_STACK_SIZE);
+
+    machine.glob = GROW_TABLE(NULL, TABLE_SIZE);
+
     machine.argc = 0;
     machine.cargc = 0;
-    machine.glob = GROW_TABLE(NULL, TABLE_SIZE);
+
     define_native(native_name("clock"), clock_native);
     define_native(native_name("square"), square_native);
     define_native(native_name("prime"), prime_native);

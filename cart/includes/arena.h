@@ -253,8 +253,6 @@ struct Element
         Arena arena;
         Native *native;
         Closure *closure;
-        // Function *function;
-        // Upval *upval;
         Class *classc;
         Instance *instance;
         void *null;
@@ -307,31 +305,3 @@ struct Table
 };
 
 #endif
-
-/*
-
-switch (type)
-{
-    case ARENA_BYTE:
-    case ARENA_INT:
-    case ARENA_DOUBLE:
-    case ARENA_LONG:
-    case ARENA_CHAR:
-    case ARENA_STR:
-    case ARENA_BOOL:
-    case ARENA_NULL:
-    case ARENA_BYTES:
-    case ARENA_INTS:
-    case ARENA_DOUBLES:
-    case ARENA_LONGS:
-    case ARENA_BOOLS:
-    case ARENA_STRS:
-    case ARENA_FUNC:
-    case ARENA_NATIVE:
-    case ARENA_VAR:
-    case ARENA_SIZE:
-    case ARENA_SIZES:
-break;
-}
-
-*/

@@ -15,6 +15,7 @@
 #define INIT_GLOBAL \
     (PAGE * PAGE_COUNT)
 #define STACK_SIZE 64
+#define MIN_SIZE 8
 #define NATIVE_STACK_SIZE 32
 #define TABLE_SIZE 128
 #define IP_SIZE 100
@@ -110,31 +111,6 @@ union Free
     Align align;
 };
 
-struct CallFrame
-{
-    Closure *closure;
-    uint8_t *ip;
-    uint8_t *ip_start;
-    Stack *slots;
-};
-
-struct vm
-{
-    int frame_count;
-    int garbage_count;
-    int garbage_len;
-    int argc;
-    int cargc;
-    CallFrame frames[FRAMES_MAX];
-    Stack *stack;
-    Stack *call_stack;
-    Stack *class_stack;
-    Stack *native_calls;
-    Upval *open_upvals;
-    Table *glob;
-};
-
-vm machine;
 static Free *mem;
 
 void initialize_global_memory();
@@ -151,6 +127,16 @@ void free_garbage(Free **new);
 Arena arena_init(void *data, size_t size, T type);
 Arena arena_alloc(size_t size, T type);
 Arena arena_realloc(Arena *ar, size_t size, T type);
+
+Arena Ints(int *ints, int len);
+Arena Doubles(double *doubles, int len);
+Arena Longs(long long int *longs, int len);
+Arena Strings(char **strs, int len);
+
+void push_int(Element *el, int Int);
+void push_double(Element *el, double Double);
+void push_long(Element *el, long long int Long);
+void push_string(Element *el, const char *String);
 
 Arena Char(char ch);
 Arena Int(int ival);
@@ -197,17 +183,7 @@ void free_native(Native *native);
 
 void print(Element ar);
 
-Table Entry(Arena key, Element val);
-Table arena_entry(Arena key, Arena val);
-Table class_entry(Class *c);
-Table instance_entry(Arena ar, Instance *c);
-Table func_entry(Closure *c);
-Table native_entry(Native *func);
-Table new_entry(Table t);
 size_t hash(Arena key);
-Table *arena_alloc_table(size_t size);
-Table *arena_realloc_table(Table *t, size_t size);
-
 void alloc_entry(Table **e, Table el);
 void arena_free_table(Table *t);
 void arena_free_entry(Table *entry);

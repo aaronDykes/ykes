@@ -2,7 +2,7 @@
 #define _VIRTUAL_MACHINE_H
 
 #include "debug.h"
-#include "table.h"
+#include "arena_table.h"
 
 typedef enum
 {
@@ -12,10 +12,35 @@ typedef enum
 
 } Interpretation;
 
+struct CallFrame
+{
+    Closure *closure;
+    uint8_t *ip;
+    uint8_t *ip_start;
+    Stack *slots;
+};
+
+struct vm
+{
+    int frame_count;
+    int garbage_count;
+    int garbage_len;
+    int argc;
+    int cargc;
+    CallFrame frames[FRAMES_MAX];
+    Stack *stack;
+    Stack *call_stack;
+    Stack *class_stack;
+    Stack *native_calls;
+    Upval *open_upvals;
+    Table *glob;
+};
+
+vm machine;
+
 void initVM();
 void freeVM();
 
-void mark_object(Element val);
 Interpretation run();
 Interpretation interpret(const char *source);
 

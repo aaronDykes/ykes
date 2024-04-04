@@ -17,4 +17,16 @@ Closure *find_func_entry(Table **t, Arena *key);
 Class *find_class_entry(Table **t, Arena *key);
 Native *find_native_entry(Table **t, Arena *key);
 
+Table Entry(Arena key, Element val);
+Table arena_entry(Arena key, Arena val);
+Table class_entry(Class *c);
+Table instance_entry(Arena ar, Instance *c);
+Table func_entry(Closure *c);
+Table native_entry(Native *func);
+Table new_entry(Table t);
+
+void write_table(Table *t, Arena a, Element b);
+Table *arena_alloc_table(size_t size);
+Table *arena_realloc_table(Table *t, size_t size);
+void alloc_entry(Table **e, Table el);
 #endif

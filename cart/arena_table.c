@@ -439,3 +439,205 @@ Arena find_arena_entry(Table **t, Arena *hash)
 
     return Null();
 }
+
+void alloc_entry(Table **e, Table el)
+{
+    Table *tmp = *e;
+
+    if (!tmp)
+    {
+        *e = ALLOC(sizeof(Table));
+        **e = el;
+        return;
+    }
+    for (; tmp->next; tmp = tmp->next)
+        ;
+    tmp->next = ALLOC(sizeof(Table));
+    *tmp->next = el;
+    tmp->next->prev = tmp;
+}
+
+Table new_entry(Table t)
+{
+    Table el;
+    el.key = t.key;
+    switch (t.type)
+    {
+    case ARENA:
+        el.val.arena = t.val.arena;
+        break;
+    case NATIVE:
+        el.val.native = t.val.native;
+        break;
+    case CLOSURE:
+        el.val.closure = t.val.closure;
+        break;
+    case UPVAL:
+
+    default:
+        break;
+    }
+    el.next = t.next;
+    el.prev = t.prev;
+    el.type = t.type;
+    return el;
+}
+
+Table Entry(Arena key, Element val)
+{
+    switch (val.type)
+    {
+    case ARENA:
+        return arena_entry(key, val.arena);
+    case NATIVE:
+        return native_entry(val.native);
+    case CLOSURE:
+        return func_entry(val.closure);
+    case CLASS:
+        return class_entry(val.classc);
+    case INSTANCE:
+        return instance_entry(key, val.instance);
+    default:
+        break;
+    }
+    return func_entry(NULL);
+}
+
+Table arena_entry(Arena key, Arena val)
+{
+    Table el;
+    el.key = key;
+    el.val.arena = val;
+    el.next = NULL;
+    el.prev = NULL;
+    el.size = key.size + val.size;
+    el.type = ARENA;
+    return el;
+}
+Table func_entry(Closure *clos)
+{
+    Table el;
+    el.key = clos->func->name;
+    el.val.closure = clos;
+    el.next = NULL;
+    el.prev = NULL;
+    el.size = el.key.size;
+    el.type = CLOSURE;
+    return el;
+}
+Table native_entry(Native *func)
+{
+    Table el;
+    el.key = func->obj;
+    el.val.native = func;
+    el.next = NULL;
+    el.prev = NULL;
+    el.size = el.key.size;
+    el.type = NATIVE;
+    return el;
+}
+Table class_entry(Class *c)
+{
+    Table el;
+    el.key = c->name;
+    el.val.classc = c;
+    el.next = NULL;
+    el.prev = NULL;
+    el.size = el.key.size;
+    el.type = CLASS;
+    return el;
+}
+Table instance_entry(Arena ar, Instance *c)
+{
+    Table el;
+    el.key = ar;
+    el.val.instance = c;
+    el.next = NULL;
+    el.prev = NULL;
+    el.size = el.key.size;
+    el.type = INSTANCE;
+    return el;
+}
+
+Table *arena_realloc_table(Table *t, size_t size)
+{
+
+    Table *ptr = NULL;
+
+    if (!t && size != 0)
+    {
+        ptr = arena_alloc_table(size);
+        return ptr;
+    }
+    if (size == 0)
+    {
+        arena_free_table(t);
+        return NULL;
+    }
+    size_t new_size = 0;
+
+    if (size > (t - 1)->size)
+        new_size = (t - 1)->size;
+    else
+        new_size = size;
+
+    ptr = arena_alloc_table(size);
+
+    for (size_t i = 0; i < new_size; i++)
+        ptr[i] = new_entry(t[i]);
+
+    FREE(PTR(t - 1));
+    return ptr;
+}
+
+void write_table(Table *t, Arena a, Element b)
+{
+
+    if (b.type == CLOSURE)
+    {
+        if (find_entry(&t, &b.closure->func->name).type != NULL_OBJ)
+            goto OVERWRITE;
+    }
+    else if (b.type == NATIVE)
+    {
+        if (find_entry(&t, &b.native->obj).type != NULL_OBJ)
+            goto OVERWRITE;
+    }
+    else if (b.type == CLASS)
+    {
+        if (find_entry(&t, &b.classc->name).type != NULL_OBJ)
+            goto OVERWRITE;
+    }
+    else
+    {
+        if (find_entry(&t, &a).type != NULL_OBJ)
+            goto OVERWRITE;
+    }
+
+    int load_capacity = (int)((t - 1)->len * LOAD_FACTOR);
+
+    if (load_capacity < (t - 1)->count + 1)
+    {
+        (t - 1)->len *= INC;
+        t = GROW_TABLE(t, t->len);
+    }
+    (t - 1)->count++;
+
+OVERWRITE:
+    insert_entry(&t, Entry(a, b));
+}
+
+Table *arena_alloc_table(size_t size)
+{
+    Table *t = ALLOC((size * sizeof(Table)) + sizeof(Table));
+
+    size_t n = (size_t)size + 1;
+
+    for (size_t i = 1; i < n; i++)
+        t[i] = arena_entry(Null(), Null());
+
+    t->size = n;
+    t->len = (int)size;
+    t->count = 0;
+    return t + 1;
+}

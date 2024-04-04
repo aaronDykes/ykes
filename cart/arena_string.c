@@ -87,7 +87,6 @@ void str_cat(char *d, char *s)
 
     char *dst = d, *src = s;
 
-    int i = 0;
     while (*src)
         *dst++ = *src++;
 }

@@ -1,0 +1,10 @@
+sr arrays()
+{
+    var ar = ["Hello", "World", "Vector", "of", "Vectors"];
+    pout ar; 
+
+    pout ar[0];
+    rm(ar);
+}
+
+arrays();

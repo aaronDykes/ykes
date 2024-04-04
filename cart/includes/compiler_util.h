@@ -175,6 +175,8 @@ static void emit_bytes(Compiler *c, uint8_t b1, uint8_t b2);
 static void emit_constant(Compiler *c, Arena ar);
 static void emit_return(Compiler *c);
 
+static void array(Compiler *c);
+static void access(Compiler *c);
 static void dval(Compiler *c);
 static void ival(Compiler *c);
 static void llint(Compiler *c);
@@ -211,7 +213,7 @@ static PRule rules[] = {
     [TOKEN_CH_LCURL] = {NULL, NULL, PREC_NONE},
     [TOKEN_CH_RCURL] = {NULL, NULL, PREC_NONE},
 
-    [TOKEN_CH_LSQUARE] = {NULL, NULL, PREC_NONE},
+    [TOKEN_CH_LSQUARE] = {array, access, PREC_CALL},
     [TOKEN_CH_RSQUARE] = {NULL, NULL, PREC_NONE},
 
     [TOKEN_CH_COMMA] = {NULL, NULL, PREC_NONE},

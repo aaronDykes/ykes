@@ -1,6 +1,6 @@
 #include "compiler.h"
 #include "compiler_util.h"
-#include "table.h"
+#include "arena_table.h"
 #ifdef DEBUG_TRACE_EXECUTION
 #include "debug.h"
 #endif
@@ -908,22 +908,21 @@ static void boolean(Compiler *c)
     else
         emit_constant(c, Bool(*c->parser.pre.start == 't' ? true : false));
 }
-static void cstr(Compiler *c)
+static const char *parse_string(Compiler *c)
 {
-
     char *ch = (char *)++c->parser.pre.start;
     ch[c->parser.pre.size - 2] = '\0';
-
-    emit_constant(c, CString(ch));
+    return ch;
+}
+static void cstr(Compiler *c)
+{
+    emit_constant(c, CString(parse_string(c)));
 }
 static void string(Compiler *c)
 {
     consume(TOKEN_CH_LPAREN, "Expect `(` prior to string declaration.", &c->parser);
     consume(TOKEN_STR, "Expect string declaration", &c->parser);
-    char *ch = (char *)++c->parser.pre.start;
-    ch[c->parser.pre.size - 2] = '\0';
-
-    emit_constant(c, String(ch));
+    emit_constant(c, String(parse_string(c)));
     consume(TOKEN_CH_RPAREN, "Expect `)` after string declaration.", &c->parser);
 }
 
@@ -1057,6 +1056,102 @@ static void dot(Compiler *c)
     }
     else
         emit_bytes(c, OP_GET_PROP, (uint8_t)arg);
+}
+
+static void int_array(Compiler *c)
+{
+    Element el = OBJ(Ints(NULL, 0));
+
+    do
+    {
+        if (match(TOKEN_INT, &c->parser))
+            push_int(&el, atoi(c->parser.pre.start));
+        else
+        {
+            error("Unexpected type in array declaration", &c->parser);
+            return;
+        }
+    } while (match(TOKEN_CH_COMMA, &c->parser));
+
+    emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, el));
+}
+static void double_array(Compiler *c)
+{
+    Element el = OBJ(Doubles(NULL, 0));
+
+    do
+    {
+        if (match(TOKEN_DOUBLE, &c->parser))
+            push_double(&el, strtod(c->parser.pre.start, NULL));
+        else
+        {
+            error("Unexpected type in array declaration", &c->parser);
+            return;
+        }
+    } while (match(TOKEN_CH_COMMA, &c->parser));
+
+    emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, el));
+}
+static void string_array(Compiler *c)
+{
+    Element el = OBJ(Strings(NULL, 0));
+
+    do
+    {
+        if (match(TOKEN_STR, &c->parser))
+            push_string(&el, parse_string(c));
+        else
+        {
+            error("Unexpected type in array declaration", &c->parser);
+            return;
+        }
+    } while (match(TOKEN_CH_COMMA, &c->parser));
+
+    emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, el));
+}
+static void long_array(Compiler *c)
+{
+    Arena longs = Longs(NULL, 0);
+    do
+    {
+        if (match(TOKEN_LLINT, &c->parser))
+            push_long(&longs, atoll(c->parser.pre.start));
+        else
+        {
+            error("Unexpected type in array declaration", &c->parser);
+            return;
+        }
+    } while (match(TOKEN_CH_COMMA, &c->parser));
+
+    emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, OBJ(longs)));
+}
+
+static void array(Compiler *c)
+{
+
+    switch (c->parser.cur.type)
+    {
+    case TOKEN_INT:
+        int_array(c);
+        break;
+    case TOKEN_STR:
+        string_array(c);
+        break;
+    case TOKEN_DOUBLE:
+        double_array(c);
+        break;
+    case TOKEN_LLINT:
+        long_array(c);
+        break;
+    default:
+        error("Unexpected type in array declaration", &c->parser);
+    }
+
+    consume(TOKEN_CH_RSQUARE, "Expect closing brace after array declaration.", &c->parser);
+}
+
+static void access(Compiler *c)
+{
 }
 
 static void _this(Compiler *c)
