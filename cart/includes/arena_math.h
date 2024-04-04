@@ -23,6 +23,8 @@ Arena _dec(Arena b);
 
 Arena _access(Arena a, Arena b);
 
+Arena _len(Arena a);
+
 Arena _sqr(Arena a);
 Arena _prime(Arena a);
 

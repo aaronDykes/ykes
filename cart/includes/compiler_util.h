@@ -73,9 +73,11 @@ struct Compiler
 
     Parser parser;
 
+    Arena init_func;
+    Arena len;
+
     Compiler *base;
     Compiler *enclosing;
-    Arena init_func;
     ClassCompiler *class_compiler;
 
     Table *calls;

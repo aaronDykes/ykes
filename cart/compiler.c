@@ -1039,11 +1039,18 @@ static void dot(Compiler *c)
     match(TOKEN_ID, &c->parser);
 
     Arena ar = parse_id(c);
+    uint8_t get, set;
 
     int arg = resolve_call(c, &ar);
     if (arg != -1)
     {
         emit_bytes(c, OP_GET_CLOSURE, (uint8_t)arg);
+        return;
+    }
+
+    if (c->base->class_count == 0 && ar.as.hash == c->base->len.as.hash)
+    {
+        emit_byte(c, OP_LEN);
         return;
     }
 
@@ -1431,6 +1438,7 @@ Function *compile(const char *src)
     c.base = &c;
     c.base->calls = GROW_TABLE(NULL, TABLE_SIZE);
     c.base->classes = GROW_TABLE(NULL, TABLE_SIZE);
+    c.base->len = String("len");
 
     c.parser.panic = false;
     c.parser.err = false;

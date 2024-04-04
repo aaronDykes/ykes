@@ -48,6 +48,7 @@ typedef enum
     OP_ARRAY,
     OP_GET_ARRAY,
     OP_ACCESS,
+    OP_LEN,
 
     OP_POP,
     OP_POPN,

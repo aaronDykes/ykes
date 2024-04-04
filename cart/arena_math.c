@@ -1719,7 +1719,23 @@ Arena _access(Arena a, Arena b)
     // case ARENA_SIZE:
     // return _access_sizes(b.as.String, a);
     default:
-        log_err("ERROR: comparison type mismatch");
+        log_err("ERROR: access type mismatch.");
+        return Null();
+    }
+}
+Arena _len(Arena a)
+{
+    switch (a.type)
+    {
+    case ARENA_INTS:
+    case ARENA_LONGS:
+    case ARENA_DOUBLES:
+    case ARENA_STRS:
+        return Int(a.count);
+    case ARENA_STR:
+        return Int(a.as.count);
+    default:
+        log_err("ERROR: Invalid object.");
         return Null();
     }
 }

@@ -393,6 +393,9 @@ Interpretation run()
         case OP_ACCESS:
             PUSH(OBJ(_access(POP().arena, POP().arena)));
             break;
+        case OP_LEN:
+            PUSH(OBJ(_len(POP().arena)));
+            break;
         case OP_NULL:
             break;
         case OP_JMPF:

@@ -6,9 +6,10 @@ sr sum(num1, num2)
 sr arrays()
 {
     var ar = ["Hello", "World", "Vector", "of", "Vectors"];
-    pout ar; 
 
-    pout ar[sum(1, 1)];
+    for (var i = 0; i < ar.len; i++)
+        pout ar[i];
+
 
     rm(ar); 
 }
