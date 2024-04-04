@@ -45,6 +45,10 @@ typedef enum
     OP_CLASS,
     OP_GET_INSTANCE,
 
+    OP_ARRAY,
+    OP_GET_ARRAY,
+    OP_ACCESS,
+
     OP_POP,
     OP_POPN,
     OP_PUSH,

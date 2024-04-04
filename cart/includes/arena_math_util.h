@@ -66,4 +66,10 @@ static Arena size_le(size_t size, Arena ar);
 static Arena size_gt(size_t size, Arena ar);
 static Arena size_ge(size_t size, Arena ar);
 
+static Arena _access_ints(int *Ints, Arena a, int len);
+static Arena _access_longs(long long int *Longs, Arena a, int len);
+static Arena _access_doubles(double *Doubles, Arena a, int len);
+static Arena _access_string(char *String, Arena a, int len);
+static Arena _access_strings(char **Strings, Arena a, int len);
+
 #endif

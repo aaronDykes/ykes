@@ -14,7 +14,7 @@ void initVM()
     machine.stack = GROW_STACK(NULL, STACK_SIZE);
     machine.call_stack = GROW_STACK(NULL, STACK_SIZE);
     machine.class_stack = GROW_STACK(NULL, STACK_SIZE);
-    machine.native_calls = GROW_STACK(NULL, NATIVE_STACK_SIZE);
+    machine.native_calls = GROW_STACK(NULL, STACK_SIZE);
 
     machine.glob = GROW_TABLE(NULL, TABLE_SIZE);
 
@@ -389,6 +389,9 @@ Interpretation run()
             break;
         case OP_AND:
             PUSH(OBJ(_and(POP().arena, POP().arena)));
+            break;
+        case OP_ACCESS:
+            PUSH(OBJ(_access(POP().arena, POP().arena)));
             break;
         case OP_NULL:
             break;

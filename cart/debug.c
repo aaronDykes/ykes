@@ -76,6 +76,8 @@ int disassemble_instruction(Chunk *c, int offset)
 
         return offset;
     }
+    case OP_ACCESS:
+        return constant_instruction("OP_ACCESS", c, offset);
     case OP_METHOD:
         return constant_instruction("OP_METHOD", c, offset);
     case OP_CLASS:
@@ -156,7 +158,7 @@ int disassemble_instruction(Chunk *c, int offset)
     case OP_GLOBAL_DEF:
         return simple_instruction("OP_GLOBAL_DEF", offset);
 
-     case OP_JMPF:
+    case OP_JMPF:
         return jump_instruction("OP_JMPF", 1, c, offset);
     case OP_JMPT:
         return jump_instruction("OP_JMPT", 1, c, offset);

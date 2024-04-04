@@ -375,7 +375,7 @@ Arena arena_realloc(Arena *ar, size_t size, T type)
         if (!ar->listof.Strings || ar->type == ARENA_NULL)
             return arena_init(ptr, size, type);
         Arena str = arena_init(ptr, size, type);
-        for (int i = 0; i < new_size; i++)
+        for (size_t i = 0; i < new_size; i++)
             str.listof.Strings[i] = CString(ar->listof.Strings[i]).as.String;
     }
     break;
@@ -537,7 +537,7 @@ void push_string(Element *el, const char *String)
         el->arena.size = el->arena.len * sizeof(char *);
         el->arena = GROW_ARRAY(&el->arena, el->arena.size, ARENA_STRS);
     }
-    el->arena.listof.Strings[el->arena.count++] = String;
+    el->arena.listof.Strings[el->arena.count++] = (char *)String;
 }
 
 Class *class(Arena name)

@@ -1023,6 +1023,7 @@ static int resolve_call(Compiler *c, Arena *ar)
 
     return -1;
 }
+
 static int resolve_instance(Compiler *c, Arena ar)
 {
     Element el = find_entry(&c->base->classes, &ar);
@@ -1111,11 +1112,11 @@ static void string_array(Compiler *c)
 }
 static void long_array(Compiler *c)
 {
-    Arena longs = Longs(NULL, 0);
+    Element el = OBJ(Longs(NULL, 0));
     do
     {
         if (match(TOKEN_LLINT, &c->parser))
-            push_long(&longs, atoll(c->parser.pre.start));
+            push_long(&el, atoll(c->parser.pre.start));
         else
         {
             error("Unexpected type in array declaration", &c->parser);
@@ -1123,7 +1124,7 @@ static void long_array(Compiler *c)
         }
     } while (match(TOKEN_CH_COMMA, &c->parser));
 
-    emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, OBJ(longs)));
+    emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, el));
 }
 
 static void array(Compiler *c)
@@ -1152,6 +1153,12 @@ static void array(Compiler *c)
 
 static void access(Compiler *c)
 {
+
+    expression(c);
+
+    // int arg = resolve_array(c, )
+    emit_byte(c, OP_ACCESS);
+    consume(TOKEN_CH_RSQUARE, "Expect closing brace after array access.", &c->parser);
 }
 
 static void _this(Compiler *c)

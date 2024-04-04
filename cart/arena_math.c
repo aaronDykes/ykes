@@ -1142,6 +1142,170 @@ static Arena size_ge(size_t size, Arena ar)
     }
 }
 
+static Arena _access_ints(int *Ints, Arena a, int len)
+{
+    switch (a.type)
+    {
+    case ARENA_INT:
+        if (a.as.Int > len - 1)
+            goto ERR;
+        return Int(Ints[a.as.Int]);
+    case ARENA_LONG:
+        if (a.as.Long > len - 1)
+            goto ERR;
+        return Int(Ints[a.as.Long]);
+    case ARENA_BYTE:
+        if (a.as.Byte > len - 1)
+            goto ERR;
+        return Int(Ints[a.as.Byte]);
+    case ARENA_CHAR:
+        if ((int)a.as.Char > len - 1)
+            goto ERR;
+        return Int(Ints[(int)a.as.Char]);
+    case ARENA_SIZE:
+        if ((int)a.as.Size > len - 1)
+            goto ERR;
+        return Int(Ints[a.as.Size]);
+    default:
+        log_err("Invalid indexing type.");
+        return Null();
+    }
+
+ERR:
+    log_err("ERROR: Array index out of bounds.");
+    exit(1);
+}
+static Arena _access_longs(long long int *Longs, Arena a, int len)
+{
+    switch (a.type)
+    {
+    case ARENA_INT:
+        if (a.as.Int > len - 1)
+            goto ERR;
+        return Long(Longs[a.as.Int]);
+    case ARENA_LONG:
+        if (a.as.Long > len - 1)
+            goto ERR;
+        return Long(Longs[a.as.Long]);
+    case ARENA_BYTE:
+        if (a.as.Double > len - 1)
+            goto ERR;
+        return Long(Longs[a.as.Byte]);
+    case ARENA_CHAR:
+        if ((int)a.as.Char > len - 1)
+            goto ERR;
+        return Long(Longs[(int)a.as.Char]);
+    case ARENA_SIZE:
+        if ((int)a.as.Size > len - 1)
+            goto ERR;
+        return Long(Longs[a.as.Size]);
+    default:
+        log_err("Invalid indexing type.");
+        return Null();
+    }
+
+ERR:
+    log_err("ERROR: Array index out of bounds.");
+    exit(1);
+}
+static Arena _access_doubles(double *Doubles, Arena a, int len)
+{
+    switch (a.type)
+    {
+    case ARENA_INT:
+        if (a.as.Int > len - 1)
+            goto ERR;
+        return Double(Doubles[a.as.Int]);
+    case ARENA_LONG:
+        if (a.as.Long > len - 1)
+            goto ERR;
+        return Double(Doubles[a.as.Long]);
+    case ARENA_BYTE:
+        if (a.as.Byte > len - 1)
+            goto ERR;
+        return Double(Doubles[a.as.Byte]);
+    case ARENA_CHAR:
+        if ((int)a.as.Char > len - 1)
+            goto ERR;
+        return Double(Doubles[(int)a.as.Char]);
+    case ARENA_SIZE:
+        if ((int)a.as.Size > len - 1)
+
+            goto ERR;
+        return Double(Doubles[a.as.Size]);
+    default:
+        log_err("Invalid indexing type.");
+        return Null();
+    }
+ERR:
+    log_err("ERROR: Array index out of bounds.");
+    exit(1);
+}
+static Arena _access_string(char *String, Arena a, int len)
+{
+    switch (a.type)
+    {
+    case ARENA_INT:
+        if (a.as.Int > len - 1)
+            goto ERR;
+        return Char(String[a.as.Int]);
+    case ARENA_LONG:
+        if (a.as.Long > len - 1)
+            goto ERR;
+        return Char(String[a.as.Long]);
+    case ARENA_BYTE:
+        if (a.as.Byte > len - 1)
+            goto ERR;
+        return Char(String[a.as.Byte]);
+    case ARENA_CHAR:
+        if ((int)a.as.Char > len - 1)
+            goto ERR;
+        return Char(String[(int)a.as.Char]);
+    case ARENA_SIZE:
+        if ((int)a.as.Size > len - 1)
+            goto ERR;
+        return Char(String[a.as.Size]);
+    default:
+        log_err("Invalid indexing type.");
+        return Null();
+    }
+ERR:
+    log_err("ERROR: Array index out of bounds.");
+    exit(1);
+}
+static Arena _access_strings(char **Strings, Arena a, int len)
+{
+    switch (a.type)
+    {
+    case ARENA_INT:
+        if (a.as.Int > len - 1)
+            goto ERR;
+        return CString(Strings[a.as.Int]);
+    case ARENA_LONG:
+        if (a.as.Long > len - 1)
+            goto ERR;
+        return CString(Strings[a.as.Long]);
+    case ARENA_BYTE:
+        if (a.as.Byte > len - 1)
+            goto ERR;
+        return CString(Strings[a.as.Byte]);
+    case ARENA_CHAR:
+        if ((int)a.as.Char > len - 1)
+            goto ERR;
+        return CString(Strings[(int)a.as.Char]);
+    case ARENA_SIZE:
+        if ((int)a.as.Size > len - 1)
+            goto ERR;
+        return CString(Strings[a.as.Size]);
+    default:
+        log_err("Invalid indexing type.");
+        return Null();
+    }
+ERR:
+    log_err("ERROR: Array index out of bounds.");
+    exit(1);
+}
+
 Arena _neg(Arena n)
 {
     Arena ar = n;
@@ -1536,6 +1700,28 @@ Arena _or(Arena a, Arena b)
 Arena _and(Arena a, Arena b)
 {
     return Bool(b.as.Bool && a.as.Bool);
+}
+
+Arena _access(Arena a, Arena b)
+{
+    switch (b.type)
+    {
+    case ARENA_INTS:
+        return _access_ints(b.listof.Ints, a, b.count);
+    case ARENA_LONGS:
+        return _access_longs(b.listof.Longs, a, b.count);
+    case ARENA_DOUBLES:
+        return _access_doubles(b.listof.Doubles, a, b.count);
+    case ARENA_STR:
+        return _access_string(b.as.String, a, b.count);
+    case ARENA_STRS:
+        return _access_strings(b.listof.Strings, a, b.count);
+    // case ARENA_SIZE:
+    // return _access_sizes(b.as.String, a);
+    default:
+        log_err("ERROR: comparison type mismatch");
+        return Null();
+    }
 }
 
 Arena _sqr(Arena a)
