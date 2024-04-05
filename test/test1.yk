@@ -6,9 +6,13 @@ sr tables()
 
     tab["Aaron"] = "Aaron";
     tab["Dykes"] = "Dykes"; 
-    
-    pout    tab["Aaron"],
-            tab["Dykes"]; 
+
+    var t = Table; 
+    t["Table"] = tab; 
+
+    pout 
+        t["Table"]["Aaron"],
+        t["Table"]["Dykes"];
 
     rm(tab);
     
