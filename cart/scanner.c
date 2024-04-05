@@ -240,6 +240,12 @@ static int id_type()
                 return check_keyword(2, 2, "ee", TOKEN_OP_FREE);
             }
     case 'i':
+        if (scan.current - scan.start > 1)
+            switch (scan.start[1])
+            {
+            case 'n':
+                return check_keyword(2, 1, "t", TOKEN_TYPE_INT);
+            }
         return check_keyword(1, 1, "f", TOKEN_IF);
     case 'I':
         return check_keyword(1, 3, "nts", TOKEN_ALLOC_INTS);
@@ -285,6 +291,8 @@ static int id_type()
                 return check_keyword(2, 3, "per", TOKEN_SUPER);
             case 'q':
                 return check_keyword(2, 4, "uare", TOKEN_SQRT);
+            case 't':
+                return check_keyword(2, 4, "ring", TOKEN_TYPE_STRING);
             }
 
         return check_keyword(1, 1, "r", TOKEN_FUNC);
@@ -299,6 +307,9 @@ static int id_type()
             case 'r':
                 return check_keyword(2, 2, "ue", TOKEN_TRUE);
             }
+    case 'T':
+        return check_keyword(1, 4, "able", TOKEN_TABLE);
+
     case 'v':
         return check_keyword(1, 2, "ar", TOKEN_VAR);
     case 'w':

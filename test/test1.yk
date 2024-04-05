@@ -2,7 +2,16 @@
 
 sr tables()
 {
-    1234
-    1234
+    var tab = Table(128);
+
+    tab["Aaron"] = "Aaron";
+    tab["Dykes"] = "Dykes"; 
+    
+    pout    tab["Aaron"],
+            tab["Dykes"]; 
+
+    rm(tab);
     
 }
+
+tables();

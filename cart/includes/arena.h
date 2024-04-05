@@ -32,12 +32,6 @@ typedef enum
 
 typedef enum
 {
-    TABLE,
-    STACK
-} DataType;
-
-typedef enum
-{
     OP_CONSTANT,
     OP_CLOSURE,
     OP_PRINT,
@@ -51,6 +45,11 @@ typedef enum
     OP_GET_ACCESS,
     OP_SET_ACCESS,
     OP_LEN,
+
+    OP_ALLOC_TABLE,
+
+    OP_PUSH_ARRAY_VAL,
+    OP_PREPEND_ARRAY_VAL,
 
     OP_POP,
     OP_POPN,
@@ -142,10 +141,10 @@ typedef enum
     NATIVE,
     CLASS,
     INSTANCE,
-    BOUND_CLOSURE,
     CLOSURE,
     FUNCTION,
     METHOD,
+    TABLE,
     INIT,
     UPVAL,
     SCRIPT,
@@ -262,6 +261,7 @@ struct Element
         Closure *closure;
         Class *classc;
         Instance *instance;
+        Table *table;
         void *null;
     };
 };

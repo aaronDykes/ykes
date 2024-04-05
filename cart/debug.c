@@ -76,6 +76,9 @@ int disassemble_instruction(Chunk *c, int offset)
 
         return offset;
     }
+    case OP_PUSH_ARRAY_VAL:
+        return simple_instruction("OP_PUSH_ARRAY_VAL", offset);
+
     case OP_SET_ACCESS:
         return constant_instruction("OP_SET_ACCESS", c, offset);
     case OP_GET_ACCESS:
@@ -142,6 +145,8 @@ int disassemble_instruction(Chunk *c, int offset)
         return simple_instruction("OP_AND", offset);
     case OP_OR:
         return simple_instruction("OP_OR", offset);
+    case OP_ALLOC_TABLE:
+        return simple_instruction("OP_ALLOC_TABLE", offset);
     case OP_NULL:
         return simple_instruction("OP_NULL", offset);
     case OP_NOOP:

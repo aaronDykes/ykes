@@ -529,6 +529,18 @@ void push_long(Element *el, long long int Long)
     }
     el->arena.listof.Longs[el->arena.count++] = Long;
 }
+// void push_char(Element *el, char Char)
+// {
+//     if (el->arena.as.len < el->arena.as.count + 1)
+//     {
+//         el->arena.as.len = GROW_CAPACITY(el->arena.as.len);
+//         el->arena.size = el->arena.as.len * sizeof(char);
+//         el->arena = GROW_ARRAY(&el->arena, el->arena.size, ARENA_STR);
+//     }
+//     // if (el->arena.count =)
+//     el->arena.as.String[el->arena.count++] = (char *)String;
+// }
+
 void push_string(Element *el, const char *String)
 {
     if (el->arena.len < el->arena.count + 1)
@@ -710,6 +722,13 @@ Element new_instance(Instance *ci)
     Element el;
     el.instance = ci;
     el.type = INSTANCE;
+    return el;
+}
+Element table_el(Table *t)
+{
+    Element el;
+    el.table = t;
+    el.type = TABLE;
     return el;
 }
 Element null_obj()

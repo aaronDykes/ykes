@@ -932,6 +932,22 @@ static void string(Compiler *c)
     consume(TOKEN_CH_RPAREN, "Expect `)` after string declaration.", &c->parser);
 }
 
+static void table(Compiler *c)
+{
+    Table *t = NULL;
+    if (!match(TOKEN_CH_LPAREN, &c->parser))
+    {
+        t = GROW_TABLE(NULL, STACK_SIZE);
+        emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, TABLE(t)));
+    }
+    else
+    {
+        expression(c);
+        emit_byte(c, OP_ALLOC_TABLE);
+        consume(TOKEN_CH_RPAREN, "Expect `)` after Table declaration", &c->parser);
+    }
+}
+
 static void parse_native_argc0(Compiler *c)
 {
     char *ch = (char *)c->parser.pre.start;
@@ -1040,12 +1056,20 @@ static int resolve_instance(Compiler *c, Arena ar)
     return -1;
 }
 
+static void push_array_val(Compiler *c)
+{
+    consume(TOKEN_CH_LPAREN, "Expect `(` after push.", &c->parser);
+    expression(c);
+    emit_byte(c, OP_PUSH_ARRAY_VAL);
+    consume(TOKEN_CH_RPAREN, "Expect `)` after push expression.", &c->parser);
+    // consume(TOKEN_CH_SEMI, "Expect `;` after push statement.", &c->parser);
+}
+
 static void dot(Compiler *c)
 {
     match(TOKEN_ID, &c->parser);
 
     Arena ar = parse_id(c);
-    uint8_t get, set;
 
     int arg = resolve_call(c, &ar);
     if (arg != -1)
@@ -1054,9 +1078,15 @@ static void dot(Compiler *c)
         return;
     }
 
-    if (c->base->class_count == 0 && ar.as.hash == c->base->len.as.hash)
+    if (ar.as.hash == c->base->len.as.hash)
     {
         emit_byte(c, OP_LEN);
+        return;
+    }
+
+    if (ar.as.hash == c->base->ar_push.as.hash)
+    {
+        push_array_val(c);
         return;
     }
 
@@ -1450,6 +1480,7 @@ Function *compile(const char *src)
     c.base->calls = GROW_TABLE(NULL, TABLE_SIZE);
     c.base->classes = GROW_TABLE(NULL, TABLE_SIZE);
     c.base->len = String("len");
+    c.base->ar_push = String("push");
 
     c.parser.panic = false;
     c.parser.err = false;

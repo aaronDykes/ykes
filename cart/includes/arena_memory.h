@@ -89,6 +89,8 @@
     bound_closure_el(c)
 #define INSTANCE(c) \
     new_instance(c)
+#define TABLE(t) \
+    table_el(t)
 
 #define FREE_CLASS(c) \
     free_class(c)
@@ -167,6 +169,7 @@ Element native_fn(Native *native);
 Element closure(Closure *clos);
 Element new_class(Class *classc);
 Element new_instance(Instance *ci);
+Element table_el(Table *t);
 Element null_obj();
 
 Function *function(Arena name);

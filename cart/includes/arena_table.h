@@ -17,10 +17,13 @@ Closure *find_func_entry(Table **t, Arena *key);
 Class *find_class_entry(Table **t, Arena *key);
 Native *find_native_entry(Table **t, Arena *key);
 
+Table *find_table_entry(Table **t, Arena *hash);
+
 Table Entry(Arena key, Element val);
 Table arena_entry(Arena key, Arena val);
 Table class_entry(Class *c);
 Table instance_entry(Arena ar, Instance *c);
+Table table_entry(Arena ar, Table *t);
 Table func_entry(Closure *c);
 Table native_entry(Native *func);
 Table new_entry(Table t);

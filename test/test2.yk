@@ -17,12 +17,15 @@ sr arrays()
 sr string_access()
 {
     var ar = ["Hello", "World", "Vector", "of", "Vectors"];
-    var str = "aaron dykes is really coooooool Hhhhhhhh";
+    var str = "ron dykes is really coooooool Hhhhhhhh";
 
-    ar[0] = "Aaron"; 
-    ar[sum(1, 0)]  = "Dykes";
-
-
+    ar[0] = "aa";
+    ar[1] = str; 
+    ar[2] = "vector"; 
+    ar[3] = "OF"; 
+    ar[4] = "VECTORS"; 
+    
+    
 
     pout str, ar; 
 

@@ -75,6 +75,7 @@ struct Compiler
 
     Arena init_func;
     Arena len;
+    Arena ar_push;
 
     Compiler *base;
     Compiler *enclosing;
@@ -187,11 +188,14 @@ static void boolean(Compiler *c);
 static void cstr(Compiler *c);
 static void string(Compiler *c);
 
+static void table(Compiler *c);
+
 static int resolve_local(Compiler *c, Arena *name);
 static int resolve_upvalue(Compiler *c, Arena *name);
 static int add_upvalue(Compiler *c, int upvalue, bool t);
 
 static Arena parse_func_id(Compiler *c);
+static void push_array_val(Compiler *c);
 
 static void parse_native_argc0(Compiler *c);
 static void parse_native_argc1(Compiler *c);
@@ -263,6 +267,7 @@ static PRule rules[] = {
     [TOKEN_ID] = {id, NULL, PREC_NONE},
     [TOKEN_STR] = {cstr, NULL, PREC_NONE},
     [TOKEN_ALLOC_STR] = {string, NULL, PREC_NONE},
+    [TOKEN_TABLE] = {table, NULL, PREC_NONE},
     [TOKEN_BTYE] = {NULL, NULL, PREC_NONE},
 
     [TOKEN_CHAR] = {ch, NULL, PREC_NONE},

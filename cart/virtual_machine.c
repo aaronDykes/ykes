@@ -391,11 +391,25 @@ Interpretation run()
             PUSH(OBJ(_and(POP().arena, POP().arena)));
             break;
         case OP_GET_ACCESS:
-            PUSH(OBJ(_get_access(POP().arena, POP().arena)));
+            PUSH(_get_access(POP(), POP()));
             break;
         case OP_SET_ACCESS:
-            _set_access(POP(), POP().arena, POP());
+        {
+            _set_access(PEEK(), NPEEK(1).arena, NPEEK(2));
             break;
+        }
+        case OP_PUSH_ARRAY_VAL:
+        {
+
+            /**
+             * TODO:
+             * Don't feel like spending time on this right now
+             */
+            Element val = PEEK();
+            Element el = NPEEK(1);
+            _push_array_val(val, &el);
+        }
+        break;
         case OP_LEN:
             PUSH(OBJ(_len(POP().arena)));
             break;
@@ -502,6 +516,14 @@ Interpretation run()
             RM();
             break;
         case OP_NOOP:
+            break;
+        case OP_ALLOC_TABLE:
+            if (PEEK().type != ARENA && PEEK().arena.type != ARENA_INT)
+            {
+                runtime_error("ERROR: Table argument must be a numeric value.");
+                return INTERPRET_RUNTIME_ERR;
+            }
+            PUSH(TABLE(GROW_TABLE(NULL, POP().arena.as.Int)));
             break;
         case OP_GET_GLOBAL:
             PUSH(FIND_GLOB(READ_CONSTANT().arena));

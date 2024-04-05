@@ -26,31 +26,38 @@ void insert_entry(Table **t, Table entry)
             ALLOC_ENTRY(&tmp[index].next, entry);
         return;
     }
-    else if (entry.type == CLOSURE)
+    if (entry.type == CLOSURE)
     {
         Closure *c = find_func_entry(t, &entry.key);
         if (!c)
             ALLOC_ENTRY(&tmp[index].next, entry);
         return;
     }
-    else if (entry.type == ARENA)
+    if (entry.type == ARENA)
     {
         Arena f = find_arena_entry(t, &entry.key);
         if (f.type == ARENA_NULL)
             ALLOC_ENTRY(&tmp[index].next, entry);
         return;
     }
-    else if (entry.type == CLASS)
+    if (entry.type == CLASS)
     {
         Class *c = find_class_entry(t, &entry.key);
         if (!c)
             ALLOC_ENTRY(&tmp[index].next, entry);
         return;
     }
-    else if (entry.type == INSTANCE)
+    if (entry.type == INSTANCE)
     {
         Instance *c = find_instance_entry(t, &entry.key);
         if (!c)
+            ALLOC_ENTRY(&tmp[index].next, entry);
+        return;
+    }
+    if (entry.type == TABLE)
+    {
+        Table *tab = find_table_entry(t, &entry.key);
+        if (!tab)
             ALLOC_ENTRY(&tmp[index].next, entry);
         return;
     }
@@ -260,25 +267,30 @@ Element find_entry(Table **t, Arena *hash)
         Arena ar = find_arena_entry(t, hash);
         return ar.type == ARENA_NULL ? el : OBJ(ar);
     }
-    else if (entry.type == NATIVE)
+    if (entry.type == NATIVE)
     {
         Native *n = find_native_entry(t, hash);
         return n == NULL ? el : NATIVE(n);
     }
-    else if (entry.type == CLOSURE)
+    if (entry.type == CLOSURE)
     {
         Closure *c = find_func_entry(t, hash);
         return c == NULL ? el : CLOSURE(c);
     }
-    else if (entry.type == CLASS)
+    if (entry.type == CLASS)
     {
         Class *c = find_class_entry(t, hash);
         return !c ? el : CLASS(c);
     }
-    else if (entry.type == INSTANCE)
+    if (entry.type == INSTANCE)
     {
         Instance *c = find_instance_entry(t, hash);
         return !c ? el : INSTANCE(c);
+    }
+    if (entry.type == TABLE)
+    {
+        Table *tab = find_table_entry(t, hash);
+        return !tab ? el : TABLE(tab);
     }
     return el;
 }
@@ -408,6 +420,38 @@ Closure *find_func_entry(Table **t, Arena *hash)
     return NULL;
 }
 
+Table *find_table_entry(Table **t, Arena *hash)
+{
+    Table *a = *t;
+    size_t index = hash->as.hash & ((a - 1)->len - 1);
+    Table entry = a[index];
+
+    if (entry.key.type == ARENA_NULL)
+        return NULL;
+
+    if (strcmp(entry.key.as.String, hash->as.String) == 0)
+        return entry.val.table;
+
+    Table *tmp = entry.next;
+
+    for (; tmp; tmp = tmp->next)
+        switch (tmp->key.type)
+        {
+        case ARENA_VAR:
+        case ARENA_FUNC:
+        case ARENA_NATIVE:
+        case ARENA_CSTR:
+        case ARENA_STR:
+            if (tmp->key.as.hash == hash->as.hash)
+                return tmp->val.table;
+            break;
+        default:
+            break;
+        }
+
+    return NULL;
+}
+
 Arena find_arena_entry(Table **t, Arena *hash)
 {
     Table *a = *t;
@@ -497,10 +541,11 @@ Table Entry(Arena key, Element val)
         return class_entry(val.classc);
     case INSTANCE:
         return instance_entry(key, val.instance);
+    case TABLE:
+        return table_entry(key, val.table);
     default:
-        break;
+        return func_entry(NULL);
     }
-    return func_entry(NULL);
 }
 
 Table arena_entry(Arena key, Arena val)
@@ -556,6 +601,18 @@ Table instance_entry(Arena ar, Instance *c)
     el.prev = NULL;
     el.size = el.key.size;
     el.type = INSTANCE;
+    return el;
+}
+
+Table table_entry(Arena ar, Table *t)
+{
+    Table el;
+    el.key = ar;
+    el.val.table = t;
+    el.next = NULL;
+    el.prev = NULL;
+    el.size = el.key.size;
+    el.type = TABLE;
     return el;
 }
 
