@@ -14,7 +14,7 @@ sr tables()
         t["Table"]["Aaron"],
         t["Table"]["Dykes"];
 
-    rm(tab);
+    rm(t);
     
 }
 

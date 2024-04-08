@@ -499,6 +499,23 @@ Arena Strings(char **Strs, int len)
     return arena_init(NULL, 0, ARENA_STRS);
 }
 
+static void int_push(int **Ints, int index, int Int)
+{
+    (*Ints)[index] = Int;
+}
+static void double_push(double **Doubles, int index, double Double)
+{
+    (*Doubles)[index] = Double;
+}
+static void long_push(long long int **Longs, int index, long long int Long)
+{
+    (*Longs)[index] = Long;
+}
+static void string_push(char ***Strings, int index, char *String)
+{
+    (*Strings)[index] = String;
+}
+
 void push_int(Element *el, int Int)
 {
     if (el->arena.len < el->arena.count + 1)
@@ -507,7 +524,7 @@ void push_int(Element *el, int Int)
         el->arena.size = el->arena.len * sizeof(int);
         el->arena = GROW_ARRAY(&el->arena, el->arena.size, ARENA_INTS);
     }
-    el->arena.listof.Ints[el->arena.count++] = Int;
+    int_push(&el->arena.listof.Ints, el->arena.count++, Int);
 }
 void push_double(Element *el, double Double)
 {
@@ -517,7 +534,7 @@ void push_double(Element *el, double Double)
         el->arena.size = el->arena.len * sizeof(double);
         el->arena = GROW_ARRAY(&el->arena, el->arena.size, ARENA_DOUBLES);
     }
-    el->arena.listof.Doubles[el->arena.count++] = Double;
+    double_push(&el->arena.listof.Doubles, el->arena.count++, Double);
 }
 void push_long(Element *el, long long int Long)
 {
@@ -527,7 +544,8 @@ void push_long(Element *el, long long int Long)
         el->arena.size = el->arena.len * sizeof(long long int);
         el->arena = GROW_ARRAY(&el->arena, el->arena.size, ARENA_LONGS);
     }
-    el->arena.listof.Longs[el->arena.count++] = Long;
+    // el->arena.listof
+    long_push(&el->arena.listof.Longs, el->arena.count++, Long);
 }
 // void push_char(Element *el, char Char)
 // {
@@ -550,6 +568,7 @@ void push_string(Element *el, const char *String)
         el->arena = GROW_ARRAY(&el->arena, el->arena.size, ARENA_STRS);
     }
     el->arena.listof.Strings[el->arena.count++] = (char *)String;
+    // string_push(&el->arena.listof.Strings, el->arena.count++, (char *)String);
 }
 
 Class *class(Arena name)
@@ -879,6 +898,8 @@ void arena_free_entry(Table *entry)
         FREE_CLASS(entry->val.classc);
     else if (entry->type == INSTANCE)
         FREE_INSTANCE(entry->val.instance);
+    else if (entry->type == TABLE)
+        arena_free_table(entry->val.table);
     else
         FREE_CLOSURE(&entry->val.closure);
 

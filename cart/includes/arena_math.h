@@ -23,7 +23,7 @@ Arena _dec(Arena b);
 
 Element _get_access(Element a, Element b);
 void _set_access(Element val, Arena index, Element el);
-void _push_array_val(Element val, Element *el);
+Element _push_array_val(Element val, Element el);
 
 Arena _len(Arena a);
 

@@ -16,22 +16,23 @@ sr arrays()
 
 sr string_access()
 {
+    
     var ar = ["Hello", "World", "Vector", "of", "Vectors"];
-    var str = "ron dykes is really coooooool Hhhhhhhh";
-
-    ar[0] = "aa";
-    ar[1] = str; 
-    ar[2] = "vector"; 
-    ar[3] = "OF"; 
-    ar[4] = "VECTORS"; 
     
-    
+    ar[0] = "Aaron";
+    ar[1] = "Dykes"; 
 
-    pout str, ar; 
+    ar.push("Another vector!!");
+    ar.push("VECTORS!!");
 
 
+
+    pout ar; 
     rm(ar); 
 }
 
+
 arrays();
 string_access();
+
+ 

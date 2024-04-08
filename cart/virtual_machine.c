@@ -405,9 +405,9 @@ Interpretation run()
              * TODO:
              * Don't feel like spending time on this right now
              */
-            Element val = PEEK();
-            Element el = NPEEK(1);
-            _push_array_val(val, &el);
+
+            // Element el = NPEEK(1);
+            PUSH(_push_array_val(POP(), POP()));
         }
         break;
         case OP_LEN:

@@ -15,6 +15,8 @@ static void init_compiler(Compiler *a, Compiler *b, ObjType type, Arena name)
     a->scope_depth = 0;
     a->call_count = 0;
     a->class_count = 0;
+    a->array_index = 0;
+    a->array_set = 0;
     a->upvalue_count = 0;
     a->class_compiler = NULL;
     a->calls = NULL;
@@ -1087,6 +1089,7 @@ static void dot(Compiler *c)
     if (ar.as.hash == c->base->ar_push.as.hash)
     {
         push_array_val(c);
+        emit_bytes(c, c->array_set, c->array_index);
         return;
     }
 
@@ -1342,7 +1345,18 @@ static void id(Compiler *c)
         emit_bytes(c, set, (uint8_t)arg);
     }
     else
+    {
         emit_bytes(c, get, (uint8_t)arg);
+
+        if (check(TOKEN_CH_DOT, &c->parser))
+        {
+            c->array_set = set;
+            c->array_index = arg;
+
+            // array_dot(c);
+            // emit_bytes(c, set, (uint8_t)arg);
+        }
+    }
 }
 
 static int parse_var(Compiler *c, Arena ar)

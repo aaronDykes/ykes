@@ -68,6 +68,9 @@ struct Compiler
     int param_count;
     int class_count;
 
+    uint8_t array_index;
+    uint8_t array_set;
+
     ObjType type;
     Function *func;
 

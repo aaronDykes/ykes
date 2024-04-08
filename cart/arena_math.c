@@ -1969,32 +1969,32 @@ void _set_access(Element val, Arena index, Element b)
     }
 }
 
-void _push_array_val(Element val, Element *el)
+Element _push_array_val(Element val, Element el)
 {
-    switch (el->type)
+    switch (el.type)
     {
     case ARENA:
     {
         Arena ar = val.arena;
         if (val.type != ARENA)
             goto ERR;
-        switch (el->arena.type)
+        switch (el.arena.type)
         {
         case ARENA_INTS:
             if (ar.type != ARENA_INT)
                 goto ERR;
-            push_int(el, ar.as.Int);
-            return;
+            push_int(&el, ar.as.Int);
+            return el;
         case ARENA_LONGS:
             if (ar.type != ARENA_LONG)
                 goto ERR;
-            push_long(el, ar.as.Long);
-            return;
+            push_long(&el, ar.as.Long);
+            return el;
         case ARENA_DOUBLES:
             if (ar.type != ARENA_DOUBLE)
                 goto ERR;
-            push_double(el, ar.as.Double);
-            return;
+            push_double(&el, ar.as.Double);
+            return el;
         // case ARENA_STR:
         // case ARENA_CSTR:
         //     if (ar.type != ARENA_CHAR)
@@ -2004,8 +2004,8 @@ void _push_array_val(Element val, Element *el)
         case ARENA_STRS:
             if (ar.type != ARENA_STR && ar.type != ARENA_CSTR)
                 goto ERR;
-            push_string(el, ar.as.String);
-            return;
+            push_string(&el, ar.as.String);
+            return el;
         default:
             break;
         }
@@ -2014,6 +2014,7 @@ void _push_array_val(Element val, Element *el)
     default:
     ERR:
         log_err("ERROR: push type mismatch.");
+        return null_obj();
     }
 }
 
