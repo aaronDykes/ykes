@@ -70,6 +70,7 @@ struct Compiler
 
     uint8_t array_index;
     uint8_t array_set;
+    uint8_t array_get;
 
     ObjType type;
     Function *func;
@@ -79,6 +80,7 @@ struct Compiler
     Arena init_func;
     Arena len;
     Arena ar_push;
+    Arena ar_pop;
 
     Compiler *base;
     Compiler *enclosing;
@@ -88,7 +90,6 @@ struct Compiler
     Table *classes;
 
     Class *instances[CALL_COUNT];
-
     Local locals[LOCAL_COUNT];
     Upvalue upvalues[LOCAL_COUNT];
 };

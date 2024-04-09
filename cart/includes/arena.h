@@ -46,6 +46,7 @@ typedef enum
     OP_ALLOC_TABLE,
 
     OP_PUSH_ARRAY_VAL,
+    OP_POP__ARRAY_VAL,
     OP_PREPEND_ARRAY_VAL,
 
     OP_POP,

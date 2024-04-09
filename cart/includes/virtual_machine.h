@@ -32,6 +32,7 @@ struct vm
     Stack *call_stack;
     Stack *class_stack;
     Stack *native_calls;
+    Element pop_val;
     Upval *open_upvals;
     Table *glob;
 };

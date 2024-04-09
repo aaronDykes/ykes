@@ -399,17 +399,20 @@ Interpretation run()
             break;
         }
         case OP_PUSH_ARRAY_VAL:
-        {
-
-            /**
-             * TODO:
-             * Don't feel like spending time on this right now
-             */
-
-            // Element el = NPEEK(1);
             PUSH(_push_array_val(POP(), POP()));
+            break;
+        case OP_POP__ARRAY_VAL:
+        {
+            Element el = PEEK();
+            Element *p = &el;
+            --p->arena.count;
+            machine.pop_val = _pop_array_val(PEEK());
+            PEEK() = *p;
+            break;
         }
-        break;
+        case OP_PUSH:
+            PUSH(machine.pop_val);
+            break;
         case OP_LEN:
             PUSH(OBJ(_len(POP().arena)));
             break;
@@ -430,8 +433,8 @@ Interpretation run()
                 break;
             }
             frame->ip += offset;
+            break;
         }
-        break;
         case OP_JMPL:
             frame->ip = frame->ip_start + JUMP();
             break;

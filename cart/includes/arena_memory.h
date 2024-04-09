@@ -140,6 +140,11 @@ void push_double(Element *el, double Double);
 void push_long(Element *el, long long int Long);
 void push_string(Element *el, const char *String);
 
+Element pop_int(Element *el);
+Element pop_double(Element *el);
+Element pop_long(Element *el);
+Element pop_string(Element *el);
+
 Arena Char(char ch);
 Arena Int(int ival);
 Arena Byte(uint8_t byte);

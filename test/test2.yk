@@ -27,8 +27,16 @@ sr string_access()
 
 
 
-    pout ar; 
-    rm(ar); 
+    var i = ar.pop();
+    pout 
+        ar,
+        i,
+        ar.pop(),
+        ar,
+        ar.len;
+ 
+
+    rm(ar);
 }
 
 

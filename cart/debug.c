@@ -78,6 +78,8 @@ int disassemble_instruction(Chunk *c, int offset)
     }
     case OP_PUSH_ARRAY_VAL:
         return simple_instruction("OP_PUSH_ARRAY_VAL", offset);
+    case OP_POP__ARRAY_VAL:
+        return simple_instruction("OP_POP__ARRAY_VAL", offset);
     case OP_SET_ACCESS:
         return constant_instruction("OP_SET_ACCESS", c, offset);
     case OP_GET_ACCESS:

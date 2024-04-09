@@ -2017,6 +2017,42 @@ Element _push_array_val(Element val, Element el)
         return null_obj();
     }
 }
+Element _pop_array_val(Element val)
+{
+    switch (val.type)
+    {
+    case ARENA:
+    {
+        Arena ar = val.arena;
+        if (val.type != ARENA)
+            goto ERR;
+        switch (ar.type)
+        {
+        case ARENA_INTS:
+            return pop_int(&val);
+        case ARENA_LONGS:
+            return pop_long(&val);
+        case ARENA_DOUBLES:
+            return pop_double(&val);
+        // case ARENA_STR:
+        // case ARENA_CSTR:
+        //     if (ar.type != ARENA_CHAR)
+        //         goto ERR;
+        //     push_char(&valr);
+        //     return;
+        case ARENA_STRS:
+            return pop_string(&val);
+        default:
+            break;
+        }
+        break;
+    }
+    default:
+    ERR:
+        log_err("ERROR: push type mismatch.");
+        return null_obj();
+    }
+}
 
 Arena _len(Arena a)
 {

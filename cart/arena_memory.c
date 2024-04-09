@@ -524,7 +524,15 @@ void push_int(Element *el, int Int)
         el->arena.size = el->arena.len * sizeof(int);
         el->arena = GROW_ARRAY(&el->arena, el->arena.size, ARENA_INTS);
     }
+
     int_push(&el->arena.listof.Ints, el->arena.count++, Int);
+}
+Element pop_int(Element *el)
+{
+
+    Element tmp = OBJ(Int(el->arena.listof.Ints[el->arena.count - 1]));
+    el->arena.listof.Ints[--el->arena.count] = 0;
+    return tmp;
 }
 void push_double(Element *el, double Double)
 {
@@ -535,6 +543,13 @@ void push_double(Element *el, double Double)
         el->arena = GROW_ARRAY(&el->arena, el->arena.size, ARENA_DOUBLES);
     }
     double_push(&el->arena.listof.Doubles, el->arena.count++, Double);
+}
+Element pop_double(Element *el)
+{
+
+    Element tmp = OBJ(Double(el->arena.listof.Doubles[el->arena.count - 1]));
+    el->arena.listof.Doubles[--el->arena.count] = 0;
+    return tmp;
 }
 void push_long(Element *el, long long int Long)
 {
@@ -547,6 +562,14 @@ void push_long(Element *el, long long int Long)
     // el->arena.listof
     long_push(&el->arena.listof.Longs, el->arena.count++, Long);
 }
+Element pop_long(Element *el)
+{
+
+    Element tmp = OBJ(Long(el->arena.listof.Longs[el->arena.count - 1]));
+    el->arena.listof.Longs[--el->arena.count] = 0;
+    return tmp;
+}
+
 // void push_char(Element *el, char Char)
 // {
 //     if (el->arena.as.len < el->arena.as.count + 1)
@@ -568,7 +591,13 @@ void push_string(Element *el, const char *String)
         el->arena = GROW_ARRAY(&el->arena, el->arena.size, ARENA_STRS);
     }
     el->arena.listof.Strings[el->arena.count++] = (char *)String;
-    // string_push(&el->arena.listof.Strings, el->arena.count++, (char *)String);
+}
+Element pop_string(Element *el)
+{
+
+    Element tmp = OBJ(CString(el->arena.listof.Strings[el->arena.count - 1]));
+    el->arena.listof.Strings[--el->arena.count] = NULL;
+    return tmp;
 }
 
 Class *class(Arena name)

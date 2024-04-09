@@ -15,8 +15,11 @@ static void init_compiler(Compiler *a, Compiler *b, ObjType type, Arena name)
     a->scope_depth = 0;
     a->call_count = 0;
     a->class_count = 0;
+
     a->array_index = 0;
     a->array_set = 0;
+    a->array_get = 0;
+
     a->upvalue_count = 0;
     a->class_compiler = NULL;
     a->calls = NULL;
@@ -1064,7 +1067,12 @@ static void push_array_val(Compiler *c)
     expression(c);
     emit_byte(c, OP_PUSH_ARRAY_VAL);
     consume(TOKEN_CH_RPAREN, "Expect `)` after push expression.", &c->parser);
-    // consume(TOKEN_CH_SEMI, "Expect `;` after push statement.", &c->parser);
+}
+static void pop_array_val(Compiler *c)
+{
+    consume(TOKEN_CH_LPAREN, "Expect `(` after push.", &c->parser);
+    emit_byte(c, OP_POP__ARRAY_VAL);
+    consume(TOKEN_CH_RPAREN, "Expect `)` after push expression.", &c->parser);
 }
 
 static void dot(Compiler *c)
@@ -1085,11 +1093,18 @@ static void dot(Compiler *c)
         emit_byte(c, OP_LEN);
         return;
     }
-
     if (ar.as.hash == c->base->ar_push.as.hash)
     {
         push_array_val(c);
         emit_bytes(c, c->array_set, c->array_index);
+        return;
+    }
+
+    if (ar.as.hash == c->base->ar_pop.as.hash)
+    {
+        pop_array_val(c);
+        emit_bytes(c, c->array_set, c->array_index);
+        emit_byte(c, OP_PUSH);
         return;
     }
 
@@ -1349,13 +1364,8 @@ static void id(Compiler *c)
         emit_bytes(c, get, (uint8_t)arg);
 
         if (check(TOKEN_CH_DOT, &c->parser))
-        {
-            c->array_set = set;
+            c->array_set = set,
             c->array_index = arg;
-
-            // array_dot(c);
-            // emit_bytes(c, set, (uint8_t)arg);
-        }
     }
 }
 
@@ -1493,8 +1503,9 @@ Function *compile(const char *src)
     c.base = &c;
     c.base->calls = GROW_TABLE(NULL, TABLE_SIZE);
     c.base->classes = GROW_TABLE(NULL, TABLE_SIZE);
-    c.base->len = String("len");
-    c.base->ar_push = String("push");
+    c.base->len = CString("len");
+    c.base->ar_push = CString("push");
+    c.base->ar_pop = CString("pop");
 
     c.parser.panic = false;
     c.parser.err = false;
