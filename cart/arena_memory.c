@@ -391,6 +391,70 @@ Arena arena_realloc(Arena *ar, size_t size, T type)
     ARENA_FREE(ar);
     return a;
 }
+Element cpy_array(Element el)
+{
+
+    Arena ar = el.arena;
+    T type = ar.type;
+    size_t size = ar.size;
+
+    void *ptr = NULL;
+    ptr = ALLOC(size);
+
+    switch (type)
+    {
+    case ARENA_BYTES:
+        if (!ar.listof.Bytes)
+            return OBJ(arena_init(ptr, size, type));
+        memcpy(ptr, ar.listof.Bytes, size);
+        break;
+    case ARENA_STR:
+    case ARENA_CSTR:
+    case ARENA_VAR:
+    case ARENA_FUNC:
+    case ARENA_NATIVE:
+        if (!ar.as.String)
+            return OBJ(arena_init(ptr, size, type));
+        memcpy(ptr, ar.as.String, size);
+        break;
+    case ARENA_INTS:
+        if (!ar.listof.Ints)
+            return OBJ(arena_init(ptr, size, type));
+        memcpy(ptr, ar.listof.Ints, size);
+        break;
+    case ARENA_DOUBLES:
+        if (!ar.listof.Doubles)
+            return OBJ(arena_init(ptr, size, type));
+        memcpy(ptr, ar.listof.Doubles, size);
+        break;
+    case ARENA_LONGS:
+        if (!ar.listof.Doubles)
+            return OBJ(arena_init(ptr, size, type));
+        memcpy(ptr, ar.listof.Longs, size);
+        break;
+
+    case ARENA_STRS:
+    {
+
+        if (!ar.listof.Strings || ar.type == ARENA_NULL)
+            return OBJ(arena_init(ptr, size, type));
+        Arena str = arena_init(ptr, size, type);
+        for (size_t i = 0; i < size; i++)
+            str.listof.Strings[i] = String(ar.listof.Strings[i]).as.String;
+    }
+    break;
+
+    default:
+        return null_obj();
+    }
+
+    Arena a = arena_init(ptr, size, type);
+    a.count = (ar.count > a.len)
+                  ? a.len
+                  : ar.count;
+    return OBJ(a);
+}
+
 Arena Char(char Char)
 {
     Arena ar;

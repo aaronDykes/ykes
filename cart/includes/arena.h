@@ -49,6 +49,7 @@ typedef enum
     OP_POP__ARRAY_VAL,
     OP_PREPEND_ARRAY_VAL,
 
+    OP_CPY_ARRAY,
     OP_POP,
     OP_POPN,
     OP_PUSH,

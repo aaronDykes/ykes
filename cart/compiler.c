@@ -937,6 +937,23 @@ static void string(Compiler *c)
     consume(TOKEN_CH_RPAREN, "Expect `)` after string declaration.", &c->parser);
 }
 
+static void ints(Compiler *c)
+{
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to allocation.", &c->parser);
+
+    if (match(TOKEN_INT, &c->parser))
+        emit_constant(c, GROW_ARRAY(NULL, atoi(c->parser.pre.start), ARENA_INTS));
+    else if (match(TOKEN_ID, &c->parser))
+    {
+        id(c);
+        emit_byte(c, OP_CPY_ARRAY);
+    }
+    else if (match(TOKEN_CH_LSQUARE, &c->parser))
+        array(c);
+
+    consume(TOKEN_CH_RPAREN, "Expect `)` after allocation.", &c->parser);
+}
+
 static void table(Compiler *c)
 {
     Table *t = NULL;

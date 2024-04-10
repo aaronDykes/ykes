@@ -1,0 +1,15 @@
+sr dynamic_int()
+{
+    var size_ar = Ints([69, 420, 69, 69]);
+
+    var cop_ar = Ints(size_ar);
+    rm(size_ar);
+
+    pout cop_ar; 
+    rm(cop_ar);
+
+ 
+
+}
+
+dynamic_int();

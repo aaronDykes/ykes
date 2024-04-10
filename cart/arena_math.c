@@ -2007,7 +2007,7 @@ Element _push_array_val(Element val, Element el)
             push_string(&el, ar.as.String);
             return el;
         default:
-            break;
+            goto ERR;
         }
         break;
     }
@@ -2043,7 +2043,7 @@ Element _pop_array_val(Element val)
         case ARENA_STRS:
             return pop_string(&val);
         default:
-            break;
+            goto ERR;
         }
         break;
     }

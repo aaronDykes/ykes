@@ -130,6 +130,8 @@ Arena arena_init(void *data, size_t size, T type);
 Arena arena_alloc(size_t size, T type);
 Arena arena_realloc(Arena *ar, size_t size, T type);
 
+Element cpy_array(Element el);
+
 Arena Ints(int *ints, int len);
 Arena Doubles(double *doubles, int len);
 Arena Longs(long long int *longs, int len);

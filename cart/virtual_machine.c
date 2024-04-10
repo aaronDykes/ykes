@@ -394,24 +394,24 @@ Interpretation run()
             PUSH(_get_access(POP(), POP()));
             break;
         case OP_SET_ACCESS:
-        {
             _set_access(PEEK(), NPEEK(1).arena, NPEEK(2));
             break;
-        }
         case OP_PUSH_ARRAY_VAL:
             PUSH(_push_array_val(POP(), POP()));
             break;
         case OP_POP__ARRAY_VAL:
         {
-            Element el = PEEK();
-            Element *p = &el;
-            --p->arena.count;
+            Element p = PEEK();
+            --p.arena.count;
             machine.pop_val = _pop_array_val(PEEK());
-            PEEK() = *p;
+            PEEK() = p;
             break;
         }
         case OP_PUSH:
             PUSH(machine.pop_val);
+            break;
+        case OP_CPY_ARRAY:
+            PUSH(cpy_array(POP()));
             break;
         case OP_LEN:
             PUSH(OBJ(_len(POP().arena)));
