@@ -23,51 +23,81 @@ void insert_entry(Table **t, Table entry)
     {
         Native *n = find_native_entry(t, &entry.key);
         if (!n)
+        {
             ALLOC_ENTRY(&tmp[index].next, entry);
-        return;
+            return;
+        }
+        n = NULL;
     }
-    if (entry.type == CLOSURE)
+    else if (entry.type == CLOSURE)
     {
         Closure *c = find_func_entry(t, &entry.key);
         if (!c)
+        {
             ALLOC_ENTRY(&tmp[index].next, entry);
-        return;
+            return;
+        }
+        c = NULL;
     }
-    if (entry.type == ARENA)
+    else if (entry.type == ARENA)
     {
         Arena f = find_arena_entry(t, &entry.key);
         if (f.type == ARENA_NULL)
+        {
             ALLOC_ENTRY(&tmp[index].next, entry);
-        return;
+            return;
+        }
     }
-    if (entry.type == CLASS)
+    else if (entry.type == CLASS)
     {
         Class *c = find_class_entry(t, &entry.key);
         if (!c)
+        {
             ALLOC_ENTRY(&tmp[index].next, entry);
-        return;
+            return;
+        }
+        c = NULL;
     }
-    if (entry.type == INSTANCE)
+    else if (entry.type == INSTANCE)
     {
         Instance *c = find_instance_entry(t, &entry.key);
         if (!c)
+        {
             ALLOC_ENTRY(&tmp[index].next, entry);
-        return;
+            return;
+        }
+        c = NULL;
     }
-    if (entry.type == TABLE)
+    else if (entry.type == TABLE)
     {
         Table *tab = find_table_entry(t, &entry.key);
         if (!tab)
-            ALLOC_ENTRY(&tmp[index].next, entry);
-        return;
-    }
+        {
 
-    if (entry.type == VECTOR)
+            ALLOC_ENTRY(&tmp[index].next, entry);
+            return;
+        }
+        tab = NULL;
+    }
+    else if (entry.type == VECTOR)
     {
         Arena *ar = find_vector_entry(t, &entry.key);
         if (!ar)
+        {
             ALLOC_ENTRY(&tmp[index].next, entry);
-        return;
+            return;
+        }
+        ar = NULL;
+    }
+    else if (entry.type == STACK)
+    {
+        Stack *ar = find_stack_entry(t, &entry.key);
+        if (!ar)
+        {
+            ALLOC_ENTRY(&tmp[index].next, entry);
+            return;
+        }
+        ar = NULL;
     }
 
     for (; ptr; ptr = ptr->next)
@@ -112,7 +142,12 @@ void free_entry(Element el)
     case VECTOR:
         FREE_ARENA(el.arena_vector);
         break;
-
+    case TABLE:
+        FREE_TABLE(el.table);
+        break;
+    case STACK:
+        FREE_STACK(el.stack);
+        break;
     default:
         break;
     }
@@ -310,6 +345,11 @@ Element find_entry(Table **t, Arena *hash)
         Arena *ar = find_vector_entry(t, hash);
         return !ar ? el : VECT(ar);
     }
+    if (entry.type == STACK)
+    {
+        Stack *s = find_stack_entry(t, hash);
+        return !s ? el : STK(s);
+    }
     return el;
 }
 
@@ -500,6 +540,37 @@ Arena *find_vector_entry(Table **t, Arena *hash)
 
     return NULL;
 }
+Stack *find_stack_entry(Table **t, Arena *hash)
+{
+    Table *a = *t;
+    size_t index = hash->as.hash & ((a - 1)->len - 1);
+    Table entry = a[index];
+
+    if (entry.key.type == ARENA_NULL)
+        return NULL;
+
+    if (entry.key.as.hash == hash->as.hash)
+        return entry.val.stack;
+
+    Table *tmp = entry.next;
+
+    for (; tmp; tmp = tmp->next)
+        switch (tmp->key.type)
+        {
+        case ARENA_VAR:
+        case ARENA_FUNC:
+        case ARENA_STR:
+        case ARENA_NATIVE:
+            if (tmp->key.as.hash == hash->as.hash)
+                return tmp->val.stack;
+            break;
+
+        default:
+            break;
+        }
+
+    return NULL;
+}
 
 Arena find_arena_entry(Table **t, Arena *hash)
 {
@@ -598,6 +669,8 @@ Table Entry(Arena key, Element val)
         return table_entry(key, val.table);
     case VECTOR:
         return vector_entry(key, val.arena_vector);
+    case STACK:
+        return stack_entry(key, val.stack);
     default:
         return func_entry(NULL);
     }
@@ -679,6 +752,17 @@ Table vector_entry(Arena ar, Arena *arena_vector)
     el.prev = NULL;
     el.size = el.key.size;
     el.type = VECTOR;
+    return el;
+}
+Table stack_entry(Arena ar, Stack *s)
+{
+    Table el;
+    el.key = ar;
+    el.val.stack = s;
+    el.next = NULL;
+    el.prev = NULL;
+    el.size = el.key.size;
+    el.type = STACK;
     return el;
 }
 

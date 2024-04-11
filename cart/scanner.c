@@ -299,7 +299,18 @@ static int id_type()
 
         return check_keyword(1, 1, "r", TOKEN_FUNC);
     case 'S':
-        return check_keyword(1, 5, "tring", TOKEN_ALLOC_STR);
+        if (scan.current - scan.start > 1)
+            switch (scan.start[1])
+            {
+            case 't':
+                switch (scan.start[2])
+                {
+                case 'r':
+                    return check_keyword(3, 3, "ing", TOKEN_ALLOC_STR);
+                case 'a':
+                    return check_keyword(3, 2, "ck", TOKEN_ALLOC_STACK);
+                }
+            }
     case 't':
         if (scan.current - scan.start > 1)
             switch (scan.start[1])

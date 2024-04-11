@@ -92,6 +92,9 @@
 #define TABLE(t) \
     table_el(t)
 
+#define STK(stk) \
+    stack_el(stk)
+
 #define FREE_CLASS(c) \
     free_class(c)
 #define FREE_INSTANCE(c) \
@@ -138,14 +141,18 @@ Arena Longs(long long int *longs, int len);
 Arena Strings(char **strs, int len);
 
 void push_arena(Element *el, Arena ar);
-void push_int(Element *el, int Int);
-void push_double(Element *el, double Double);
-void push_long(Element *el, long long int Long);
-void push_string(Element *el, const char *String);
+Element pop_arena(Element *el);
 
+void push_int(Element *el, int Int);
 Element pop_int(Element *el);
+
+void push_double(Element *el, double Double);
 Element pop_double(Element *el);
+
+void push_long(Element *el, long long int Long);
 Element pop_long(Element *el);
+
+void push_string(Element *el, const char *String);
 Element pop_string(Element *el);
 
 Arena Char(char ch);
@@ -172,6 +179,7 @@ Upval **upvals(size_t size);
 void free_upvals(Upval **up);
 
 Stack value(Element el);
+Element stack_el(Stack *el);
 Element Obj(Arena ar);
 Element native_fn(Native *native);
 Element closure(Closure *clos);

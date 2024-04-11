@@ -1,0 +1,17 @@
+
+sr stack_alloc()
+{
+    sr hello()
+    {
+        pout "hello world!";
+    } 
+     
+    
+    var s = Stack;
+    s.push(hello);
+    s[0]();
+    
+    rm(s);
+}
+
+stack_alloc();

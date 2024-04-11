@@ -817,6 +817,15 @@ Stack value(Element e)
     s.as = e;
     return s;
 }
+
+Element stack_el(Stack *el)
+{
+    Element e;
+    e.stack = el;
+    e.type = STACK;
+    return e;
+}
+
 Element Obj(Arena ar)
 {
     Element s;
@@ -1272,6 +1281,21 @@ void print_line(Element ar)
 
         printf("\n]\n");
         return;
+    }
+
+    if (ar.type == STACK)
+    {
+        printf("{");
+
+        if (ar.stack->count == 0)
+        {
+            printf(" }\n");
+            return;
+        }
+        for (int i = 0; i < ar.stack->count; i++)
+            print_line((ar.stack + i)->as);
+
+        printf("\n}\n");
     }
 
     switch (a.type)

@@ -402,7 +402,7 @@ Interpretation run()
             Element e1 = POP();
             Element e2 = POP();
             PUSH(_push_array_val(e1, e2));
-            PUSH(OBJ(Bool(e2.type == VECTOR)));
+            PUSH(OBJ(Bool(e2.type == VECTOR || e2.type == STACK)));
         }
         break;
         case OP_POP__ARRAY_VAL:

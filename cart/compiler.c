@@ -957,14 +957,48 @@ static void array_alloc(Compiler *c)
 }
 static void vector_alloc(Compiler *c)
 {
-    consume(TOKEN_CH_LPAREN, "Expect `(` prior to vector allocation.", &c->parser);
+    Arena *ar = NULL;
+    if (!match(TOKEN_CH_LPAREN, &c->parser))
+    {
+        ar = GROW_ARENA(NULL, STACK_SIZE);
+        emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, VECT(ar)));
+        return;
+    }
 
     if (match(TOKEN_INT, &c->parser))
-        emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, VECT(GROW_ARENA(NULL, atoi(c->parser.pre.start)))));
+    {
+        ar = GROW_ARENA(NULL, atoi(c->parser.pre.start));
+        emit_bytes(
+            c, OP_CONSTANT,
+            add_constant(&c->func->ch, VECT(ar)));
+    }
     else
         error("ERROR: Invalid expression inside of vector allocation", &c->parser);
 
     consume(TOKEN_CH_RPAREN, "Expect `)` after vector allocation.", &c->parser);
+}
+
+static void stack_alloc(Compiler *c)
+{
+    Stack *s = NULL;
+    if (!match(TOKEN_CH_LPAREN, &c->parser))
+    {
+        s = GROW_STACK(NULL, STACK_SIZE);
+        emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, STK(s)));
+        return;
+    }
+
+    if (match(TOKEN_INT, &c->parser))
+    {
+        s = stack(atoi(c->parser.pre.start));
+        emit_bytes(
+            c, OP_CONSTANT,
+            add_constant(&c->func->ch, STK(s)));
+    }
+    else
+        error("ERROR: Invalid expression inside of Stack allocation", &c->parser);
+
+    consume(TOKEN_CH_RPAREN, "Expect `)` after Stack allocation", &c->parser);
 }
 
 static void table(Compiler *c)

@@ -145,6 +145,7 @@ typedef enum
     FUNCTION,
     VECTOR,
     METHOD,
+    STACK,
     TABLE,
     INIT,
     UPVAL,
@@ -264,6 +265,7 @@ struct Element
         Class *classc;
         Instance *instance;
         Table *table;
+        Stack *stack;
         void *null;
     };
 };
