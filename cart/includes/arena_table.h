@@ -4,6 +4,8 @@
 
 #define FREE_ENTRY(e) \
     free_entry(e)
+#define FREE_TABLE(ar) \
+    arena_realloc_table(ar, 0)
 
 void insert_entry(Table **t, Table entry);
 void delete_arena_entry(Table **t, Arena key);
@@ -16,6 +18,7 @@ Instance *find_instance_entry(Table **t, Arena *key);
 Closure *find_func_entry(Table **t, Arena *key);
 Class *find_class_entry(Table **t, Arena *key);
 Native *find_native_entry(Table **t, Arena *key);
+Arena *find_vector_entry(Table **t, Arena *hash);
 
 Table *find_table_entry(Table **t, Arena *hash);
 
@@ -26,6 +29,7 @@ Table instance_entry(Arena ar, Instance *c);
 Table table_entry(Arena ar, Table *t);
 Table func_entry(Closure *c);
 Table native_entry(Native *func);
+Table vector_entry(Arena ar, Arena *arena_vector);
 Table new_entry(Table t);
 
 void write_table(Table *t, Arena a, Element b);

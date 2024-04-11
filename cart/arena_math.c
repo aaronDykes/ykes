@@ -1307,6 +1307,39 @@ ERR:
     exit(1);
 }
 
+static Arena _access_arena(Arena *vect, Arena index, int len)
+{
+    switch (index.type)
+    {
+    case ARENA_INT:
+        if (index.as.Int > len - 1)
+            goto ERR;
+        return vect[index.as.Int];
+    case ARENA_LONG:
+        if (index.as.Long > len - 1)
+            goto ERR;
+        return vect[index.as.Long];
+    case ARENA_BYTE:
+        if (index.as.Byte > len - 1)
+            goto ERR;
+        return vect[index.as.Byte];
+    case ARENA_CHAR:
+        if ((int)index.as.Char > len - 1)
+            goto ERR;
+        return vect[(int)index.as.Char];
+    case ARENA_SIZE:
+        if ((int)index.as.Size > len - 1)
+            goto ERR;
+        return vect[(int)index.as.Size];
+    default:
+        log_err("Invalid indexing type.");
+        return Null();
+    }
+ERR:
+    log_err("ERROR: Array index out of bounds.");
+    exit(1);
+}
+
 static void _set_int_index(int **Ints, Arena index, int Int, int len)
 {
     switch (index.type)
@@ -1482,6 +1515,56 @@ static void _set_strings_index(char ***Strings, Arena index, char *String, int l
         return;
     default:
         log_err("Invalid indexing type.");
+    }
+ERR:
+    log_err("ERROR: Array index out of bounds.");
+    exit(1);
+}
+static void _set_arena_index(Arena **vect, Arena index, Arena val)
+{
+    int len = ((*vect) - 1)->len,
+        count = ((*vect) - 1)->count;
+
+    switch (index.type)
+    {
+    case ARENA_INT:
+        if (index.as.Int > count - 1 && index.as.Int < len)
+            ((*vect) - 1)->count = index.as.Int + 1;
+        else if (index.as.Int > count && index.as.Int >= len)
+            goto ERR;
+        (*vect)[index.as.Int] = val;
+        return;
+    case ARENA_LONG:
+        if (index.as.Long > count - 1 && index.as.Long < len)
+            ((*vect) - 1)->count = index.as.Long + 1;
+        else if (index.as.Long > count && index.as.Long >= len)
+            goto ERR;
+        (*vect)[index.as.Long] = val;
+        return;
+    case ARENA_BYTE:
+        if (index.as.Byte > count - 1 && index.as.Byte < len)
+            ((*vect) - 1)->count = index.as.Byte + 1;
+        else if (index.as.Byte > count && index.as.Byte >= len)
+            goto ERR;
+        (*vect)[index.as.Byte] = val;
+        return;
+    case ARENA_CHAR:
+        if ((int)index.as.Char > count - 1 && (int)index.as.Char < len)
+            ((*vect) - 1)->count = (int)index.as.Char + 1;
+        else if ((int)index.as.Char > count && (int)index.as.Char >= len)
+            goto ERR;
+        (*vect)[(int)index.as.Char] = val;
+        return;
+    case ARENA_SIZE:
+        if ((int)index.as.Size > count - 1 && (int)index.as.Size < len)
+            ((*vect) - 1)->count = (int)index.as.Size + 1;
+        else if ((int)index.as.Size > count && (int)index.as.Size >= len)
+            goto ERR;
+        (*vect)[(int)index.as.Size] = val;
+        return;
+    default:
+        log_err("Invalid indexing type.");
+        // return Null();
     }
 ERR:
     log_err("ERROR: Array index out of bounds.");
@@ -1910,6 +1993,8 @@ Element _get_access(Element a, Element b)
             goto ERR;
         return find_entry(&b.table, &a.arena);
 
+    case VECTOR:
+        return OBJ(_access_arena(b.arena_vector, a.arena, (b.arena_vector - 1)->count));
     default:
     ERR:
         log_err("ERROR: access type mismatch.");
@@ -1963,6 +2048,11 @@ void _set_access(Element val, Arena index, Element b)
         break;
     case INSTANCE:
         break;
+    case VECTOR:
+        if (val.type != ARENA)
+            goto ERR;
+        _set_arena_index(&b.arena_vector, index, val.arena);
+        break;
     default:
     ERR:
         log_err("ERROR: access type mismatch.");
@@ -1995,12 +2085,7 @@ Element _push_array_val(Element val, Element el)
                 goto ERR;
             push_double(&el, ar.as.Double);
             return el;
-        // case ARENA_STR:
-        // case ARENA_CSTR:
-        //     if (ar.type != ARENA_CHAR)
-        //         goto ERR;
-        //     push_char(&val, ar.as.Char);
-        //     return;
+
         case ARENA_STRS:
             if (ar.type != ARENA_STR && ar.type != ARENA_CSTR)
                 goto ERR;
@@ -2009,8 +2094,10 @@ Element _push_array_val(Element val, Element el)
         default:
             goto ERR;
         }
-        break;
     }
+    case VECTOR:
+        push_arena(&el, val.arena);
+        break;
     default:
     ERR:
         log_err("ERROR: push type mismatch.");
@@ -2034,12 +2121,6 @@ Element _pop_array_val(Element val)
             return pop_long(&val);
         case ARENA_DOUBLES:
             return pop_double(&val);
-        // case ARENA_STR:
-        // case ARENA_CSTR:
-        //     if (ar.type != ARENA_CHAR)
-        //         goto ERR;
-        //     push_char(&valr);
-        //     return;
         case ARENA_STRS:
             return pop_string(&val);
         default:
@@ -2047,6 +2128,8 @@ Element _pop_array_val(Element val)
         }
         break;
     }
+    case VECTOR:
+        break;
     default:
     ERR:
         log_err("ERROR: push type mismatch.");
@@ -2054,20 +2137,31 @@ Element _pop_array_val(Element val)
     }
 }
 
-Arena _len(Arena a)
+Arena _len(Element el)
 {
-    switch (a.type)
+    switch (el.type)
     {
-    case ARENA_INTS:
-    case ARENA_LONGS:
-    case ARENA_DOUBLES:
-    case ARENA_STRS:
-        return Int(a.count);
-    case ARENA_CSTR:
-    case ARENA_STR:
-        return Int(a.as.len);
+    case ARENA:
+    {
+        Arena a = el.arena;
+        switch (a.type)
+        {
+        case ARENA_INTS:
+        case ARENA_LONGS:
+        case ARENA_DOUBLES:
+        case ARENA_STRS:
+            return Int(a.count);
+        case ARENA_CSTR:
+        case ARENA_STR:
+            return Int(a.as.len);
+        default:
+            log_err("ERROR: Invalid object.");
+            return Null();
+        }
+    }
+    case VECTOR:
+        return Int((el.arena_vector - 1)->count);
     default:
-        log_err("ERROR: Invalid object.");
         return Null();
     }
 }

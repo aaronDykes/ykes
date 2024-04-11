@@ -61,6 +61,15 @@ void insert_entry(Table **t, Table entry)
             ALLOC_ENTRY(&tmp[index].next, entry);
         return;
     }
+
+    if (entry.type == VECTOR)
+    {
+        Arena *ar = find_vector_entry(t, &entry.key);
+        if (!ar)
+            ALLOC_ENTRY(&tmp[index].next, entry);
+        return;
+    }
+
     for (; ptr; ptr = ptr->next)
         switch (ptr->key.type)
         {
@@ -100,6 +109,10 @@ void free_entry(Element el)
     case INSTANCE:
         FREE_INSTANCE(el.instance);
         break;
+    case VECTOR:
+        FREE_ARENA(el.arena_vector);
+        break;
+
     default:
         break;
     }
@@ -292,6 +305,11 @@ Element find_entry(Table **t, Arena *hash)
         Table *tab = find_table_entry(t, hash);
         return !tab ? el : TABLE(tab);
     }
+    if (entry.type == VECTOR)
+    {
+        Arena *ar = find_vector_entry(t, hash);
+        return !ar ? el : VECT(ar);
+    }
     return el;
 }
 
@@ -451,6 +469,37 @@ Table *find_table_entry(Table **t, Arena *hash)
 
     return NULL;
 }
+Arena *find_vector_entry(Table **t, Arena *hash)
+{
+    Table *a = *t;
+    size_t index = hash->as.hash & ((a - 1)->len - 1);
+    Table entry = a[index];
+
+    if (entry.key.type == ARENA_NULL)
+        return NULL;
+
+    if (entry.key.as.hash == hash->as.hash)
+        return entry.val.arena_vector;
+
+    Table *tmp = entry.next;
+
+    for (; tmp; tmp = tmp->next)
+        switch (tmp->key.type)
+        {
+        case ARENA_VAR:
+        case ARENA_FUNC:
+        case ARENA_STR:
+        case ARENA_NATIVE:
+            if (tmp->key.as.hash == hash->as.hash)
+                return tmp->val.arena_vector;
+            break;
+
+        default:
+            break;
+        }
+
+    return NULL;
+}
 
 Arena find_arena_entry(Table **t, Arena *hash)
 {
@@ -516,8 +565,12 @@ Table new_entry(Table t)
     case CLOSURE:
         el.val.closure = t.val.closure;
         break;
-    case UPVAL:
-
+    case TABLE:
+        el.val.table = t.val.table;
+        break;
+    case VECTOR:
+        el.val.arena_vector = t.val.arena_vector;
+        break;
     default:
         break;
     }
@@ -543,6 +596,8 @@ Table Entry(Arena key, Element val)
         return instance_entry(key, val.instance);
     case TABLE:
         return table_entry(key, val.table);
+    case VECTOR:
+        return vector_entry(key, val.arena_vector);
     default:
         return func_entry(NULL);
     }
@@ -613,6 +668,17 @@ Table table_entry(Arena ar, Table *t)
     el.prev = NULL;
     el.size = el.key.size;
     el.type = TABLE;
+    return el;
+}
+Table vector_entry(Arena ar, Arena *arena_vector)
+{
+    Table el;
+    el.key = ar;
+    el.val.arena_vector = arena_vector;
+    el.next = NULL;
+    el.prev = NULL;
+    el.size = el.key.size;
+    el.type = VECTOR;
     return el;
 }
 

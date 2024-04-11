@@ -180,6 +180,8 @@ static int id_type()
 {
     switch (*scan.start)
     {
+    case 'A':
+        return check_keyword(1, 4, "rray", TOKEN_ALLOC_ARRAY);
     case 'a':
         return check_keyword(1, 2, "nd", TOKEN_OP_AND);
     case 'b':
@@ -312,6 +314,8 @@ static int id_type()
 
     case 'v':
         return check_keyword(1, 2, "ar", TOKEN_VAR);
+    case 'V':
+        return check_keyword(1, 5, "ector", TOKEN_ALLOC_VECTOR);
     case 'w':
         return check_keyword(1, 4, "hile", TOKEN_WHILE);
     }

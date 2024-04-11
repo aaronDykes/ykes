@@ -248,6 +248,9 @@ Arena *arena_alloc_arena(size_t size)
     Arena *p = ALLOC((size * sizeof(Arena)) + sizeof(Arena));
 
     p->size = size;
+    p->count = 0;
+    p->size = size;
+    p->len = (int)size;
 
     return p + 1;
 }
@@ -277,6 +280,8 @@ Arena *arena_realloc_arena(Arena *ar, size_t size)
 
     for (size_t i = 0; i < new_size; i++)
         ptr[i] = ar[i];
+
+    (ptr - 1)->count = (ar - 1)->count;
 
     arena_free_arena(ar);
     return ptr;
@@ -397,6 +402,7 @@ Element cpy_array(Element el)
     Arena ar = el.arena;
     T type = ar.type;
     size_t size = ar.size;
+    int len = ar.count;
 
     void *ptr = NULL;
     ptr = ALLOC(size);
@@ -439,8 +445,8 @@ Element cpy_array(Element el)
         if (!ar.listof.Strings || ar.type == ARENA_NULL)
             return OBJ(arena_init(ptr, size, type));
         Arena str = arena_init(ptr, size, type);
-        for (size_t i = 0; i < size; i++)
-            str.listof.Strings[i] = String(ar.listof.Strings[i]).as.String;
+        for (int i = 0; i < len; i++)
+            str.listof.Strings[i] = CString(ar.listof.Strings[i]).as.String;
     }
     break;
 
@@ -578,6 +584,24 @@ static void long_push(long long int **Longs, int index, long long int Long)
 static void string_push(char ***Strings, int index, char *String)
 {
     (*Strings)[index] = String;
+}
+
+void push_arena(Element *el, Arena ar)
+{
+    if ((el->arena_vector - 1)->len < (el->arena_vector - 1)->count + 1)
+    {
+        (el->arena_vector - 1)->len = GROW_CAPACITY((el->arena_vector - 1)->len);
+        el->arena_vector = GROW_ARENA(el->arena_vector, (el->arena_vector - 1)->len);
+    }
+
+    el->arena_vector[(el->arena_vector - 1)->count++] = ar;
+}
+
+Element pop_arena(Element *el)
+{
+    Element tmp = OBJ(el->arena_vector[(el->arena_vector - 1)->count - 1]);
+    el->arena_vector[--(el->arena_vector - 1)->count] = Null();
+    return tmp;
 }
 
 void push_int(Element *el, int Int)
@@ -843,6 +867,13 @@ Element table_el(Table *t)
     el.type = TABLE;
     return el;
 }
+Element vector(Arena *vect)
+{
+    Element el;
+    el.arena_vector = vect;
+    el.type = VECTOR;
+    return el;
+}
 Element null_obj()
 {
     Element el;
@@ -993,6 +1024,8 @@ void arena_free_entry(Table *entry)
         FREE_INSTANCE(entry->val.instance);
     else if (entry->type == TABLE)
         arena_free_table(entry->val.table);
+    else if (entry->type == VECTOR)
+        FREE_ARENA(entry->val.arena_vector);
     else
         FREE_CLOSURE(&entry->val.closure);
 
@@ -1088,10 +1121,111 @@ static void parse_str(const char *str)
         else
             printf("%c", *s);
 
-    printf("\n");
+    // printf("\n");
 }
 
 void print(Element ar)
+{
+    Arena a = ar.arena;
+
+    if (ar.type == NATIVE)
+    {
+        printf("<native: %s>", ar.native->obj.as.String);
+        return;
+    }
+    if (ar.type == CLOSURE)
+    {
+        printf("<fn: %s>", ar.closure->func->name.as.String);
+        return;
+    }
+    if (ar.type == CLASS)
+    {
+        printf("<class: %s>", ar.classc->name.as.String);
+        return;
+    }
+    if (ar.type == INSTANCE)
+    {
+        if (!ar.instance->classc)
+            return;
+        printf("<instance: %s>", ar.instance->classc->name.as.String);
+        return;
+    }
+    if (ar.type == VECTOR)
+    {
+        printf("[\n");
+
+        int count = (ar.arena_vector - 1)->count;
+        for (int i = 0; i < (ar.arena_vector - 1)->count; i++)
+        {
+
+            print(OBJ(ar.arena_vector[i]));
+            if (i != (ar.arena_vector - 1)->count - 1)
+                printf(", ");
+        }
+
+        printf("\n]\n");
+        return;
+    }
+
+    switch (a.type)
+    {
+    case ARENA_BYTE:
+        printf("%d", a.as.Byte);
+        break;
+    case ARENA_CHAR:
+        printf("%c", a.as.Char);
+        break;
+    case ARENA_DOUBLE:
+        printf("%f", a.as.Double);
+        break;
+    case ARENA_INT:
+        printf("%d", a.as.Int);
+        break;
+    case ARENA_LONG:
+        printf("%lld", a.as.Long);
+        break;
+    case ARENA_BOOL:
+        printf("%s", (a.as.Bool == true) ? "true" : "false");
+        break;
+    case ARENA_STR:
+    case ARENA_VAR:
+    case ARENA_FUNC:
+    case ARENA_CSTR:
+        parse_str(a.as.String);
+        break;
+    case ARENA_INTS:
+        printf("[ ");
+        for (int i = 0; i < a.count; i++)
+            if (i == a.count - 1)
+                printf("%d ]", a.listof.Ints[i]);
+            else
+                printf("%d, ", a.listof.Ints[i]);
+        break;
+    case ARENA_DOUBLES:
+        printf("[ ");
+        for (int i = 0; i < a.count; i++)
+            if (i == a.count - 1)
+                printf("%f ]", a.listof.Doubles[i]);
+            else
+                printf("%f, ", a.listof.Doubles[i]);
+        break;
+    case ARENA_STRS:
+        printf("[ ");
+        for (int i = 0; i < a.count; i++)
+            if (i == a.count - 1)
+                printf("%s ]", a.listof.Strings[i]);
+            else
+                printf("%s, ", a.listof.Strings[i]);
+        break;
+    case ARENA_NULL:
+        printf("[ null ]");
+        break;
+
+    default:
+        return;
+    }
+}
+void print_line(Element ar)
 {
     Arena a = ar.arena;
 
@@ -1117,6 +1251,29 @@ void print(Element ar)
         printf("<instance: %s>\n", ar.instance->classc->name.as.String);
         return;
     }
+    if (ar.type == VECTOR)
+    {
+        printf("[");
+
+        int count = (ar.arena_vector - 1)->count;
+        if (count == 0)
+        {
+            printf(" ]\n");
+            return;
+        }
+
+        printf("\n");
+        for (int i = 0; i < (ar.arena_vector - 1)->count; i++)
+        {
+            print(OBJ(ar.arena_vector[i]));
+            if (i != (ar.arena_vector - 1)->count - 1)
+                printf(", ");
+        }
+
+        printf("\n]\n");
+        return;
+    }
+
     switch (a.type)
     {
     case ARENA_BYTE:
@@ -1142,6 +1299,7 @@ void print(Element ar)
     case ARENA_FUNC:
     case ARENA_CSTR:
         parse_str(a.as.String);
+        printf("\n");
         break;
     case ARENA_INTS:
         printf("[ ");
@@ -1170,6 +1328,7 @@ void print(Element ar)
     case ARENA_NULL:
         printf("[ null ]\n");
         break;
+
     default:
         return;
     }

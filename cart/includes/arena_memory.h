@@ -49,8 +49,6 @@
     arena_realloc_table(ar, size)
 #define ALLOC_ENTRY(a, b) \
     alloc_entry(a, b)
-#define FREE_TABLE(ar) \
-    arena_realloc_table(ar, 0)
 #define FREE_TABLE_ENTRY(ar) \
     arena_free_entry(ar)
 
@@ -75,6 +73,8 @@
 
 #define OBJ(o) \
     Obj(o)
+#define VECT(o) \
+    vector(o)
 #define FUNC(ar) \
     Func(ar)
 #define NATIVE(n) \
@@ -137,6 +137,7 @@ Arena Doubles(double *doubles, int len);
 Arena Longs(long long int *longs, int len);
 Arena Strings(char **strs, int len);
 
+void push_arena(Element *el, Arena ar);
 void push_int(Element *el, int Int);
 void push_double(Element *el, double Double);
 void push_long(Element *el, long long int Long);
@@ -177,6 +178,7 @@ Element closure(Closure *clos);
 Element new_class(Class *classc);
 Element new_instance(Instance *ci);
 Element table_el(Table *t);
+Element vector(Arena *vect);
 Element null_obj();
 
 Function *function(Arena name);
@@ -192,6 +194,7 @@ Native *native(NativeFn native, Arena ar);
 void free_native(Native *native);
 
 void print(Element ar);
+void print_line(Element ar);
 
 size_t hash(Arena key);
 void alloc_entry(Table **e, Table el);

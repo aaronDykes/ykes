@@ -267,7 +267,7 @@ Interpretation run()
     {
 #ifdef DEBUG_TRACE_EXECUTION
         for (Stack *v = machine.stack; v < machine.stack->top; v++)
-            print(v->as);
+            print_line(v->as);
         disassemble_instruction(&frame->closure->func->ch,
                                 (int)(frame->ip - frame->closure->func->ch.op_codes.listof.Bytes));
 #endif
@@ -397,12 +397,21 @@ Interpretation run()
             _set_access(PEEK(), NPEEK(1).arena, NPEEK(2));
             break;
         case OP_PUSH_ARRAY_VAL:
-            PUSH(_push_array_val(POP(), POP()));
-            break;
+        {
+
+            Element e1 = POP();
+            Element e2 = POP();
+            PUSH(_push_array_val(e1, e2));
+            PUSH(OBJ(Bool(e2.type == VECTOR)));
+        }
+        break;
         case OP_POP__ARRAY_VAL:
         {
             Element p = PEEK();
-            --p.arena.count;
+            if (p.type == ARENA)
+                --p.arena.count;
+            else
+                --p.arena_vector->count;
             machine.pop_val = _pop_array_val(PEEK());
             PEEK() = p;
             break;
@@ -414,7 +423,7 @@ Interpretation run()
             PUSH(cpy_array(POP()));
             break;
         case OP_LEN:
-            PUSH(OBJ(_len(POP().arena)));
+            PUSH(OBJ(_len(POP())));
             break;
         case OP_NULL:
             break;
@@ -556,7 +565,7 @@ Interpretation run()
         break;
 
         case OP_PRINT:
-            print(POP());
+            print_line(POP());
             break;
         case OP_RETURN:
         {

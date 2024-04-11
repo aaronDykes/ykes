@@ -26,7 +26,8 @@ typedef enum
     ARENA_FUNC,
     ARENA_NATIVE,
     ARENA_VAR,
-    ARENA_CLASS
+    ARENA_CLASS,
+    ARENA_VECTOR
 
 } T;
 
@@ -142,6 +143,7 @@ typedef enum
     INSTANCE,
     CLOSURE,
     FUNCTION,
+    VECTOR,
     METHOD,
     TABLE,
     INIT,
@@ -256,6 +258,7 @@ struct Element
     union
     {
         Arena arena;
+        Arena *arena_vector;
         Native *native;
         Closure *closure;
         Class *classc;

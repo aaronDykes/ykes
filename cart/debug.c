@@ -20,7 +20,7 @@ static int constant_instruction(const char *name, Chunk *c, int offset)
     uint8_t constant = c->op_codes.listof.Bytes[offset + 1];
 
     printf("%-16s %4d '", name, constant);
-    print(c->constants[constant].as);
+    print_line(c->constants[constant].as);
     printf("\n");
     return offset + 2;
 }
@@ -61,7 +61,7 @@ int disassemble_instruction(Chunk *c, int offset)
         offset++;
         uint8_t constant = c->op_codes.listof.Bytes[offset++];
         printf("%-16s %4d ", "OP_CLOSURE", constant);
-        print(c->constants[constant].as);
+        print_line(c->constants[constant].as);
 
         Closure *clos = c->constants[constant].as.closure;
         if (!clos)

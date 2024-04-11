@@ -1,15 +1,17 @@
-sr dynamic_int()
+sr dynamic_array()
 {
-    var size_ar = Ints([69, 420, 69, 69]);
 
-    var cop_ar = Ints(size_ar);
+
+    var size_ar = Array(["vector", "of", "vectors"]);
+
+    var cop_ar = Array(size_ar);
     rm(size_ar);
 
-    pout cop_ar; 
+    pout size_ar; 
     rm(cop_ar);
 
  
 
 }
 
-dynamic_int();
+dynamic_array();

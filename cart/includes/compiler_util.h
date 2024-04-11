@@ -192,7 +192,8 @@ static void boolean(Compiler *c);
 static void cstr(Compiler *c);
 
 static void string(Compiler *c);
-static void ints(Compiler *c);
+static void array_alloc(Compiler *c);
+static void vector_alloc(Compiler *c);
 
 static void table(Compiler *c);
 
@@ -273,7 +274,8 @@ static PRule rules[] = {
     [TOKEN_ID] = {id, NULL, PREC_NONE},
     [TOKEN_STR] = {cstr, NULL, PREC_NONE},
     [TOKEN_ALLOC_STR] = {string, NULL, PREC_NONE},
-    [TOKEN_ALLOC_INTS] = {ints, NULL, PREC_NONE},
+    [TOKEN_ALLOC_ARRAY] = {array_alloc, NULL, PREC_NONE},
+    [TOKEN_ALLOC_VECTOR] = {vector_alloc, NULL, PREC_NONE},
     [TOKEN_TABLE] = {table, NULL, PREC_NONE},
     [TOKEN_BTYE] = {NULL, NULL, PREC_NONE},
 

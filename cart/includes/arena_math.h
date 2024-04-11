@@ -26,7 +26,7 @@ void _set_access(Element val, Arena index, Element el);
 Element _push_array_val(Element val, Element el);
 Element _pop_array_val(Element val);
 
-Arena _len(Arena a);
+Arena _len(Element el);
 
 Arena _sqr(Arena a);
 Arena _prime(Arena a);

@@ -937,7 +937,7 @@ static void string(Compiler *c)
     consume(TOKEN_CH_RPAREN, "Expect `)` after string declaration.", &c->parser);
 }
 
-static void ints(Compiler *c)
+static void array_alloc(Compiler *c)
 {
     consume(TOKEN_CH_LPAREN, "Expect `(` prior to allocation.", &c->parser);
 
@@ -950,8 +950,21 @@ static void ints(Compiler *c)
     }
     else if (match(TOKEN_CH_LSQUARE, &c->parser))
         array(c);
+    else
+        error("ERROR: Invalid expression inside of array allocation", &c->parser);
 
     consume(TOKEN_CH_RPAREN, "Expect `)` after allocation.", &c->parser);
+}
+static void vector_alloc(Compiler *c)
+{
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to vector allocation.", &c->parser);
+
+    if (match(TOKEN_INT, &c->parser))
+        emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, VECT(GROW_ARENA(NULL, atoi(c->parser.pre.start)))));
+    else
+        error("ERROR: Invalid expression inside of vector allocation", &c->parser);
+
+    consume(TOKEN_CH_RPAREN, "Expect `)` after vector allocation.", &c->parser);
 }
 
 static void table(Compiler *c)
@@ -1113,7 +1126,13 @@ static void dot(Compiler *c)
     if (ar.as.hash == c->base->ar_push.as.hash)
     {
         push_array_val(c);
+        int exit = emit_jump(c, OP_JMPT);
+        emit_byte(c, OP_POP);
         emit_bytes(c, c->array_set, c->array_index);
+        int falsey = emit_jump(c, OP_JMP);
+        patch_jump(c, exit);
+        emit_byte(c, OP_POP);
+        patch_jump(c, falsey);
         return;
     }
 
