@@ -20,7 +20,6 @@ sr stack_alloc()
 
 
     pout(s, s[1]);
-    
     rm(s);
 }
 

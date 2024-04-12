@@ -12,12 +12,10 @@ sr twod_ar()
     ar[4] = last;
 
     for (var i = 0; i < ar.len; i++)
-    {
         pout(
             ar[i],
             ar[i].len
         );
-    }
 
     pout(ar.pop(), ar);
 

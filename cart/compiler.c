@@ -124,9 +124,6 @@ static void method(Compiler *c, Class *class)
     if (ar.as.hash != c->base->init_func.as.hash)
         type = METHOD;
     write_table(c->base->calls, ar, OBJ(Int(c->base->call_count++)));
-    // c->base->calls[c->base->call_count++] = ar;
-    // {
-    // }
 
     method_body(c, type, ar, &class);
 }

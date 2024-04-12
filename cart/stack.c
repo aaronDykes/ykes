@@ -15,6 +15,7 @@ void write_chunk(Chunk *c, uint8_t byte, int line)
         c->cases = GROW_ARRAY(&c->cases, c->cases.len * sizeof(int), ARENA_INTS);
     }
 
+    // push_int()
     if (c->lines.len < c->lines.count + 1)
     {
         c->lines.len = GROW_CAPACITY(c->lines.len);

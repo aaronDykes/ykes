@@ -11,9 +11,7 @@ if (69 == 69)
         pout("this is lame");
 
         if (69 != 69)
-        {
             pout("wow, it's nested");
-        }
         elif (420 == 420) 
         {
             pout("wow, it's nested again");

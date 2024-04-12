@@ -3,8 +3,9 @@ sr dynamic_array()
 
 
     var size_ar = Array(["vector", "of", "vectors\n"]);
-
     var cop_ar = Array(size_ar);
+
+
     rm(size_ar);
     pout(size_ar); 
     rm(cop_ar);

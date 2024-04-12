@@ -1372,34 +1372,47 @@ ERR:
     exit(1);
 }
 
-static void _set_int_index(int **Ints, Arena index, int Int, int len)
+static void _set_int_index(Arena *Ints, Arena index, int Int)
 {
+    int count = Ints->count,
+        len = Ints->len;
+
     switch (index.type)
     {
     case ARENA_INT:
-        if (index.as.Int > len - 1)
+        if (index.as.Int > count - 1 && index.as.Int < len)
+            Ints->count = index.as.Int;
+        else if (index.as.Int > count - 1 && index.as.Int >= len)
             goto ERR;
-        (*Ints)[index.as.Int] = Int;
+        Ints->listof.Ints[index.as.Int] = Int;
         return;
     case ARENA_LONG:
-        if (index.as.Long > len - 1)
+        if (index.as.Long > count - 1 && index.as.Long < len)
+            Ints->count = (int)index.as.Long;
+        else if (index.as.Long > count - 1 && index.as.Long >= len)
             goto ERR;
-        (*Ints)[index.as.Long] = Int;
+        Ints->listof.Ints[index.as.Long] = Int;
         return;
     case ARENA_BYTE:
-        if (index.as.Byte > len - 1)
+        if (index.as.Byte > count - 1 && index.as.Byte < len)
+            Ints->count = (int)index.as.Byte;
+        else if (index.as.Byte > count - 1 && index.as.Byte >= len)
             goto ERR;
-        (*Ints)[index.as.Byte] = Int;
+        Ints->listof.Ints[index.as.Byte] = Int;
         return;
     case ARENA_CHAR:
-        if ((int)index.as.Char > len - 1)
+        if ((int)index.as.Char > count - 1 && (int)index.as.Char < len)
+            Ints->count = (int)index.as.Char;
+        else if ((int)index.as.Char > count - 1 && (int)index.as.Char >= len)
             goto ERR;
-        (*Ints)[(int)index.as.Char] = Int;
+        Ints->listof.Ints[(int)index.as.Char] = Int;
         return;
     case ARENA_SIZE:
-        if ((int)index.as.Size > len - 1)
+        if ((int)index.as.Size > count - 1 && (int)index.as.Size < len)
+            Ints->count = (int)index.as.Size;
+        else if ((int)index.as.Size > count - 1 && (int)index.as.Size >= len)
             goto ERR;
-        (*Ints)[(int)index.as.Size] = Int;
+        Ints->listof.Ints[(int)index.as.Size] = Int;
         return;
     default:
         log_err("Invalid indexing type.");
@@ -1408,34 +1421,47 @@ ERR:
     log_err("ERROR: Array index out of bounds.");
     exit(1);
 }
-static void _set_long_index(long long int **Longs, Arena index, long long int Long, int len)
+static void _set_long_index(Arena *Longs, Arena index, long long int Long)
 {
+    int count = Longs->count,
+        len = Longs->len;
+
     switch (index.type)
     {
     case ARENA_INT:
-        if (index.as.Int > len - 1)
+        if (index.as.Int > count - 1 && index.as.Int < len)
+            Longs->count = index.as.Int;
+        else if (index.as.Int > count - 1 && index.as.Int >= len)
             goto ERR;
-        (*Longs)[index.as.Int] = Long;
+        Longs->listof.Longs[index.as.Int] = Long;
         return;
     case ARENA_LONG:
-        if (index.as.Long > len - 1)
+        if (index.as.Long > count - 1 && index.as.Long < len)
+            Longs->count = (int)index.as.Long;
+        else if (index.as.Long > count - 1 && index.as.Long >= len)
             goto ERR;
-        (*Longs)[index.as.Long] = Long;
+        Longs->listof.Longs[index.as.Long] = Long;
         return;
     case ARENA_BYTE:
-        if (index.as.Byte > len - 1)
+        if (index.as.Byte > count - 1 && index.as.Byte < len)
+            Longs->count = (int)index.as.Byte;
+        else if (index.as.Byte > count - 1 && index.as.Byte >= len)
             goto ERR;
-        (*Longs)[index.as.Byte] = Long;
+        Longs->listof.Longs[index.as.Byte] = Long;
         return;
     case ARENA_CHAR:
-        if ((int)index.as.Char > len - 1)
+        if ((int)index.as.Char > count - 1 && (int)index.as.Char < len)
+            Longs->count = (int)index.as.Char;
+        else if ((int)index.as.Char > count - 1 && (int)index.as.Char >= len)
             goto ERR;
-        (*Longs)[(int)index.as.Char] = Long;
+        Longs->listof.Longs[(int)index.as.Char] = Long;
         return;
     case ARENA_SIZE:
-        if ((int)index.as.Size > len - 1)
+        if ((int)index.as.Size > count - 1 && (int)index.as.Size < len)
+            Longs->count = (int)index.as.Size;
+        else if ((int)index.as.Size > count - 1 && (int)index.as.Size >= len)
             goto ERR;
-        (*Longs)[(int)index.as.Size] = Long;
+        Longs->listof.Longs[(int)index.as.Size] = Long;
         return;
     default:
         log_err("Invalid indexing type.");
@@ -1444,34 +1470,47 @@ ERR:
     log_err("ERROR: Array index out of bounds.");
     exit(1);
 }
-static void _set_double_index(double **Doubles, Arena index, double Double, int len)
+static void _set_double_index(Arena *Doubles, Arena index, double Double)
 {
+    int count = Doubles->count,
+        len = Doubles->len;
+
     switch (index.type)
     {
     case ARENA_INT:
-        if (index.as.Int > len - 1)
+        if (index.as.Int > count - 1 && index.as.Int < len)
+            Doubles->count = index.as.Int;
+        else if (index.as.Int > count - 1 && index.as.Int >= len)
             goto ERR;
-        (*Doubles)[index.as.Int] = Double;
+        Doubles->listof.Doubles[index.as.Int] = Double;
         return;
     case ARENA_LONG:
-        if (index.as.Long > len - 1)
+        if (index.as.Long > count - 1 && index.as.Long < len)
+            Doubles->count = (int)index.as.Long;
+        else if (index.as.Long > count - 1 && index.as.Long >= len)
             goto ERR;
-        (*Doubles)[index.as.Long] = Double;
+        Doubles->listof.Doubles[index.as.Long] = Double;
         return;
     case ARENA_BYTE:
-        if (index.as.Byte > len - 1)
+        if (index.as.Byte > count - 1 && index.as.Byte < len)
+            Doubles->count = (int)index.as.Byte;
+        else if (index.as.Byte > count - 1 && index.as.Byte >= len)
             goto ERR;
-        (*Doubles)[index.as.Byte] = Double;
+        Doubles->listof.Doubles[index.as.Byte] = Double;
         return;
     case ARENA_CHAR:
-        if ((int)index.as.Char > len - 1)
+        if ((int)index.as.Char > count - 1 && (int)index.as.Char < len)
+            Doubles->count = (int)index.as.Char;
+        else if ((int)index.as.Char > count - 1 && (int)index.as.Char >= len)
             goto ERR;
-        (*Doubles)[(int)index.as.Char] = Double;
+        Doubles->listof.Doubles[(int)index.as.Char] = Double;
         return;
     case ARENA_SIZE:
-        if ((int)index.as.Size > len - 1)
+        if ((int)index.as.Size > count - 1 && (int)index.as.Size < len)
+            Doubles->count = (int)index.as.Size;
+        else if ((int)index.as.Size > count - 1 && (int)index.as.Size >= len)
             goto ERR;
-        (*Doubles)[(int)index.as.Size] = Double;
+        Doubles->listof.Doubles[(int)index.as.Size] = Double;
         return;
     default:
         log_err("Invalid indexing type.");
@@ -1480,34 +1519,47 @@ ERR:
     log_err("ERROR: Array index out of bounds.");
     exit(1);
 }
-static void _set_string_index(char **String, Arena index, char Char, int len)
+static void _set_string_index(Arena *String, Arena index, char Char)
 {
+    int count = String->as.count,
+        len = String->as.len;
+
     switch (index.type)
     {
     case ARENA_INT:
-        if (index.as.Int > len - 1)
+        if (index.as.Int > count - 1 && index.as.Int < len)
+            String->as.count = index.as.Int;
+        else if (index.as.Int > count - 1 && index.as.Int >= len)
             goto ERR;
-        (*String)[index.as.Int] = Char;
+        String->as.String[index.as.Int] = Char;
         return;
     case ARENA_LONG:
-        if (index.as.Long > len - 1)
+        if (index.as.Long > count - 1 && index.as.Long < len)
+            String->as.count = (int)index.as.Long;
+        else if (index.as.Long > count - 1 && index.as.Long >= len)
             goto ERR;
-        (*String)[index.as.Long] = Char;
+        String->as.String[index.as.Long] = Char;
         return;
     case ARENA_BYTE:
-        if (index.as.Byte > len - 1)
+        if (index.as.Byte > count - 1 && index.as.Byte < len)
+            String->as.count = (int)index.as.Byte;
+        else if (index.as.Byte > count - 1 && index.as.Byte >= len)
             goto ERR;
-        (*String)[index.as.Byte] = Char;
+        String->as.String[index.as.Byte] = Char;
         return;
     case ARENA_CHAR:
-        if ((int)index.as.Char > len - 1)
+        if ((int)index.as.Char > count - 1 && (int)index.as.Char < len)
+            String->as.count = (int)index.as.Char;
+        else if ((int)index.as.Char > count - 1 && (int)index.as.Char >= len)
             goto ERR;
-        (*String)[(int)index.as.Char] = Char;
+        String->as.String[(int)index.as.Char] = Char;
         return;
     case ARENA_SIZE:
-        if ((int)index.as.Size > len - 1)
+        if ((int)index.as.Size > count - 1 && (int)index.as.Size < len)
+            String->as.count = (int)index.as.Size;
+        else if ((int)index.as.Size > count - 1 && (int)index.as.Size >= len)
             goto ERR;
-        (*String)[(int)index.as.Size] = Char;
+        String->as.String[(int)index.as.Size] = Char;
         return;
     default:
         log_err("Invalid indexing type.");
@@ -1516,34 +1568,47 @@ ERR:
     log_err("ERROR: Array index out of bounds.");
     exit(1);
 }
-static void _set_strings_index(char ***Strings, Arena index, char *String, int len)
+static void _set_strings_index(Arena *Strings, Arena index, char *String)
 {
+    int count = Strings->count,
+        len = Strings->len;
+
     switch (index.type)
     {
     case ARENA_INT:
-        if (index.as.Int > len - 1)
+        if (index.as.Int > count - 1 && index.as.Int < len)
+            Strings->count = index.as.Int;
+        else if (index.as.Int > count - 1 && index.as.Int >= len)
             goto ERR;
-        (*Strings)[index.as.Int] = CString(String).as.String;
+        Strings->listof.Strings[index.as.Int] = String;
         return;
     case ARENA_LONG:
-        if (index.as.Long > len - 1)
+        if (index.as.Long > count - 1 && index.as.Long < len)
+            Strings->count = (int)index.as.Long;
+        else if (index.as.Long > count - 1 && index.as.Long >= len)
             goto ERR;
-        (*Strings)[index.as.Long] = CString(String).as.String;
+        Strings->listof.Strings[index.as.Long] = String;
         return;
     case ARENA_BYTE:
-        if (index.as.Byte > len - 1)
+        if (index.as.Byte > count - 1 && index.as.Byte < len)
+            Strings->count = (int)index.as.Byte;
+        else if (index.as.Byte > count - 1 && index.as.Byte >= len)
             goto ERR;
-        (*Strings)[index.as.Byte] = CString(String).as.String;
+        Strings->listof.Strings[index.as.Byte] = String;
         return;
     case ARENA_CHAR:
-        if ((int)index.as.Char > len - 1)
+        if ((int)index.as.Char > count - 1 && (int)index.as.Char < len)
+            Strings->count = (int)index.as.Char;
+        else if ((int)index.as.Char > count - 1 && (int)index.as.Char >= len)
             goto ERR;
-        (*Strings)[(int)index.as.Char] = CString(String).as.String;
+        Strings->listof.Strings[(int)index.as.Char] = String;
         return;
     case ARENA_SIZE:
-        if ((int)index.as.Size > len - 1)
+        if ((int)index.as.Size > count - 1 && (int)index.as.Size < len)
+            Strings->count = (int)index.as.Size;
+        else if ((int)index.as.Size > count - 1 && (int)index.as.Size >= len)
             goto ERR;
-        (*Strings)[(int)index.as.Size] = CString(String).as.String;
+        Strings->listof.Strings[(int)index.as.Size] = String;
         return;
     default:
         log_err("Invalid indexing type.");
@@ -2096,28 +2161,28 @@ void _set_access(Element val, Arena index, Element b)
         case ARENA_INTS:
             if (val.arena.type != ARENA_INT)
                 goto ERR;
-            _set_int_index(&ar.listof.Ints, index, val.arena.as.Int, ar.count);
+            _set_int_index(&ar, index, val.arena.as.Int);
             return;
         case ARENA_LONGS:
             if (val.arena.type != ARENA_LONG)
                 goto ERR;
-            _set_long_index(&ar.listof.Longs, index, val.arena.as.Long, ar.count);
+            _set_long_index(&ar, index, val.arena.as.Long);
             return;
         case ARENA_DOUBLES:
             if (val.arena.type != ARENA_DOUBLE)
                 goto ERR;
-            _set_double_index(&ar.listof.Doubles, index, val.arena.as.Double, ar.count);
+            _set_double_index(&ar, index, val.arena.as.Double);
             return;
         case ARENA_STR:
         case ARENA_CSTR:
             if (val.arena.type != ARENA_CHAR)
                 goto ERR;
-            _set_string_index(&ar.as.String, index, val.arena.as.Char, ar.count);
+            _set_string_index(&ar, index, val.arena.as.Char);
             return;
         case ARENA_STRS:
             if (val.arena.type != ARENA_STR && val.arena.type != ARENA_CSTR)
                 goto ERR;
-            _set_strings_index(&ar.listof.Strings, index, val.arena.as.String, ar.count);
+            _set_strings_index(&ar, index, val.arena.as.String);
             return;
         default:
             break;
@@ -2251,6 +2316,8 @@ Arena _len(Element el)
     }
     case VECTOR:
         return Int((el.arena_vector - 1)->count);
+    case STACK:
+        return Int(el.stack->count);
     default:
         return Int(0);
     }
