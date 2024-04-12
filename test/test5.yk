@@ -8,8 +8,18 @@ sr stack_alloc()
      
     
     var s = Stack;
-    s.push(hello);
-    s[0]();
+    var st = Stack; 
+    
+    st.push(hello);
+    s[0] = st; 
+
+    s[0][0](); 
+    
+
+    s[1] = "Hello world"; 
+
+
+    pout s, s[1];
     
     rm(s);
 }

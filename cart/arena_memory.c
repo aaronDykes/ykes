@@ -1176,6 +1176,25 @@ void print(Element ar)
         return;
     }
 
+    if (ar.type == STACK)
+    {
+        printf("{ ");
+
+        if (ar.stack->count == 0)
+        {
+            printf(" }");
+            return;
+        }
+        for (int i = 0; i < ar.stack->count; i++)
+        {
+            print((ar.stack + i)->as);
+            if (i != ar.stack->count - 1)
+                printf(",\n");
+        }
+
+        printf(" }");
+    }
+
     switch (a.type)
     {
     case ARENA_BYTE:
@@ -1292,8 +1311,13 @@ void print_line(Element ar)
             printf(" }\n");
             return;
         }
+        printf("\n");
         for (int i = 0; i < ar.stack->count; i++)
-            print_line((ar.stack + i)->as);
+        {
+            print((ar.stack + i)->as);
+            if (i != ar.stack->count - 1)
+                printf(",\n");
+        }
 
         printf("\n}\n");
     }

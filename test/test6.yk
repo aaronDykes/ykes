@@ -1,0 +1,13 @@
+
+sr nested_for()
+{
+    for (var i = 2; i < 5; i++)
+    {
+        for (var j = 2; j < 5; j++)
+        {
+            pout i * j;
+        } 
+    } 
+}
+
+nested_for();
