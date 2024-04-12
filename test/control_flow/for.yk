@@ -2,5 +2,5 @@
 {
 
     for (var i = 'a'; i <= 'z'; i++)
-        pout i;
+        pout(i);
 }

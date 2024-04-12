@@ -8,7 +8,7 @@ sr arrays()
     var ar = ["Hello", "World", "Vector", "of", "Vectors"];
 
     for (var i = 0; i < ar.len; i++)
-        pout ar[i];
+        pout(ar[i]);
 
 
     rm(ar); 
@@ -21,9 +21,9 @@ sr string_access()
 
 
     for (var i = 0; i < str.len; i++)
-        pout str[i];
+        pout(str[i]);
 
-    pout str, ar; 
+    pout(str, ar); 
 
 
     rm(ar); 

@@ -654,6 +654,7 @@ static void default_expression(Compiler *c)
 
 static void print_statement(Compiler *c)
 {
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to print expression", &c->parser);
     do
     {
         expression(c);
@@ -661,8 +662,10 @@ static void print_statement(Compiler *c)
             emit_byte(c, OP_PRINT);
     } while (match(TOKEN_CH_COMMA, &c->parser));
 
-    consume(TOKEN_CH_SEMI, "Expect ';' after value.", &c->parser);
     emit_byte(c, OP_PRINT);
+
+    consume(TOKEN_CH_RPAREN, "Expect `)` after print expression", &c->parser);
+    consume(TOKEN_CH_SEMI, "Expect ';' after value.", &c->parser);
 }
 
 static void begin_scope(Compiler *c)
@@ -958,7 +961,8 @@ static void array_alloc(Compiler *c)
 static void vector_alloc(Compiler *c)
 {
     Arena *ar = NULL;
-    if (!match(TOKEN_CH_LPAREN, &c->parser))
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to vector allocation", &c->parser);
+    if (match(TOKEN_CH_RPAREN, &c->parser))
     {
         ar = GROW_ARENA(NULL, STACK_SIZE);
         emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, VECT(ar)));
@@ -981,7 +985,9 @@ static void vector_alloc(Compiler *c)
 static void stack_alloc(Compiler *c)
 {
     Stack *s = NULL;
-    if (!match(TOKEN_CH_LPAREN, &c->parser))
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to stack allocation", &c->parser);
+
+    if (match(TOKEN_CH_RPAREN, &c->parser))
     {
         s = GROW_STACK(NULL, STACK_SIZE);
         emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, STK(s)));
@@ -1004,10 +1010,13 @@ static void stack_alloc(Compiler *c)
 static void table(Compiler *c)
 {
     Table *t = NULL;
-    if (!match(TOKEN_CH_LPAREN, &c->parser))
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to Table allocation", &c->parser);
+
+    if (match(TOKEN_CH_RPAREN, &c->parser))
     {
         t = GROW_TABLE(NULL, STACK_SIZE);
         emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, TABLE(t)));
+        return;
     }
     else
     {
@@ -1226,7 +1235,7 @@ static void double_array(Compiler *c)
 }
 static void string_array(Compiler *c)
 {
-    Element el = OBJ(Strings(NULL, 0));
+    Element el = OBJ(Strings());
 
     do
     {

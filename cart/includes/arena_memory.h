@@ -138,7 +138,7 @@ Element cpy_array(Element el);
 Arena Ints(int *ints, int len);
 Arena Doubles(double *doubles, int len);
 Arena Longs(long long int *longs, int len);
-Arena Strings(char **strs, int len);
+Arena Strings();
 
 void push_arena(Element *el, Arena ar);
 Element pop_arena(Element *el);

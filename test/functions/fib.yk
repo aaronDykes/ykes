@@ -7,7 +7,7 @@ sr fib(n) {
 sr print_fib(n)
 {
   for (var i = 1; i < n; i++)
-    pout fib(i);
+    pout(fib(i));
 }
 
 var start = clock();
@@ -15,4 +15,4 @@ var start = clock();
 print_fib(35);
 
 
-pout clock() - start;
+pout(clock() - start);

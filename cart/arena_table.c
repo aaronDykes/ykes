@@ -146,7 +146,7 @@ void free_entry(Element el)
         FREE_TABLE(el.table);
         break;
     case STACK:
-        FREE_STACK(el.stack);
+        FREE_STACK(&el.stack);
         break;
     default:
         break;

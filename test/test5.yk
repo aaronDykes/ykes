@@ -3,12 +3,12 @@ sr stack_alloc()
 {
     sr hello()
     {
-        pout "hello world!";
+        pout("hello world!");
     } 
      
     
-    var s = Stack;
-    var st = Stack; 
+    var s = Stack();
+    var st = Stack(); 
     
     st.push(hello);
     s[0] = st; 
@@ -19,7 +19,7 @@ sr stack_alloc()
     s[1] = "Hello world"; 
 
 
-    pout s, s[1];
+    pout(s, s[1]);
     
     rm(s);
 }

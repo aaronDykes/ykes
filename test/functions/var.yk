@@ -5,7 +5,7 @@ sr outer()
   sr inner() 
   {
     x = String("updated"); 
-    pout x + "... How?";
+    pout(x + "... How?");
     rm(x); 
   }
 

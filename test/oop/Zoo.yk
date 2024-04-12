@@ -30,5 +30,5 @@ while (sum < 100000000)
         + zoo.mouse();
 }
 
-pout clock() - start;
-pout sum;
+pout(clock() - start);
+pout(sum);

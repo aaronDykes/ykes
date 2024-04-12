@@ -10,7 +10,7 @@ sr pr()
 
     var start = clock();
     print_prime(10000000);
-    pout clock() - start;
+    pout(clock() - start);
 }
 
 pr();

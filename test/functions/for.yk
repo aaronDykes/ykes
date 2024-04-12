@@ -7,7 +7,7 @@ sr nested (i)
 sr okay()
 {
     for (var i = 0; i < 5; i++)
-        pout nested(i);
+        pout(nested(i));
 }
 
 sr last()

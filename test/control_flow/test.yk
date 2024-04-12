@@ -4,6 +4,7 @@ if (69 == 69)
     var hello="str";
     
     switch (hello)
+    {
         case "false":
         {
             var h = "right on: ";
@@ -21,6 +22,10 @@ if (69 == 69)
         } 
         default:
             pout "lame"; 
+
+    }
+
+
 
 
 }

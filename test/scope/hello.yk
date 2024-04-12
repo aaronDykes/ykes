@@ -1,5 +1,4 @@
 var cp="Hello sir!";
-
 {
     var hello=6969;
     hello=hello + " is a number!"; 

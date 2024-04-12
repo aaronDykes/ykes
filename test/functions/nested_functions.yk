@@ -23,7 +23,7 @@ sr n()
 
   sr sum()
   {
-    pout f() + g() + h();
+    pout(f() + g() + h());
   }
   return sum;
 }

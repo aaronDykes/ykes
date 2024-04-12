@@ -564,7 +564,7 @@ Arena Longs(long long int *Longs, int len)
     return arena_init(Longs, sizeof(long long int) * len, ARENA_LONGS);
 }
 
-Arena Strings(char **Strs, int len)
+Arena Strings()
 {
     return arena_init(NULL, 0, ARENA_STRS);
 }
@@ -580,10 +580,6 @@ static void double_push(double **Doubles, int index, double Double)
 static void long_push(long long int **Longs, int index, long long int Long)
 {
     (*Longs)[index] = Long;
-}
-static void string_push(char ***Strings, int index, char *String)
-{
-    (*Strings)[index] = String;
 }
 
 void push_arena(Element *el, Arena ar)
@@ -1163,10 +1159,8 @@ void print(Element ar)
     {
         printf("[\n");
 
-        int count = (ar.arena_vector - 1)->count;
         for (int i = 0; i < (ar.arena_vector - 1)->count; i++)
         {
-
             print(OBJ(ar.arena_vector[i]));
             if (i != (ar.arena_vector - 1)->count - 1)
                 printf(", ");
@@ -1369,9 +1363,16 @@ void print_line(Element ar)
         printf("[ ");
         for (int i = 0; i < a.count; i++)
             if (i == a.count - 1)
-                printf("%s ]\n", a.listof.Strings[i]);
+            {
+
+                parse_str(a.listof.Strings[i]);
+                printf(" ]\n");
+            }
             else
-                printf("%s, ", a.listof.Strings[i]);
+            {
+                parse_str(a.listof.Strings[i]);
+                printf(", ");
+            }
         break;
     case ARENA_NULL:
         printf("[ null ]\n");

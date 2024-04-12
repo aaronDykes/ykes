@@ -36,4 +36,4 @@ sr n()
 
 
 var hello=n();
-pout hello();
+pout(hello());

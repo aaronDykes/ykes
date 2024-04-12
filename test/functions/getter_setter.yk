@@ -18,5 +18,5 @@ sr n()
 
 n();
 glob_set();
-pout glob_get();
+pout(glob_get());
 

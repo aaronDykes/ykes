@@ -12,7 +12,7 @@ class CoffeeMaker
     brew() 
     {
         var str = "Enjoy your " + this.coffee; 
-        pout str;
+        pout(str);
     }
 
 

@@ -7,27 +7,27 @@ sr hello()
         if ((i % 15) == 0)
         {
             str = "FIZZBANG: " + i;
-            pout str;
+            pout(str);
             rm(str);
         }
         elif ((i % 5) == 0)
         {
             str = "BANG: " + i;
-            pout str;
+            pout(str);
             rm(str);
         }
         elif ((i % 3) == 0)
         {
 
             str = "FIZZ: " + i;
-            pout str;
+            pout(str);
             rm(str);
         }
         else 
-            pout i;
+            pout(i);
 
 }
 
 var start = clock();
 hello();
-pout clock() - start;
+pout(clock() - start);

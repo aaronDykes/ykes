@@ -13,12 +13,13 @@ sr twod_ar()
 
     for (var i = 0; i < ar.len; i++)
     {
-        pout 
+        pout(
             ar[i],
-            ar[i].len;
+            ar[i].len
+        );
     }
 
-    pout ar.pop(), ar;
+    pout(ar.pop(), ar);
 
 
 

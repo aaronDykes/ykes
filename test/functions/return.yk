@@ -11,6 +11,6 @@ sr okay ()
 }
 
 
-pout okay();
+pout(okay());
 
 
