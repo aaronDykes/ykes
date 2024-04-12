@@ -2235,7 +2235,6 @@ Element _push_array_val(Element val, Element el)
                 goto ERR;
             push_double(&el, ar.as.Double);
             return el;
-
         case ARENA_STRS:
             if (ar.type != ARENA_STR && ar.type != ARENA_CSTR)
                 goto ERR;

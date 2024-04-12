@@ -55,7 +55,7 @@ Arena arena_init(void *data, size_t size, T type)
     case ARENA_VAR:
     case ARENA_NATIVE:
         ar.as.String = data;
-        ar.as.hash = hash(ar);
+        // ar.as.hash = hash(ar);
         ar.as.len = (int)size;
         ar.as.count = 0;
         break;

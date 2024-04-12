@@ -300,7 +300,7 @@ static PRule rules[] = {
     [TOKEN_SQRT] = {parse_native_argc1, NULL, PREC_CALL},
     [TOKEN_PRIME] = {parse_native_argc1, NULL, PREC_CALL},
 
-    [TOKEN_PRINT] = {NULL, NULL, PREC_CALL},
+    [TOKEN_PRINT] = {NULL, NULL, PREC_NONE},
     [TOKEN_RETURN] = {NULL, NULL, PREC_NONE},
     [TOKEN_SUPER] = {NULL, NULL, PREC_NONE},
     [TOKEN_THIS] = {_this, NULL, PREC_NONE},

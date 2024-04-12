@@ -13,8 +13,12 @@ void insert_entry(Table **t, Table entry)
         return;
     }
 
-    if (e.key.as.String && (e.key.as.hash == entry.key.as.hash))
+    if (e.key.as.hash == entry.key.as.hash)
     {
+        // if (entry.val.type == CLASS)
+        //     return;
+
+        // FREE_ENTRY((tmp + index)->val);
         tmp[index] = new_entry(entry);
         return;
     }
@@ -115,7 +119,8 @@ void insert_entry(Table **t, Table entry)
         }
     return;
 END:
-    FREE_ENTRY(ptr->val);
+    if (ptr->val.type != CLASS && ptr->val.type != CLOSURE)
+        FREE_ENTRY(ptr->val);
     ptr->val = entry.val;
 }
 
@@ -153,79 +158,7 @@ void free_entry(Element el)
     }
 }
 
-void delete_func_entry(Table **t, Arena key)
-{
-    Table *a = *t;
-    size_t index = key.as.hash & ((a - 1)->len - 1);
-    Table e = a[index];
-
-    if (e.key.type == ARENA_NULL || key.type == ARENA_NULL)
-        return;
-
-    if (e.next && (e.key.as.hash == key.as.hash))
-    {
-        Table *t = a[index].next;
-        FREE_TABLE_ENTRY(&a[index]);
-        a[index] = func_entry(NULL);
-        t->prev = NULL;
-        a[index] = new_entry(*t);
-
-        return;
-    }
-    if (!e.next && (e.key.as.hash == key.as.hash))
-    {
-        FREE_TABLE_ENTRY(&a[index]);
-        a[index] = func_entry(NULL);
-
-        return;
-    }
-
-    Table *tmp = e.next;
-    Table *del = NULL;
-
-    if (!tmp->next)
-    {
-        FREE_TABLE_ENTRY(tmp);
-        return;
-    }
-
-    for (; tmp->next; tmp = tmp->next)
-        switch (tmp->key.type)
-        {
-        case ARENA_VAR:
-        case ARENA_FUNC:
-            if (tmp->key.as.hash == key.as.hash)
-                goto DEL;
-            break;
-        default:
-            break;
-        }
-
-    switch (tmp->key.type)
-    {
-    case ARENA_VAR:
-    case ARENA_FUNC:
-        if (tmp->key.as.hash == key.as.hash)
-            goto DEL_LAST;
-        break;
-    default:
-        return;
-    }
-    return;
-DEL:
-    del = tmp->prev;
-    del->next = tmp->next;
-    tmp->next->prev = del;
-    FREE_TABLE_ENTRY(tmp);
-    return;
-
-DEL_LAST:
-    del = tmp->prev;
-    del->next = NULL;
-    FREE_TABLE_ENTRY(tmp);
-}
-
-void delete_arena_entry(Table **t, Arena key)
+void delete_entry(Table **t, Arena key)
 {
     Table *a = *t;
     size_t index = key.as.hash & ((a - 1)->len - 1);
@@ -645,8 +578,10 @@ Table new_entry(Table t)
     default:
         break;
     }
-    el.next = t.next;
-    el.prev = t.prev;
+    el.next = NULL;
+    // el.next = t.next;
+    el.prev = NULL;
+    // el.prev = t.prev;
     el.type = t.type;
     return el;
 }
@@ -791,7 +726,12 @@ Table *arena_realloc_table(Table *t, size_t size)
     ptr = arena_alloc_table(size);
 
     for (size_t i = 0; i < new_size; i++)
+    {
         ptr[i] = new_entry(t[i]);
+
+        for (Table *tab = t[i].next; tab; tab = tab->next)
+            insert_entry(&ptr, new_entry(*tab));
+    }
 
     FREE(PTR(t - 1));
     return ptr;

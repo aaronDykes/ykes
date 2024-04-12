@@ -4,7 +4,7 @@ sr stack_alloc()
     sr hello()
     {
         pout("hello world!");
-    } 
+    }
      
     
     var s = Stack();
@@ -23,4 +23,7 @@ sr stack_alloc()
     rm(s);
 }
 
+
 stack_alloc();
+
+
