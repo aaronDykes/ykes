@@ -1895,6 +1895,7 @@ Arena _eq(Arena a, Arena b)
     case ARENA_CHAR:
         return char_eq(b.as.Char, a);
     case ARENA_STR:
+    case ARENA_CSTR:
         return string_eq(b, a);
     case ARENA_NULL:
         switch (a.type)
