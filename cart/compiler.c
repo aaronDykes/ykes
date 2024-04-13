@@ -297,6 +297,8 @@ static void var_dec(Compiler *c)
     if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
         expression(c);
+        if (match(TOKEN_CH_TERNARY, &c->parser))
+            ternary_statement(c);
         emit_bytes(c, set, (uint8_t)glob);
     }
     else
@@ -618,6 +620,19 @@ static void elif_statement(Compiler *c)
     }
 }
 
+static void ternary_statement(Compiler *c)
+{
+    int exit = emit_jump(c, OP_JMPF);
+    emit_byte(c, OP_POP);
+    expression(c);
+    consume(TOKEN_CH_COLON, "Expect `:` between ternary expressions.", &c->parser);
+    int tr = emit_jump(c, OP_JMP);
+    patch_jump(c, exit);
+    emit_byte(c, OP_POP);
+    expression(c);
+    patch_jump(c, tr);
+}
+
 static void return_statement(Compiler *c)
 {
     if (c->type == SCRIPT)
@@ -703,6 +718,8 @@ static void print_statement(Compiler *c)
     do
     {
         expression(c);
+        if (match(TOKEN_CH_TERNARY, &c->parser))
+            ternary_statement(c);
         if (check(TOKEN_CH_COMMA, &c->parser))
             emit_byte(c, OP_PRINT);
     } while (match(TOKEN_CH_COMMA, &c->parser));
@@ -1151,6 +1168,8 @@ static Arena get_id(Compiler *c)
     else if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
         expression(c);
+        if (match(TOKEN_CH_TERNARY, &c->parser))
+            ternary_statement(c);
         emit_bytes(c, set, (uint8_t)arg);
     }
     else
@@ -1238,6 +1257,8 @@ static void dot(Compiler *c)
     if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
         expression(c);
+        if (match(TOKEN_CH_TERNARY, &c->parser))
+            ternary_statement(c);
         emit_bytes(c, OP_SET_PROP, (uint8_t)arg);
     }
     else
@@ -1345,6 +1366,8 @@ static void access(Compiler *c)
     if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
         expression(c);
+        if (match(TOKEN_CH_TERNARY, &c->parser))
+            ternary_statement(c);
         emit_byte(c, OP_SET_ACCESS);
     }
     else
@@ -1431,12 +1454,16 @@ static void id(Compiler *c)
     else if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
         expression(c);
+        if (match(TOKEN_CH_TERNARY, &c->parser))
+            ternary_statement(c);
         emit_bytes(c, set, (uint8_t)arg);
     }
     else if (match(TOKEN_ADD_ASSIGN, &c->parser))
     {
         emit_bytes(c, get, (uint8_t)arg);
         expression(c);
+        if (match(TOKEN_CH_TERNARY, &c->parser))
+            ternary_statement(c);
         emit_byte(c, OP_ADD);
         emit_bytes(c, set, (uint8_t)arg);
     }
@@ -1444,6 +1471,8 @@ static void id(Compiler *c)
     {
         emit_bytes(c, get, (uint8_t)arg);
         expression(c);
+        if (match(TOKEN_CH_TERNARY, &c->parser))
+            ternary_statement(c);
         emit_byte(c, OP_SUB);
         emit_bytes(c, set, (uint8_t)arg);
     }
@@ -1452,6 +1481,8 @@ static void id(Compiler *c)
 
         emit_bytes(c, get, (uint8_t)arg);
         expression(c);
+        if (match(TOKEN_CH_TERNARY, &c->parser))
+            ternary_statement(c);
         emit_byte(c, OP_MUL);
         emit_bytes(c, set, (uint8_t)arg);
     }
@@ -1459,6 +1490,8 @@ static void id(Compiler *c)
     {
         emit_bytes(c, get, (uint8_t)arg);
         expression(c);
+        if (match(TOKEN_CH_TERNARY, &c->parser))
+            ternary_statement(c);
         emit_byte(c, OP_DIV);
         emit_bytes(c, set, (uint8_t)arg);
     }
@@ -1466,6 +1499,8 @@ static void id(Compiler *c)
     {
         emit_bytes(c, get, (uint8_t)arg);
         expression(c);
+        if (match(TOKEN_CH_TERNARY, &c->parser))
+            ternary_statement(c);
         emit_byte(c, OP_MOD);
         emit_bytes(c, set, (uint8_t)arg);
     }
@@ -1473,6 +1508,8 @@ static void id(Compiler *c)
     {
         emit_bytes(c, get, (uint8_t)arg);
         expression(c);
+        if (match(TOKEN_CH_TERNARY, &c->parser))
+            ternary_statement(c);
         emit_byte(c, OP_AND);
         emit_bytes(c, set, (uint8_t)arg);
     }
@@ -1480,6 +1517,8 @@ static void id(Compiler *c)
     {
         emit_bytes(c, get, (uint8_t)arg);
         expression(c);
+        if (match(TOKEN_CH_TERNARY, &c->parser))
+            ternary_statement(c);
         emit_byte(c, OP_OR);
         emit_bytes(c, set, (uint8_t)arg);
     }

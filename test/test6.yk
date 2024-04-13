@@ -1,9 +1,24 @@
 
-sr nested_for()
+sr ternary()
 {
-    for (var i = 2; i < 5; i++)
-        for (var j = 2; j < 5; j++)
-            pout(i * j);
+
+    var hello = (420 == 69) ? "nope" : "that works";
+
+    pout(
+        hello,
+        (69 == 69) ? "hello world" : "okay then"
+    );
+
 }
 
-nested_for();
+sr null_coalescing()
+{
+    var a = null;
+    var b = String("Hello world!");
+
+    var hello = b ?? a;
+
+    pout(hello);
+}
+
+ternary();

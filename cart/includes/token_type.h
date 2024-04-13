@@ -15,6 +15,7 @@ enum
     TOKEN_CH_DOT,
     TOKEN_CH_SEMI,
     TOKEN_CH_COLON,
+    TOKEN_CH_TERNARY,
 
     // One or two character tokens.
     TOKEN_OP_DIV,
