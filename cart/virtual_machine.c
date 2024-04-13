@@ -575,7 +575,13 @@ Interpretation run()
         {
             uint16_t offset = READ_SHORT();
             if (not_null(PEEK()))
+            {
+
                 frame->ip += offset;
+            }
+            // else
+            // POP();
+
             break;
         }
         break;

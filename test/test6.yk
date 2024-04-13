@@ -4,22 +4,24 @@ sr ternary()
 
     var hello = (420 == 69) ? "nope" : "that works";
 
-    pout(
-        hello,
-        (69 == 69) ? "hello world" : "okay then"
-    );
+    // pout(
+    //     hello,
+    //     (69 == 69) ? "hello world" : "okay then"
+    // );
+
+    return hello;
 
 }
 
 sr null_coalescing()
 {
-    var a = null;
-    var b = String("Hello world!");
+    var b = ternary();
+    var a = String("Hello world!");
 
     var hello = b ?? a;
 
     pout(hello);
 }
 
-ternary();
+// ternary();
 null_coalescing();

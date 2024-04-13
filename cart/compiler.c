@@ -532,10 +532,6 @@ static Arena consume_switch(Compiler *c)
     return args;
 }
 
-/**
- * TODO:
- *  Moving on... will revisit later
- */
 static void switch_statement(Compiler *c)
 {
     Arena args = consume_switch(c);
@@ -640,7 +636,7 @@ static void null_coalescing_statement(Compiler *c)
     emit_byte(c, OP_POP);
     expression(c);
     patch_jump(c, exit);
-    emit_byte(c, OP_POP);
+    // emit_byte(c, OP_POP);
 }
 
 static void return_statement(Compiler *c)
@@ -992,7 +988,7 @@ static void ch(Compiler *c)
 static void boolean(Compiler *c)
 {
     if (*c->parser.pre.start == 'n')
-        emit_byte(c, OP_NULL);
+        emit_bytes(c, OP_CONSTANT, add_constant(c, OBJ(Null())));
     else
         emit_constant(c, Bool(*c->parser.pre.start == 't' ? true : false));
 }
