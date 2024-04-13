@@ -24,5 +24,4 @@ sr null_coalescing()
     pout((hello == "that works") ?  ab() : "another string");
 }
 
-// ternary();
 null_coalescing();

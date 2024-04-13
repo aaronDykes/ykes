@@ -1765,7 +1765,6 @@ Arena _add(Arena a, Arena b)
         return add_arena_int(b.as.Int, a);
     case ARENA_LONG:
         return add_arena_long(b.as.Long, a);
-    case ARENA_CSTR:
     case ARENA_STR:
         return append(b, a);
     case ARENA_CSTR:
