@@ -20,6 +20,7 @@ static Arena add_arena_size(size_t size, Arena ar)
 {
     switch (ar.type)
     {
+    case ARENA_CSTR:
     case ARENA_STR:
         return prepend_int_to_str(Int((int)size), ar);
     case ARENA_INT:
@@ -146,6 +147,7 @@ static Arena add_arena_char(char ch, Arena ar)
         return Double((double)ch + ar.as.Double);
     case ARENA_LONG:
         return Num(ch + ar.as.Long);
+    case ARENA_CSTR:
     case ARENA_STR:
         return prepend_char_to_str(Char(ch), ar);
     case ARENA_SIZE:
@@ -372,6 +374,7 @@ static Arena add_arena_long(long long int llint, Arena ar)
         return Double((double)llint + ar.as.Double);
     case ARENA_LONG:
         return Num(llint + ar.as.Long);
+    case ARENA_CSTR:
     case ARENA_STR:
         return prepend_long_to_str(Long(llint), ar);
     case ARENA_SIZE:
@@ -693,6 +696,7 @@ static Arena int_eq(int ival, Arena ar)
         return Bool(ival == ar.as.Long);
     case ARENA_CHAR:
         return Bool(ival == ar.as.Char);
+    case ARENA_CSTR:
     case ARENA_STR:
         return itoa_eqcmp(ival, ar);
     case ARENA_SIZE:
@@ -714,6 +718,7 @@ static Arena int_ne(int ival, Arena ar)
         return Bool(ival != ar.as.Long);
     case ARENA_CHAR:
         return Bool(ival != ar.as.Char);
+    case ARENA_CSTR:
     case ARENA_STR:
         return itoa_neqcmp(ival, ar);
     case ARENA_SIZE:
@@ -812,6 +817,7 @@ static Arena long_eq(long long int llint, Arena ar)
         return Bool(llint == ar.as.Char);
     case ARENA_LONG:
         return Bool(llint == ar.as.Long);
+    case ARENA_CSTR:
     case ARENA_STR:
         return ltoa_eqcmp(llint, ar);
     case ARENA_SIZE:
@@ -833,6 +839,7 @@ static Arena long_ne(long long int llint, Arena ar)
         return Bool(llint != ar.as.Char);
     case ARENA_LONG:
         return Bool(llint != ar.as.Long);
+    case ARENA_CSTR:
     case ARENA_STR:
         return ltoa_neqcmp(llint, ar);
     case ARENA_SIZE:
@@ -1758,6 +1765,7 @@ Arena _add(Arena a, Arena b)
         return add_arena_int(b.as.Int, a);
     case ARENA_LONG:
         return add_arena_long(b.as.Long, a);
+    case ARENA_CSTR:
     case ARENA_STR:
         return append(b, a);
     case ARENA_CSTR:
@@ -1936,6 +1944,7 @@ Arena _ne(Arena a, Arena b)
         return long_ne(b.as.Long, a);
     case ARENA_CHAR:
         return char_ne(b.as.Char, a);
+    case ARENA_CSTR:
     case ARENA_STR:
         return string_ne(b, a);
     case ARENA_NULL:
@@ -1980,6 +1989,7 @@ Arena _seq(Arena a, Arena b)
         return Bool(b.as.Long == a.as.Long);
     case ARENA_CHAR:
         return Bool(b.as.Char == a.as.Char);
+    case ARENA_CSTR:
     case ARENA_STR:
         return Bool(strcmp(b.as.String, a.as.String) == 0);
     case ARENA_NULL:
@@ -2007,6 +2017,7 @@ Arena _sne(Arena a, Arena b)
         return Bool(b.as.Long != a.as.Long);
     case ARENA_CHAR:
         return Bool(b.as.Char != a.as.Char);
+    case ARENA_CSTR:
     case ARENA_STR:
         return Bool(strcmp(b.as.String, a.as.String) != 0);
     case ARENA_NULL:
@@ -2033,6 +2044,7 @@ Arena _lt(Arena a, Arena b)
         return long_lt(b.as.Long, a);
     case ARENA_CHAR:
         return char_lt(b.as.Char, a);
+    case ARENA_CSTR:
     case ARENA_STR:
         return string_lt(b, a);
     case ARENA_SIZE:
@@ -2054,6 +2066,7 @@ Arena _le(Arena a, Arena b)
         return long_le(b.as.Long, a);
     case ARENA_CHAR:
         return char_le(b.as.Char, a);
+    case ARENA_CSTR:
     case ARENA_STR:
         return string_le(b, a);
     case ARENA_SIZE:
@@ -2075,6 +2088,7 @@ Arena _gt(Arena a, Arena b)
         return long_gt(b.as.Long, a);
     case ARENA_CHAR:
         return char_gt(b.as.Char, a);
+    case ARENA_CSTR:
     case ARENA_STR:
         return string_gt(b, a);
     case ARENA_SIZE:
@@ -2096,6 +2110,7 @@ Arena _ge(Arena a, Arena b)
         return long_ge(b.as.Long, a);
     case ARENA_CHAR:
         return char_ge(b.as.Char, a);
+    case ARENA_CSTR:
     case ARENA_STR:
         return string_ge(b, a);
     case ARENA_SIZE:

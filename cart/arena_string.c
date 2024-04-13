@@ -272,6 +272,7 @@ Arena string_ne(Arena s, Arena c)
     {
     case ARENA_NULL:
         return Bool(*s.as.String != '\0');
+    case ARENA_CSTR:
     case ARENA_STR:
         return Bool(strcmp(s.as.String, c.as.String) != 0);
     case ARENA_INT:
