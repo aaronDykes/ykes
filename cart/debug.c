@@ -174,6 +174,8 @@ int disassemble_instruction(Chunk *c, int offset)
 
     case OP_JMP_NIL:
         return jump_instruction("OP_JMP_NIL", 1, c, offset);
+    case OP_JMP_NOT_NIL:
+        return jump_instruction("OP_JMP_NOT_NIL", 1, c, offset);
     case OP_JMPF:
         return jump_instruction("OP_JMPF", 1, c, offset);
     case OP_JMPT:

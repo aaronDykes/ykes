@@ -121,6 +121,7 @@ typedef enum
     OP_GE,
 
     OP_JMP_NIL,
+    OP_JMP_NOT_NIL,
     OP_JMPL,
     OP_JMPC,
     OP_JMPF,

@@ -55,6 +55,8 @@ token scan_token()
     case ':':
         return make_token(TOKEN_CH_COLON);
     case '?':
+        if (match('?'))
+            return make_token(TOKEN_CH_NULL_COALESCING);
         return make_token(TOKEN_CH_TERNARY);
     case '/':
         if (match('='))

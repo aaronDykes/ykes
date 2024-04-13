@@ -22,3 +22,4 @@ sr null_coalescing()
 }
 
 ternary();
+null_coalescing();

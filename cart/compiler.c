@@ -299,6 +299,8 @@ static void var_dec(Compiler *c)
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
+            null_coalescing_statement(c);
         emit_bytes(c, set, (uint8_t)glob);
     }
     else
@@ -632,6 +634,14 @@ static void ternary_statement(Compiler *c)
     expression(c);
     patch_jump(c, tr);
 }
+static void null_coalescing_statement(Compiler *c)
+{
+    int exit = emit_jump(c, OP_JMP_NOT_NIL);
+    emit_byte(c, OP_POP);
+    expression(c);
+    patch_jump(c, exit);
+    emit_byte(c, OP_POP);
+}
 
 static void return_statement(Compiler *c)
 {
@@ -720,6 +730,8 @@ static void print_statement(Compiler *c)
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
+            null_coalescing_statement(c);
         if (check(TOKEN_CH_COMMA, &c->parser))
             emit_byte(c, OP_PRINT);
     } while (match(TOKEN_CH_COMMA, &c->parser));
@@ -1170,6 +1182,8 @@ static Arena get_id(Compiler *c)
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
+            null_coalescing_statement(c);
         emit_bytes(c, set, (uint8_t)arg);
     }
     else
@@ -1259,6 +1273,8 @@ static void dot(Compiler *c)
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
+            null_coalescing_statement(c);
         emit_bytes(c, OP_SET_PROP, (uint8_t)arg);
     }
     else
@@ -1368,6 +1384,8 @@ static void access(Compiler *c)
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
+            null_coalescing_statement(c);
         emit_byte(c, OP_SET_ACCESS);
     }
     else
@@ -1456,6 +1474,8 @@ static void id(Compiler *c)
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
+            null_coalescing_statement(c);
         emit_bytes(c, set, (uint8_t)arg);
     }
     else if (match(TOKEN_ADD_ASSIGN, &c->parser))
@@ -1464,6 +1484,8 @@ static void id(Compiler *c)
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
+            null_coalescing_statement(c);
         emit_byte(c, OP_ADD);
         emit_bytes(c, set, (uint8_t)arg);
     }
@@ -1473,6 +1495,8 @@ static void id(Compiler *c)
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
+            null_coalescing_statement(c);
         emit_byte(c, OP_SUB);
         emit_bytes(c, set, (uint8_t)arg);
     }
@@ -1483,6 +1507,8 @@ static void id(Compiler *c)
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
+            null_coalescing_statement(c);
         emit_byte(c, OP_MUL);
         emit_bytes(c, set, (uint8_t)arg);
     }
@@ -1492,6 +1518,8 @@ static void id(Compiler *c)
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
+            null_coalescing_statement(c);
         emit_byte(c, OP_DIV);
         emit_bytes(c, set, (uint8_t)arg);
     }
@@ -1501,6 +1529,8 @@ static void id(Compiler *c)
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
+            null_coalescing_statement(c);
         emit_byte(c, OP_MOD);
         emit_bytes(c, set, (uint8_t)arg);
     }
@@ -1510,6 +1540,8 @@ static void id(Compiler *c)
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
+            null_coalescing_statement(c);
         emit_byte(c, OP_AND);
         emit_bytes(c, set, (uint8_t)arg);
     }
@@ -1519,6 +1551,8 @@ static void id(Compiler *c)
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
+            null_coalescing_statement(c);
         emit_byte(c, OP_OR);
         emit_bytes(c, set, (uint8_t)arg);
     }

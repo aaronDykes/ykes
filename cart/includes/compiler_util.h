@@ -155,6 +155,7 @@ static void case_statement(Compiler *c, Arena ar);
 static void if_statement(Compiler *c);
 static void elif_statement(Compiler *c);
 static void ternary_statement(Compiler *c);
+static void null_coalescing_statement(Compiler *c);
 
 static void return_statement(Compiler *c);
 
@@ -284,6 +285,7 @@ static PRule rules[] = {
     [TOKEN_TABLE] = {table, NULL, PREC_NONE},
     [TOKEN_BTYE] = {NULL, NULL, PREC_NONE},
     [TOKEN_CH_TERNARY] = {NULL, NULL, PREC_NONE},
+    [TOKEN_CH_NULL_COALESCING] = {NULL, NULL, PREC_NONE},
 
     [TOKEN_CHAR] = {ch, NULL, PREC_NONE},
     [TOKEN_INT] = {ival, NULL, PREC_NONE},

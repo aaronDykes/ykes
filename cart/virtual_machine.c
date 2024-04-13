@@ -233,6 +233,66 @@ static void free_asterisk(Element el)
     }
 }
 
+static bool not_null(Element el)
+{
+    switch (el.type)
+    {
+    case ARENA:
+    {
+        Arena ar = el.arena;
+        switch (ar.type)
+        {
+        case ARENA_BYTE:
+        case ARENA_SIZE:
+        case ARENA_INT:
+        case ARENA_DOUBLE:
+        case ARENA_CHAR:
+        case ARENA_BOOL:
+        case ARENA_LONG:
+            return true;
+        case ARENA_NULL:
+            return false;
+        case ARENA_STR:
+        case ARENA_CSTR:
+        case ARENA_VAR:
+        case ARENA_NATIVE:
+        case ARENA_FUNC:
+            return ar.as.String ? true : false;
+        case ARENA_BYTES:
+            return ar.listof.Bytes ? true : false;
+        case ARENA_INTS:
+            return ar.listof.Ints ? true : false;
+        case ARENA_DOUBLES:
+            return ar.listof.Doubles ? true : false;
+        case ARENA_LONGS:
+            return ar.listof.Longs ? true : false;
+        case ARENA_BOOLS:
+            return ar.listof.Bools ? true : false;
+        case ARENA_SIZES:
+            return ar.listof.Sizes ? true : false;
+        case ARENA_STRS:
+            return ar.listof.Strings ? true : false;
+        default:
+            return false;
+        }
+    }
+    case TABLE:
+        return el.table ? true : false;
+    case VECTOR:
+        return el.arena_vector ? true : false;
+    case CLOSURE:
+        return el.closure ? true : false;
+    case CLASS:
+        return el.classc ? true : false;
+    case INSTANCE:
+        return el.instance ? true : false;
+    case STACK:
+        return el.stack ? true : false;
+    default:
+        return false;
+    }
+}
+
 Interpretation run()
 {
 
@@ -511,6 +571,14 @@ Interpretation run()
                 frame->ip += offset;
             break;
         }
+        case OP_JMP_NOT_NIL:
+        {
+            uint16_t offset = READ_SHORT();
+            if (not_null(PEEK()))
+                frame->ip += offset;
+            break;
+        }
+        break;
         case OP_JMP:
             frame->ip += READ_SHORT();
             break;
