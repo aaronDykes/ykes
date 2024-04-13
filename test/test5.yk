@@ -1,29 +1,36 @@
 
-sr stack_alloc()
+
+
+
+
+sr stack_push()
 {
-    sr hello()
+
+    sr this_is()
     {
-        pout("hello world!");
+        var stack = Stack();
+        stack.push("hello world!");
+        stack.push("Another vector!");
+        stack.push("This is a stack value");
+        stack.push(69.43022);
+
+        return stack;
     }
-     
-    
-    var s = Stack();
-    var st = Stack(); 
-    
-    st.push(hello);
-    s[0] = st; 
+    var hello=this_is();
 
-    s[0][0](); 
-    
-
-    s[1] = "Hello world"; 
-
-
-    pout(s, s[1]);
-    rm(s);
+    return hello;
 }
 
+var hello = stack_push();
 
-stack_alloc();
+each(var s : hello)
+    pout(s);
+
+
+rm(hello);
+
+
+
+
 
 

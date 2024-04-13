@@ -85,7 +85,8 @@ char *lltoa(char *c, long long int n)
 void str_cat(char *d, char *s)
 {
 
-    char *dst = d, *src = s;
+    char *dst = d,
+         *src = s;
 
     while (*src)
         *dst++ = *src++;
@@ -145,8 +146,9 @@ static Arena append_int_to_str(Arena s, Arena i)
 static Arena append_str_to_str(Arena s, Arena str)
 {
     int new = s.as.len + str.as.len + 1;
+    int tmp = s.as.len;
     s = GROW_ARRAY(&s, new * sizeof(char), ARENA_STR);
-    strcat(s.as.String, str.as.String);
+    str_cat(s.as.String + tmp, str.as.String);
     s.as.String[new] = '\0';
     ARENA_FREE(&str);
     return s;

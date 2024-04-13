@@ -213,7 +213,10 @@ static void free_asterisk(Element el)
     switch (el.type)
     {
     case ARENA:
-        ARENA_FREE(&el.arena);
+        if (el.arena.type == ARENA_VAR)
+            delete_entry(&machine.glob, el.arena);
+        else
+            ARENA_FREE(&el.arena);
         break;
     case SCRIPT:
     case CLOSURE:
@@ -393,8 +396,18 @@ Interpretation run()
         case OP_GET_ACCESS:
             PUSH(_get_access(POP(), POP()));
             break;
+        case OP_RESET_ARGC:
+            machine.cargc = 0;
+            machine.argc = 0;
+            break;
+        case OP_EACH_ACCESS:
+        {
+            Element el = _get_each_access(POP(), machine.cargc++);
+            PEEK() = el;
+        }
+        break;
         case OP_SET_ACCESS:
-            _set_access(PEEK(), NPEEK(1).arena, NPEEK(2));
+            _set_access(POP(), POP().arena, PEEK());
             break;
         case OP_PUSH_ARRAY_VAL:
         {
@@ -491,6 +504,13 @@ Interpretation run()
         case OP_JMPT:
             frame->ip += (READ_SHORT() * !FALSEY());
             break;
+        case OP_JMP_NIL:
+        {
+            uint16_t offset = READ_SHORT();
+            if (!PEEK().stack)
+                frame->ip += offset;
+            break;
+        }
         case OP_JMP:
             frame->ip += READ_SHORT();
             break;

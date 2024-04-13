@@ -80,10 +80,14 @@ int disassemble_instruction(Chunk *c, int offset)
         return simple_instruction("OP_PUSH_ARRAY_VAL", offset);
     case OP_POP__ARRAY_VAL:
         return simple_instruction("OP_POP__ARRAY_VAL", offset);
+    case OP_RESET_ARGC:
+        return simple_instruction("OP_RESET_ARGC", offset);
     case OP_SET_ACCESS:
         return constant_instruction("OP_SET_ACCESS", c, offset);
     case OP_GET_ACCESS:
         return constant_instruction("OP_GET_ACCESS", c, offset);
+    case OP_EACH_ACCESS:
+        return constant_instruction("OP_EACH_ACCESS", c, offset);
     case OP_METHOD:
         return constant_instruction("OP_METHOD", c, offset);
     case OP_CLASS:
@@ -168,6 +172,8 @@ int disassemble_instruction(Chunk *c, int offset)
     case OP_GLOBAL_DEF:
         return simple_instruction("OP_GLOBAL_DEF", offset);
 
+    case OP_JMP_NIL:
+        return jump_instruction("OP_JMP_NIL", 1, c, offset);
     case OP_JMPF:
         return jump_instruction("OP_JMPF", 1, c, offset);
     case OP_JMPT:

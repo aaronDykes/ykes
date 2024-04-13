@@ -15,10 +15,10 @@ void insert_entry(Table **t, Table entry)
 
     if (e.key.as.hash == entry.key.as.hash)
     {
-        // if (entry.val.type == CLASS)
-        //     return;
+        if (e.val.type == CLASS)
+            return;
 
-        // FREE_ENTRY((tmp + index)->val);
+        FREE_ENTRY((tmp + index)->val);
         tmp[index] = new_entry(entry);
         return;
     }
@@ -579,9 +579,7 @@ Table new_entry(Table t)
         break;
     }
     el.next = NULL;
-    // el.next = t.next;
     el.prev = NULL;
-    // el.prev = t.prev;
     el.type = t.type;
     return el;
 }

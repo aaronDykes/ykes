@@ -115,7 +115,6 @@ void arena_free(Arena *ar)
     case ARENA_VAR:
         if (!ar->as.String)
             return;
-
         new = (void *)ar->as.String;
         ar->as.String = NULL;
         break;
@@ -283,7 +282,8 @@ Arena *arena_realloc_arena(Arena *ar, size_t size)
 
     (ptr - 1)->count = (ar - 1)->count;
 
-    arena_free_arena(ar);
+    FREE(PTR(ar - 1));
+    // arena_free_arena(ar);
     return ptr;
 }
 
@@ -505,7 +505,7 @@ Arena String(const char *str)
 {
     size_t size = strlen(str);
     Arena ar = arena_alloc(size, ARENA_STR);
-    strcpy(ar.as.String, str);
+    memcpy(ar.as.String, str, size);
     ar.as.String[size] = '\0';
     ar.size = size;
     size_t k = hash(ar);
@@ -1187,6 +1187,7 @@ void print(Element ar)
         }
 
         printf(" }");
+        return;
     }
 
     switch (a.type)
@@ -1298,6 +1299,8 @@ void print_line(Element ar)
 
     if (ar.type == STACK)
     {
+        if (!ar.stack)
+            return;
         printf("{");
 
         if (ar.stack->count == 0)
@@ -1314,6 +1317,7 @@ void print_line(Element ar)
         }
 
         printf("\n}\n");
+        return;
     }
 
     switch (a.type)

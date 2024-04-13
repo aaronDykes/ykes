@@ -40,6 +40,7 @@ typedef enum
     OP_CLASS,
     OP_GET_INSTANCE,
 
+    OP_EACH_ACCESS,
     OP_GET_ACCESS,
     OP_SET_ACCESS,
     OP_LEN,
@@ -71,6 +72,7 @@ typedef enum
 
     OP_SET_FUNC_VAR,
 
+    OP_RESET_ARGC,
     OP_GET_LOCAL,
     OP_SET_LOCAL,
     OP_SET_LOCAL_PARAM,
@@ -118,6 +120,7 @@ typedef enum
     OP_GT,
     OP_GE,
 
+    OP_JMP_NIL,
     OP_JMPL,
     OP_JMPC,
     OP_JMPF,

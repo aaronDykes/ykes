@@ -2113,6 +2113,53 @@ Arena _and(Arena a, Arena b)
     return Bool(b.as.Bool && a.as.Bool);
 }
 
+Element _get_each_access(Element b, int index)
+{
+    Element nil = null_obj();
+    switch (b.type)
+    {
+    case ARENA:
+        switch (b.arena.type)
+        {
+        case ARENA_INTS:
+            if (index > b.arena.count - 1)
+                return nil;
+            return OBJ(Int(*(b.arena.listof.Ints + index)));
+        case ARENA_LONGS:
+            if (index > b.arena.count - 1)
+                return nil;
+            return OBJ(Long(*(b.arena.listof.Longs + index)));
+        case ARENA_DOUBLES:
+            if (index > b.arena.count - 1)
+                return nil;
+            return OBJ(Double(*(b.arena.listof.Doubles + index)));
+        case ARENA_STR:
+        case ARENA_CSTR:
+            if (index > b.arena.count - 1)
+                return nil;
+            return OBJ(Char(*(b.arena.as.String + index)));
+        case ARENA_STRS:
+            if (index > b.arena.count - 1)
+                return nil;
+            return OBJ(CString(*(b.arena.listof.Strings + index)));
+        default:
+            goto ERR;
+        }
+    case VECTOR:
+        if (index > (b.arena_vector - 1)->count)
+            return nil;
+        return OBJ(*(b.arena_vector + index));
+    case STACK:
+        if (index > b.stack->count - 1)
+            return nil;
+        return b.stack[index].as;
+    default:
+    ERR:
+        log_err("ERROR: access type mismatch.");
+        return OBJ(Null());
+    }
+}
+
 Element _get_access(Element a, Element b)
 {
     switch (b.type)

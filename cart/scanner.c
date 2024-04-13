@@ -221,6 +221,8 @@ static int id_type()
         if (scan.current - scan.start > 1)
             switch (scan.start[1])
             {
+            case 'a':
+                return check_keyword(2, 2, "ch", TOKEN_EACH);
             case 'l':
                 switch (scan.start[2])
                 {

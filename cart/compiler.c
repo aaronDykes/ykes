@@ -346,6 +346,8 @@ static void statement(Compiler *c)
         switch_statement(c);
     else if (match(TOKEN_CH_LCURL, &c->parser))
         block(c);
+    else if (match(TOKEN_EACH, &c->parser))
+        each_statement(c);
     else if (match(TOKEN_RETURN, &c->parser))
         return_statement(c);
     else if (is_comment(&c->parser))
@@ -457,6 +459,52 @@ static void while_statement(Compiler *c)
     // If true, exit
     patch_jump(c, exit_jmp);
     emit_byte(c, OP_POP);
+}
+static void each_statement(Compiler *c)
+{
+    emit_byte(c, OP_RESET_ARGC);
+
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to each expression.", &c->parser);
+
+    Arena ar;
+    int glob = 0;
+    uint8_t set = 0;
+
+    if (match(TOKEN_VAR, &c->parser))
+    {
+        consume(TOKEN_ID, "Expect identifier after var keyword", &c->parser);
+        ar = parse_id(c);
+        glob = parse_var(c, ar);
+    }
+    else
+        error("Expect variable declaration at start of each expression", &c->parser);
+
+    if (glob != -1)
+        set = OP_SET_GLOBAL;
+    else if ((glob = resolve_upvalue(c, &ar)) != -1)
+        set = OP_SET_UPVALUE;
+    else
+    {
+        glob = resolve_local(c, &ar);
+        set = OP_SET_LOCAL;
+    }
+    consume(TOKEN_CH_COLON, "Expect `:` between variable declaration and identifier", &c->parser);
+
+    int start = c->func->ch.op_codes.count;
+
+    id(c);
+    emit_byte(c, OP_EACH_ACCESS);
+    int exit = emit_jump(c, OP_JMP_NIL);
+
+    emit_bytes(c, set, (uint8_t)glob);
+
+    consume(TOKEN_CH_RPAREN, "Expect `)` following an each expression.", &c->parser);
+
+    statement(c);
+    emit_loop(c, start);
+
+    patch_jump(c, exit);
+    // emit_byte(c, OP_POP);
 }
 
 static void consume_if(Compiler *c)
@@ -1387,51 +1435,51 @@ static void id(Compiler *c)
     }
     else if (match(TOKEN_ADD_ASSIGN, &c->parser))
     {
-        expression(c);
         emit_bytes(c, get, (uint8_t)arg);
+        expression(c);
         emit_byte(c, OP_ADD);
         emit_bytes(c, set, (uint8_t)arg);
     }
     else if (match(TOKEN_SUB_ASSIGN, &c->parser))
     {
-        expression(c);
         emit_bytes(c, get, (uint8_t)arg);
+        expression(c);
         emit_byte(c, OP_SUB);
         emit_bytes(c, set, (uint8_t)arg);
     }
     else if (match(TOKEN_MUL_ASSIGN, &c->parser))
     {
 
-        expression(c);
         emit_bytes(c, get, (uint8_t)arg);
+        expression(c);
         emit_byte(c, OP_MUL);
         emit_bytes(c, set, (uint8_t)arg);
     }
     else if (match(TOKEN_DIV_ASSIGN, &c->parser))
     {
-        expression(c);
         emit_bytes(c, get, (uint8_t)arg);
+        expression(c);
         emit_byte(c, OP_DIV);
         emit_bytes(c, set, (uint8_t)arg);
     }
     else if (match(TOKEN_MOD_ASSIGN, &c->parser))
     {
-        expression(c);
         emit_bytes(c, get, (uint8_t)arg);
+        expression(c);
         emit_byte(c, OP_MOD);
         emit_bytes(c, set, (uint8_t)arg);
     }
     else if (match(TOKEN_AND_ASSIGN, &c->parser))
     {
-        expression(c);
         emit_bytes(c, get, (uint8_t)arg);
+        expression(c);
         emit_byte(c, OP_AND);
         emit_bytes(c, set, (uint8_t)arg);
     }
     else if (match(TOKEN_OR__ASSIGN, &c->parser))
     {
-        expression(c);
         emit_bytes(c, get, (uint8_t)arg);
+        expression(c);
         emit_byte(c, OP_OR);
         emit_bytes(c, set, (uint8_t)arg);
     }
@@ -1593,5 +1641,10 @@ Function *compile(const char *src)
     consume(TOKEN_EOF, "Expect end of expression", &c.parser);
 
     Function *f = end_compile(&c);
+
+    FREE(PTR(c.base->calls - 1));
+    FREE(PTR(c.base->classes - 1));
+    FREE(PTR(c.base->init_func.as.String));
+
     return c.parser.err ? NULL : f;
 }

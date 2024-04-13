@@ -89,6 +89,7 @@ enum
     TOKEN_ELSE,
     TOKEN_FUNC,
     TOKEN_FALSE,
+    TOKEN_EACH,
     TOKEN_FOR,
     TOKEN_IF,
     TOKEN_SWITCH,

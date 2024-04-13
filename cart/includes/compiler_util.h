@@ -141,6 +141,7 @@ static void patch_jump(Compiler *c, int byte);
 
 static void for_statement(Compiler *c);
 static void while_statement(Compiler *c);
+static void each_statement(Compiler *c);
 
 static void rm_statement(Compiler *c);
 
@@ -271,6 +272,7 @@ static PRule rules[] = {
 
     [TOKEN_FALSE] = {boolean, NULL, PREC_NONE},
     [TOKEN_TRUE] = {boolean, NULL, PREC_NONE},
+    [TOKEN_EACH] = {NULL, NULL, PREC_NONE},
 
     [TOKEN_ID] = {id, NULL, PREC_NONE},
     [TOKEN_STR] = {cstr, NULL, PREC_NONE},
