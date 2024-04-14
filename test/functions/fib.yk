@@ -12,7 +12,7 @@ sr print_fib(n)
 
 var start = clock();
 
-print_fib(35);
+print_fib(30);
 
 
 pout(clock() - start);

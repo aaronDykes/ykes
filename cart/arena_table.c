@@ -337,7 +337,7 @@ Class *find_class_entry(Table **t, Arena *hash)
         case ARENA_VAR:
         case ARENA_FUNC:
         case ARENA_NATIVE:
-        case ARENA_CLASS:
+            // case ARENA_CLASS:
             if (tmp->key.as.String == hash->as.String)
                 return tmp->val.classc;
             break;
@@ -368,7 +368,7 @@ Instance *find_instance_entry(Table **t, Arena *hash)
         case ARENA_VAR:
         case ARENA_FUNC:
         case ARENA_NATIVE:
-        case ARENA_CLASS:
+            // case ARENA_CLASS:
             if (tmp->key.as.String == hash->as.String)
                 return tmp->val.instance;
             break;

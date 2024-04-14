@@ -23,12 +23,16 @@ void initialize_global_memory()
 
     mem = request_system_memory(OFFSET + (OFFSET * PAGE));
     mem->size = OFFSET;
-    mem->next = mem + (OFFSET * 2);
-    mem->next->size = PAGE - (OFFSET * 2);
+    mem->next = mem + OFFSET;
+    mem->next->size = PAGE;
+    mem->next->next = NULL;
 }
 
 void destroy_global_memory()
 {
+
+    mem = mem->next;
+    mem->size += OFFSET;
 
     while (mem)
     {
@@ -55,7 +59,6 @@ Arena arena_init(void *data, size_t size, T type)
     case ARENA_VAR:
     case ARENA_NATIVE:
         ar.as.String = data;
-        // ar.as.hash = hash(ar);
         ar.as.len = (int)size;
         ar.as.count = 0;
         break;
@@ -141,6 +144,7 @@ void arena_free(Arena *ar)
             return;
         new = (void *)ar->listof.Strings;
         ar->listof.Strings = NULL;
+        break;
     default:
         return;
     }
@@ -157,7 +161,7 @@ static void merge_list()
     {
 
         prev = free;
-        if (free->next && (free->size + free) == free->next)
+        if (free->next && ((unsigned long)free + OFFSET + free->size) == (unsigned long)free->next)
         {
             prev->size += free->next->size;
             prev->next = free->next->next;
@@ -170,14 +174,13 @@ void free_ptr(Free *new)
 
     if (!new)
         return;
+    if (new->size == 0)
+        return;
 
     Free *free = NULL, *prev = NULL;
 
-    for (free = mem->next; free->next && ((free < new) && (free->next > new)); free = free->next)
+    for (free = mem->next; free->next && (((unsigned long)free < (unsigned long)new)); free = free->next)
         prev = free->next;
-
-    if ((free && free == new) || (prev && prev == new))
-        return;
 
     if (free && free < new)
     {
@@ -210,7 +213,7 @@ void *alloc_ptr(size_t size)
 
         size_t tmp = free->size - size;
 
-        void *ptr = ((free + OFFSET + free->size) - size);
+        void *ptr = ((free + free->size) - size);
 
         free->size = tmp;
 
@@ -235,7 +238,7 @@ void *alloc_ptr(size_t size)
         prev->next = request_system_memory(tmp * OFFSET);
         prev->next->size = size;
         void *ptr = prev->next + OFFSET;
-        prev->next += size;
+        prev->next += size + OFFSET;
         prev->next->size = tmp - size;
         return ptr;
     }
@@ -332,6 +335,7 @@ Arena arena_realloc(Arena *ar, size_t size, T type)
 
     void *ptr = NULL;
     ptr = ALLOC(size);
+
     if (!ar && size != 0)
         return arena_init(ptr, size, type);
 
@@ -393,7 +397,7 @@ Arena arena_realloc(Arena *ar, size_t size, T type)
     a.count = (ar->count > a.len)
                   ? a.len
                   : ar->count;
-    ARENA_FREE(ar);
+    // ARENA_FREE(ar);
     return a;
 }
 Element cpy_array(Element el)
@@ -753,6 +757,8 @@ Stack *realloc_stack(Stack *st, size_t size)
 }
 void free_stack(Stack **stack)
 {
+    if (!stack)
+        return;
     if (!(*stack - 1))
         return;
 
@@ -774,7 +780,15 @@ void free_stack(Stack **stack)
         case INSTANCE:
             FREE_INSTANCE((*stack)[i].as.instance);
             break;
-
+        case VECTOR:
+            FREE_ARENA((*stack)[i].as.arena_vector);
+            break;
+        case STACK:
+            FREE_STACK(&(*stack)[i].as.stack);
+            break;
+        case TABLE:
+            arena_free_table((*stack)[i].as.table);
+            break;
         default:
             break;
         }
@@ -1052,6 +1066,7 @@ Arena Var(const char *str)
     ar.type = ARENA_VAR;
     return ar;
 }
+
 Arena func_name(const char *str)
 {
     size_t size = strlen(str);

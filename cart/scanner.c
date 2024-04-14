@@ -295,7 +295,16 @@ static int id_type()
             switch (scan.start[1])
             {
             case 'e':
-                return check_keyword(2, 4, "turn", TOKEN_RETURN);
+                if (scan.current - scan.start > 2)
+                {
+                    switch (scan.start[2])
+                    {
+                    case 't':
+                        return check_keyword(3, 3, "urn", TOKEN_RETURN);
+                    case 'a':
+                        return check_keyword(3, 1, "d", TOKEN_READ);
+                    }
+                }
             }
         return check_keyword(1, 1, "m", TOKEN_OP_REM);
     case 's':

@@ -2,18 +2,6 @@ sr dynamic_array()
 {
 
 
-    var size_ar = Array(["vector", "of", "vectors"]);
-    var cop_ar = Array(size_ar);
-
-
-    // array s = Array([1, 2, 3, 4, 5]);
-
-    rm(size_ar);
-
-    each(var i : cop_ar)
-        pout(i);
-
-    rm(cop_ar);
 
  
 

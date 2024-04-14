@@ -71,6 +71,65 @@ static void advance_compiler(Parser *parser)
         current_err(parser->cur.start, parser);
     }
 }
+static bool type_dec(Compiler *c)
+{
+    if (match(TOKEN_VAR, &c->parser))
+    {
+        var_dec(c);
+        return true;
+    }
+    if (match(TOKEN_TYPE_INT, &c->parser))
+    {
+        int_declaration(c);
+        return true;
+    }
+    if (match(TOKEN_TYPE_DOUBLE, &c->parser))
+    {
+        double_declaration(c);
+        return true;
+    }
+    if (match(TOKEN_TYPE_LONG, &c->parser))
+    {
+        long_declaration(c);
+        return true;
+    }
+    if (match(TOKEN_TYPE_BYTE, &c->parser))
+    {
+        byte_declaration(c);
+        return true;
+    }
+    if (match(TOKEN_TYPE_CHAR, &c->parser))
+    {
+        char_declaration(c);
+        return true;
+    }
+    if (match(TOKEN_TYPE_STRING, &c->parser))
+    {
+        string_declaration(c);
+        return true;
+    }
+    if (match(TOKEN_TYPE_STACK, &c->parser))
+    {
+        stack_declaration(c);
+        return true;
+    }
+    if (match(TOKEN_TYPE_ARRAY, &c->parser))
+    {
+        array_declaration(c);
+        return true;
+    }
+    if (match(TOKEN_TYPE_VECTOR, &c->parser))
+    {
+        vector_declaration(c);
+        return true;
+    }
+    if (match(TOKEN_TYPE_TABLE, &c->parser))
+    {
+        table_declaration(c);
+        return true;
+    }
+    return false;
+}
 
 static void declaration(Compiler *c)
 {
@@ -99,7 +158,6 @@ static void declaration(Compiler *c)
         vector_declaration(c);
     else if (match(TOKEN_TYPE_TABLE, &c->parser))
         table_declaration(c);
-
     else if (match(TOKEN_VAR, &c->parser))
         var_dec(c);
     else
@@ -333,7 +391,31 @@ static void var_dec(Compiler *c)
 static void int_declaration(Compiler *c)
 {
     consume(TOKEN_ID, "Expect variable name.", &c->parser);
+
     Arena ar = parse_id(c);
+    int glob = parse_var(c, ar);
+
+    uint8_t set = 0;
+    if (glob != -1)
+        set = OP_GLOBAL_DEF;
+    else
+    {
+        glob = resolve_local(c, &ar);
+        set = OP_SET_LOCAL;
+    }
+
+    if (match(TOKEN_OP_ASSIGN, &c->parser))
+    {
+        expression(c);
+        if (match(TOKEN_CH_TERNARY, &c->parser))
+            ternary_statement(c);
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
+            null_coalescing_statement(c);
+        emit_bytes(c, set, (uint8_t)glob);
+    }
+    else
+        emit_byte(c, OP_NULL);
+
     consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
 }
 static void double_declaration(Compiler *c)
@@ -527,9 +609,7 @@ static void for_statement(Compiler *c)
     consume(TOKEN_CH_LPAREN, "Expect `(` after to 'for'.", &c->parser);
     if (!match(TOKEN_CH_SEMI, &c->parser))
     {
-        if (match(TOKEN_VAR, &c->parser))
-            var_dec(c);
-        else
+        if (!type_dec(c))
             id(c);
     }
 
@@ -878,7 +958,7 @@ static void end_scope(Compiler *c)
         if (c->locals[c->local_count - 1].captured)
             emit_byte(c, OP_CLOSE_UPVAL);
         else
-            arena_free(&c->locals[c->local_count - 1].name);
+            ARENA_FREE(&c->locals[c->local_count - 1].name);
         --c->local_count;
     }
 }

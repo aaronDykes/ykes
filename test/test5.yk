@@ -8,9 +8,9 @@ sr stack_push()
         s.push("Another vector!");
         s.push("This is a stack value");
         s.push(69.43022);
-
         return s;
     }
+    
 
     return this_is();
 
@@ -20,6 +20,7 @@ var hello = stack_push();
 
 each(var s : hello)
     pout(s);
+
 
 
 rm(hello);

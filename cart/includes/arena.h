@@ -26,8 +26,6 @@ typedef enum
     ARENA_FUNC,
     ARENA_NATIVE,
     ARENA_VAR,
-    ARENA_CLASS,
-    ARENA_VECTOR
 
 } T;
 
@@ -148,6 +146,7 @@ typedef enum
     CLOSURE,
     FUNCTION,
     VECTOR,
+
     METHOD,
     STACK,
     TABLE,
@@ -157,11 +156,19 @@ typedef enum
     NULL_OBJ
 } ObjType;
 
+typedef enum
+{
+    OBJECT_TYPE,
+    ARENA_TYPE,
+    WILD_CARD
+} Typed;
+
 typedef union Vector Vector;
 typedef union Value Value;
 typedef struct Arena Arena;
 typedef struct Data Data;
 
+typedef struct ExprType ExprType;
 typedef struct Chunk Chunk;
 typedef struct Function Function;
 typedef struct Closure Closure;
@@ -174,6 +181,16 @@ typedef struct BoundClosure BoundClosure;
 typedef struct Instance Instance;
 typedef struct Table Table;
 typedef Element (*NativeFn)(int argc, Stack *argv);
+
+struct ExprType
+{
+    Typed type;
+    union
+    {
+        ObjType object;
+        T arena;
+    };
+};
 
 union Vector
 {
@@ -288,12 +305,11 @@ struct Instance
 
 struct Stack
 {
-
     int count;
     int len;
     size_t size;
     Element as;
-    struct Stack *top;
+    Stack *top;
 };
 
 struct Upval

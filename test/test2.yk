@@ -7,15 +7,14 @@ sr arrays()
 {
     var ar = ["Hello", "World", "Vector", "of", "Vectors"];
 
-
     each(var s : ar)
         pout(s);
 
+    rm(ar);
 
-    array[int] a;
-
-    rm(ar); 
 }
+arrays();
+
 
 sr string_access()
 {
@@ -45,7 +44,5 @@ sr string_access()
 }
 
 
-arrays();
-// string_access();
 
  

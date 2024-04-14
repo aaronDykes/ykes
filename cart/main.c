@@ -28,23 +28,23 @@ static void repl()
 {
 
     initVM();
-    Arena ar = GROW_ARRAY(NULL, 1024 * sizeof(char), ARENA_STR);
+    char ar[1024] = {0};
+    // Arena ar = GROW_ARRAY(NULL, 1024 * sizeof(char), ARENA_STR);
 
     for (;;)
     {
         printf("$ ");
 
-        if (!fgets(ar.as.String, ar.size, stdin))
+        if (!fgets(ar, 1024, stdin))
         {
             printf("\n");
             break;
         }
-        if (strcmp(ar.as.String, "end\n") == 0)
+        if (strcmp(ar, "end\n") == 0)
             break;
 
-        interpret(ar.as.String);
+        interpret(ar);
     }
-    FREE_ARRAY(&ar);
     freeVM();
 }
 

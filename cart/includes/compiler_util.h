@@ -37,31 +37,12 @@ typedef struct Local Local;
 typedef struct Upvalue Upvalue;
 typedef struct Compiler Compiler;
 typedef struct ClassCompiler ClassCompiler;
-typedef struct ExprType ExprType;
 typedef void (*parse_fn)(Compiler *);
 typedef struct parse_rule PRule;
-
-typedef enum
-{
-    OBJECT_TYPE,
-    ARENA_TYPE,
-    WILD_CARD
-} C;
-
-struct ExprType
-{
-    C type;
-    union
-    {
-        ObjType object;
-        T arena;
-    };
-};
 
 struct Local
 {
     Arena name;
-    ExprType type;
     int depth;
     bool captured;
 };
@@ -244,6 +225,7 @@ static void dot(Compiler *c);
 static void _this(Compiler *c);
 
 static Arena parse_id(Compiler *c);
+
 static int parse_var(Compiler *c, Arena ar);
 static void id(Compiler *c);
 static Arena get_id(Compiler *c);
