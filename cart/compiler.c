@@ -330,30 +330,57 @@ static void var_dec(Compiler *c)
 
 static void int_declaration(Compiler *c)
 {
+    consume(TOKEN_ID, "Expect variable name.", &c->parser);
+    Arena ar = parse_id(c);
+    consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
 }
 static void double_declaration(Compiler *c)
 {
+    consume(TOKEN_ID, "Expect variable name.", &c->parser);
+    Arena ar = parse_id(c);
+    consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
 }
 static void long_declaration(Compiler *c)
 {
+    consume(TOKEN_ID, "Expect variable name.", &c->parser);
+    Arena ar = parse_id(c);
+    consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
 }
 static void byte_declaration(Compiler *c)
 {
+    consume(TOKEN_ID, "Expect variable name.", &c->parser);
+    Arena ar = parse_id(c);
+    consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
 }
 static void char_declaration(Compiler *c)
 {
+    consume(TOKEN_ID, "Expect variable name.", &c->parser);
+    Arena ar = parse_id(c);
+    consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
 }
 static void string_declaration(Compiler *c)
 {
+    consume(TOKEN_ID, "Expect variable name.", &c->parser);
+    Arena ar = parse_id(c);
+    consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
 }
 static void stack_declaration(Compiler *c)
 {
+    consume(TOKEN_ID, "Expect variable name.", &c->parser);
+    Arena ar = parse_id(c);
+    consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
 }
 static void vector_declaration(Compiler *c)
 {
+    consume(TOKEN_ID, "Expect variable name.", &c->parser);
+    Arena ar = parse_id(c);
+    consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
 }
 static void table_declaration(Compiler *c)
 {
+    consume(TOKEN_ID, "Expect variable name.", &c->parser);
+    Arena ar = parse_id(c);
+    consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
 }
 
 static void synchronize(Parser *parser)

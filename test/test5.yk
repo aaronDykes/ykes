@@ -11,15 +11,20 @@ sr stack_push()
 
         return s;
     }
+
     return this_is();
+
 }
 
 var hello = stack_push();
 
 each(var s : hello)
-{
     pout(s);
-}
+
+    
+
+
+
 
 
 
