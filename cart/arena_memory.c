@@ -213,7 +213,7 @@ void *alloc_ptr(size_t size)
 
         size_t tmp = free->size - size;
 
-        void *ptr = ((free + free->size) - size);
+        void *ptr = (free + free->size) - size;
 
         free->size = tmp;
 
@@ -221,10 +221,6 @@ void *alloc_ptr(size_t size)
             prev->next = free->next;
         else if (!prev && tmp == 0)
             mem->next = free->next;
-        else if (prev)
-            prev->next = free;
-        else
-            mem->next = free;
 
         return ptr;
     }
