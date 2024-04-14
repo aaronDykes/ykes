@@ -21,12 +21,6 @@ var hello = stack_push();
 each(var s : hello)
     pout(s);
 
-    
-
-
-
-
-
 
 rm(hello);
 

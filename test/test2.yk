@@ -11,6 +11,9 @@ sr arrays()
     each(var s : ar)
         pout(s);
 
+
+    array[int] a;
+
     rm(ar); 
 }
 

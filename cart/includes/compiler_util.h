@@ -37,12 +37,31 @@ typedef struct Local Local;
 typedef struct Upvalue Upvalue;
 typedef struct Compiler Compiler;
 typedef struct ClassCompiler ClassCompiler;
+typedef struct ExprType ExprType;
 typedef void (*parse_fn)(Compiler *);
 typedef struct parse_rule PRule;
+
+typedef enum
+{
+    OBJECT_TYPE,
+    ARENA_TYPE,
+    WILD_CARD
+} C;
+
+struct ExprType
+{
+    C type;
+    union
+    {
+        ObjType object;
+        T arena;
+    };
+};
 
 struct Local
 {
     Arena name;
+    ExprType type;
     int depth;
     bool captured;
 };
@@ -126,6 +145,7 @@ static void byte_declaration(Compiler *c);
 static void char_declaration(Compiler *c);
 static void string_declaration(Compiler *c);
 static void stack_declaration(Compiler *c);
+static void array_declaration(Compiler *c);
 static void vector_declaration(Compiler *c);
 static void table_declaration(Compiler *c);
 static void synchronize(Parser *parser);
@@ -319,6 +339,7 @@ static PRule rules[] = {
     [TOKEN_SUPER] = {NULL, NULL, PREC_NONE},
     [TOKEN_THIS] = {_this, NULL, PREC_NONE},
     [TOKEN_VAR] = {NULL, NULL, PREC_NONE},
+    [TOKEN_TYPE_ARRAY] = {NULL, NULL, PREC_NONE},
     [TOKEN_TYPE_INT] = {NULL, NULL, PREC_NONE},
     [TOKEN_TYPE_DOUBLE] = {NULL, NULL, PREC_NONE},
     [TOKEN_TYPE_LONG] = {NULL, NULL, PREC_NONE},

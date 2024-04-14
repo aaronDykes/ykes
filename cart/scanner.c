@@ -187,7 +187,16 @@ static int id_type()
     case 'A':
         return check_keyword(1, 4, "rray", TOKEN_ALLOC_ARRAY);
     case 'a':
-        return check_keyword(1, 2, "nd", TOKEN_OP_AND);
+        if (scan.current - scan.start > 1)
+        {
+            switch (scan.start[1])
+            {
+            case 'r':
+                return check_keyword(2, 3, "ray", TOKEN_TYPE_ARRAY);
+            case 'n':
+                return check_keyword(2, 1, "d", TOKEN_OP_AND);
+            }
+        }
     case 'b':
         if (scan.current - scan.start > 1)
             switch (scan.start[1])
