@@ -8,6 +8,9 @@ sr ternary()
         hello,
         (69 == 69) ? "hello world" : "okay then"
     );
+    // var hello = stack;
+
+    
 
     return hello;
 

@@ -193,7 +193,7 @@ static int id_type()
             switch (scan.start[1])
             {
             case 'y':
-                return check_keyword(2, 3, "te", TOKEN_BTYE);
+                return check_keyword(2, 3, "te", TOKEN_TYPE_BYTE);
             case 'r':
                 return check_keyword(2, 3, "eak", TOKEN_BREAK);
             }
@@ -300,7 +300,13 @@ static int id_type()
             case 'q':
                 return check_keyword(2, 4, "uare", TOKEN_SQRT);
             case 't':
-                return check_keyword(2, 4, "ring", TOKEN_TYPE_STRING);
+                switch (scan.start[2])
+                {
+                case 'r':
+                    return check_keyword(2, 4, "ring", TOKEN_TYPE_STRING);
+                case 'a':
+                    return check_keyword(2, 3, "ack", TOKEN_TYPE_STACK);
+                }
             }
 
         return check_keyword(1, 1, "r", TOKEN_FUNC);
@@ -321,6 +327,8 @@ static int id_type()
         if (scan.current - scan.start > 1)
             switch (scan.start[1])
             {
+            case 'a':
+                return check_keyword(2, 3, "ble", TOKEN_TYPE_TABLE);
             case 'h':
                 return check_keyword(2, 2, "is", TOKEN_THIS);
             case 'r':
@@ -330,7 +338,16 @@ static int id_type()
         return check_keyword(1, 4, "able", TOKEN_TABLE);
 
     case 'v':
-        return check_keyword(1, 2, "ar", TOKEN_VAR);
+        if (scan.current - scan.start > 1)
+        {
+            switch (scan.start[1])
+            {
+            case 'a':
+                return check_keyword(2, 1, "r", TOKEN_VAR);
+            case 'e':
+                return check_keyword(2, 4, "ctor", TOKEN_TYPE_VECTOR);
+            }
+        }
     case 'V':
         return check_keyword(1, 5, "ector", TOKEN_ALLOC_VECTOR);
     case 'w':

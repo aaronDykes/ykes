@@ -79,6 +79,25 @@ static void declaration(Compiler *c)
         func_declaration(c);
     else if (match(TOKEN_CLASS, &c->parser))
         class_declaration(c);
+    else if (match(TOKEN_TYPE_INT, &c->parser))
+        int_declaration(c);
+    else if (match(TOKEN_TYPE_DOUBLE, &c->parser))
+        double_declaration(c);
+    else if (match(TOKEN_TYPE_LONG, &c->parser))
+        long_declaration(c);
+    else if (match(TOKEN_TYPE_BYTE, &c->parser))
+        byte_declaration(c);
+    else if (match(TOKEN_TYPE_CHAR, &c->parser))
+        char_declaration(c);
+    else if (match(TOKEN_TYPE_STRING, &c->parser))
+        string_declaration(c);
+    else if (match(TOKEN_TYPE_STACK, &c->parser))
+        stack_declaration(c);
+    else if (match(TOKEN_TYPE_VECTOR, &c->parser))
+        vector_declaration(c);
+    else if (match(TOKEN_TYPE_TABLE, &c->parser))
+        table_declaration(c);
+
     else if (match(TOKEN_VAR, &c->parser))
         var_dec(c);
     else
@@ -307,6 +326,34 @@ static void var_dec(Compiler *c)
         emit_byte(c, OP_NULL);
 
     consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
+}
+
+static void int_declaration(Compiler *c)
+{
+}
+static void double_declaration(Compiler *c)
+{
+}
+static void long_declaration(Compiler *c)
+{
+}
+static void byte_declaration(Compiler *c)
+{
+}
+static void char_declaration(Compiler *c)
+{
+}
+static void string_declaration(Compiler *c)
+{
+}
+static void stack_declaration(Compiler *c)
+{
+}
+static void vector_declaration(Compiler *c)
+{
+}
+static void table_declaration(Compiler *c)
+{
 }
 
 static void synchronize(Parser *parser)
@@ -988,7 +1035,7 @@ static void ch(Compiler *c)
 static void boolean(Compiler *c)
 {
     if (*c->parser.pre.start == 'n')
-        emit_bytes(c, OP_CONSTANT, add_constant(c, OBJ(Null())));
+        emit_bytes(c, OP_CONSTANT, add_constant(c, CLASS(NULL)));
     else
         emit_constant(c, Bool(*c->parser.pre.start == 't' ? true : false));
 }

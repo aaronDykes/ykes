@@ -3,23 +3,23 @@ sr stack_push()
 
     sr this_is()
     {
-        var stack = Stack();
-        stack.push("hello world!");
-        stack.push("Another vector!");
-        stack.push("This is a stack value");
-        stack.push(69.43022);
+        var s = Stack();
+        s.push("hello world!");
+        s.push("Another vector!");
+        s.push("This is a stack value");
+        s.push(69.43022);
 
-        return stack;
+        return s;
     }
-    var hello=this_is();
-
-    return hello;
+    return this_is();
 }
 
 var hello = stack_push();
 
 each(var s : hello)
+{
     pout(s);
+}
 
 
 

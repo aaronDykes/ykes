@@ -119,6 +119,15 @@ static void func_body(Compiler *c, ObjType type, Arena ar);
 static void func_var(Compiler *c);
 
 static void var_dec(Compiler *c);
+static void int_declaration(Compiler *c);
+static void double_declaration(Compiler *c);
+static void long_declaration(Compiler *c);
+static void byte_declaration(Compiler *c);
+static void char_declaration(Compiler *c);
+static void string_declaration(Compiler *c);
+static void stack_declaration(Compiler *c);
+static void vector_declaration(Compiler *c);
+static void table_declaration(Compiler *c);
 static void synchronize(Parser *parser);
 
 static void statement(Compiler *c);
@@ -283,7 +292,6 @@ static PRule rules[] = {
     [TOKEN_ALLOC_VECTOR] = {vector_alloc, NULL, PREC_NONE},
     [TOKEN_ALLOC_STACK] = {stack_alloc, NULL, PREC_NONE},
     [TOKEN_TABLE] = {table, NULL, PREC_NONE},
-    [TOKEN_BTYE] = {NULL, NULL, PREC_NONE},
     [TOKEN_CH_TERNARY] = {NULL, NULL, PREC_NONE},
     [TOKEN_CH_NULL_COALESCING] = {NULL, NULL, PREC_NONE},
 
@@ -311,6 +319,13 @@ static PRule rules[] = {
     [TOKEN_SUPER] = {NULL, NULL, PREC_NONE},
     [TOKEN_THIS] = {_this, NULL, PREC_NONE},
     [TOKEN_VAR] = {NULL, NULL, PREC_NONE},
+    [TOKEN_TYPE_INT] = {NULL, NULL, PREC_NONE},
+    [TOKEN_TYPE_DOUBLE] = {NULL, NULL, PREC_NONE},
+    [TOKEN_TYPE_LONG] = {NULL, NULL, PREC_NONE},
+    [TOKEN_TYPE_STRING] = {NULL, NULL, PREC_NONE},
+    [TOKEN_TYPE_CHAR] = {NULL, NULL, PREC_NONE},
+    [TOKEN_TYPE_BYTE] = {NULL, NULL, PREC_NONE},
+
     [TOKEN_WHILE] = {NULL, NULL, PREC_NONE},
     [TOKEN_ERR] = {NULL, NULL, PREC_NONE},
     [TOKEN_EOF] = {NULL, NULL, PREC_NONE},
