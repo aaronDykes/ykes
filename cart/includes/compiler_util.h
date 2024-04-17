@@ -130,7 +130,7 @@ static void end_scope(Compiler *c);
 static void parse_block(Compiler *c);
 static void block(Compiler *c);
 
-static void comment(Compiler *c);
+// static void comment(Compiler *c);
 
 static void emit_loop(Compiler *c, int byte);
 static int emit_jump_long(Compiler *c, int byte);
@@ -295,8 +295,8 @@ static PRule rules[] = {
     [TOKEN_ELSE] = {NULL, NULL, PREC_NONE},
     [TOKEN_FOR] = {NULL, NULL, PREC_NONE},
 
-    [TOKEN_LINE_COMMENT] = {unary, NULL, PREC_NONE},
-    [TOKEN_NLINE_COMMENT] = {unary, NULL, PREC_NONE},
+    [TOKEN_LINE_COMMENT] = {NULL, NULL, PREC_NONE},
+    [TOKEN_NLINE_COMMENT] = {NULL, NULL, PREC_NONE},
 
     [TOKEN_IF] = {NULL, NULL, PREC_NONE},
     [TOKEN_ELIF] = {NULL, NULL, PREC_OR},

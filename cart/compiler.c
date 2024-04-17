@@ -167,10 +167,8 @@ static void method_body(Compiler *c, ObjType type, Arena ar, Class **class)
 
     for (int i = 0; i < tmp->upvalue_count; i++)
     {
-        uint8_t local = tmp->upvalues[i].islocal ? 1 : 0;
-        uint8_t index = (uint8_t)tmp->upvalues[i].index;
-        emit_byte(c, local);
-        emit_byte(c, index);
+        emit_byte(c, tmp->upvalues[i].islocal ? 1 : 0);
+        emit_byte(c, (uint8_t)tmp->upvalues[i].index);
     }
 }
 
@@ -212,7 +210,6 @@ static void func_declaration(Compiler *c)
     Arena ar = parse_func_id(c);
 
     write_table(c->base->calls, ar, OBJ(Int(c->base->call_count++)));
-    // c->base->calls[c->base->call_count++] = ar;
     func_body(c, CLOSURE, ar);
 }
 
@@ -252,11 +249,8 @@ static void func_body(Compiler *c, ObjType type, Arena ar)
 
     for (int i = 0; i < tmp->upvalue_count; i++)
     {
-        uint8_t local = tmp->upvalues[i].islocal ? 1 : 0;
-        uint8_t index = (uint8_t)tmp->upvalues[i].index;
-
-        emit_byte(c, local);
-        emit_byte(c, index);
+        emit_byte(c, tmp->upvalues[i].islocal ? 1 : 0);
+        emit_byte(c, (uint8_t)tmp->upvalues[i].index);
     }
 }
 
@@ -355,7 +349,7 @@ static void statement(Compiler *c)
     else if (match(TOKEN_RETURN, &c->parser))
         return_statement(c);
     else if (is_comment(&c->parser))
-        comment(c);
+        advance_compiler(&c->parser);
     else
         default_expression(c);
 }
@@ -388,13 +382,6 @@ static void rm_statement(Compiler *c)
 static inline bool is_comment(Parser *parser)
 {
     return check(TOKEN_LINE_COMMENT, parser) || check(TOKEN_NLINE_COMMENT, parser);
-}
-
-static void comment(Compiler *c)
-{
-
-    advance_compiler(&c->parser);
-    emit_byte(c, OP_NOOP);
 }
 
 static void for_statement(Compiler *c)
@@ -547,7 +534,8 @@ static void switch_statement(Compiler *c)
     if (expect)
         consume(TOKEN_CH_RCURL, "Expect `}` after switch body", &c->parser);
 
-    c->func->ch.cases.listof.Ints[c->func->ch.cases.count++] = c->func->ch.op_codes.count;
+    Element el = OBJ(c->func->ch.cases);
+    push_int(&el, c->func->ch.op_codes.count);
 }
 
 static void case_statement(Compiler *c, Arena args)
@@ -596,7 +584,8 @@ static void if_statement(Compiler *c)
     if (match(TOKEN_ELSE, &c->parser))
         statement(c);
 
-    c->func->ch.cases.listof.Ints[c->func->ch.cases.count++] = c->func->ch.op_codes.count;
+    Element el = OBJ(c->func->ch.cases);
+    push_int(&el, c->func->ch.op_codes.count);
     patch_jump(c, exit);
 }
 
@@ -908,10 +897,6 @@ static void unary(Compiler *c)
     case TOKEN_OP_SUB:
     case TOKEN_OP_BANG:
         emit_byte(c, OP_NEG);
-        break;
-    case TOKEN_LINE_COMMENT:
-    case TOKEN_NLINE_COMMENT:
-        emit_byte(c, OP_NOOP);
         break;
     default:
         return;

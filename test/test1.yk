@@ -1,11 +1,11 @@
-
-
 sr tables()
 {
     var tab = Table(128);
 
     var nest = Table();
     var another_nest = Table();
+    tab[69.999] = 420;
+    tab['a'] = "aa";
     tab["Aaron"] = "Aaron";
     tab["Dykes"] = "Dykes"; 
     tab["Table"] = nest;
@@ -18,6 +18,8 @@ sr tables()
     t["Table"] = tab; 
 
     pout(
+        t["Table"][69.999],
+        t["Table"]['a'],
         t["Table"]["Aaron"],
         t["Table"]["Dykes"],
         t["Table"]["Table"]["nest"],
@@ -25,6 +27,17 @@ sr tables()
     );
 
     rm(t);
+/**
+    pout(
+        t["Table"][69.999],
+        t["Table"]['a'],
+        t["Table"]["Aaron"],
+        t["Table"]["Dykes"],
+        t["Table"]["Table"]["nest"],
+        t["Table"]["Table"]["another"]["nest"]
+    );
+*/
+
     
 }
 

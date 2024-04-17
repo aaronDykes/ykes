@@ -228,6 +228,9 @@ static void free_asterisk(Element el)
     case INSTANCE:
         FREE_INSTANCE(el.instance);
         break;
+    case TABLE:
+        FREE_TABLE(el.table);
+        break;
     default:
         return;
     }

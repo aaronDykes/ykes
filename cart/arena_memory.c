@@ -191,6 +191,11 @@ void free_ptr(Free *new)
         new->next = free->next;
         free->next = new;
     }
+    else if (!prev && free && free < new)
+    {
+        new->next = mem->next->next;
+        mem->next->next = new;
+    }
     else if (prev && prev < new)
     {
         new->next = prev->next;
@@ -620,6 +625,7 @@ void push_int(Element *el, int Int)
     if (el->arena.len < el->arena.count + 1)
     {
         el->arena.len = GROW_CAPACITY(el->arena.len);
+
         el->arena.size = el->arena.len * sizeof(int);
         el->arena = GROW_ARRAY(&el->arena, el->arena.size, ARENA_INTS);
     }
@@ -1005,8 +1011,8 @@ void init_chunk(Chunk *c)
     c->lines.listof.Ints = NULL;
     c->cases.len = 0;
     c->cases.count = 0;
-    c->cases.listof.Ints = NULL;
-    c->cases.len = 0;
+    c->cases = GROW_ARRAY(NULL, MIN_SIZE, ARENA_INTS);
+    c->cases.len = PAGE_COUNT;
     c->constants = GROW_STACK(NULL, STACK_SIZE);
 }
 
@@ -1123,7 +1129,7 @@ long long int hash(Arena key)
         index = (index * 16777669);
         break;
     case ARENA_DOUBLE:
-        index ^= ((int)key.as.Double);
+        index ^= ((long long int)key.as.Double);
         index = (index * 16777420);
         break;
     case ARENA_LONG:
