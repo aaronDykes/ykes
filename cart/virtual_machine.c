@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <math.h>
 
-void initVM()
+void initVM(void)
 {
 
     initialize_global_memory();
@@ -25,7 +25,7 @@ void initVM()
     define_native(native_name("square"), square_native);
     define_native(native_name("prime"), prime_native);
 }
-void freeVM()
+void freeVM(void)
 {
     FREE_TABLE(machine.glob);
     FREE_STACK(&machine.stack);
@@ -35,7 +35,7 @@ void freeVM()
     destroy_global_memory();
 }
 
-static void reset_vm_stack()
+static void reset_vm_stack(void)
 {
     reset_stack(machine.stack);
     machine.frame_count = 0;
@@ -293,7 +293,7 @@ static bool not_null(Element el)
     }
 }
 
-Interpretation run()
+Interpretation run(void)
 {
 
     CallFrame *frame = &machine.frames[machine.frame_count - 1];

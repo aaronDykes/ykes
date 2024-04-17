@@ -2,22 +2,13 @@
 #include <stdlib.h>
 #include "lex_util.h"
 
-static token make_token(int t);
-static token err_token(const char *err);
-static token string();
-static token number();
-static token id();
-static token character();
-static token skip_comment();
-static token strict_toke(int t);
-
 void init_scanner(const char *src)
 {
     scan.start = src;
     scan.current = src;
     scan.line = 1;
 }
-token scan_token()
+token scan_token(void)
 {
     skip_whitespace();
     scan.start = scan.current;
@@ -127,7 +118,7 @@ static token err_token(const char *err)
     return toke;
 }
 
-static token string()
+static token string(void)
 {
     while (next() != '"' && !end())
     {
@@ -143,7 +134,7 @@ static token string()
     skip();
     return make_token(TOKEN_STR);
 }
-static token number()
+static token number(void)
 {
     bool is_whole = true;
 
@@ -161,14 +152,14 @@ static token number()
     int type = (val < INT32_MAX) ? TOKEN_INT : TOKEN_LLINT;
     return is_whole ? make_token(type) : make_token(TOKEN_DOUBLE);
 }
-static token id()
+static token id(void)
 {
     while (digit(next()) || alpha(next()))
         skip();
 
     return make_token(id_type());
 }
-static token character()
+static token character(void)
 {
     nskip(2);
     return make_token(TOKEN_CHAR);
@@ -180,7 +171,7 @@ static token strict_toke(int t)
     return make_token(t);
 }
 
-static int id_type()
+static int id_type(void)
 {
     switch (*scan.start)
     {
@@ -382,11 +373,11 @@ static int check_keyword(int start, int end, const char *str, int t)
     return TOKEN_ID;
 }
 
-static char next()
+static char next(void)
 {
     return *scan.current;
 }
-static char advance()
+static char advance(void)
 {
     return *scan.current++;
 }
@@ -395,7 +386,7 @@ static char peek(int n)
     return scan.current[n];
 }
 
-static void skip()
+static void skip(void)
 {
     scan.current++;
 }
@@ -405,7 +396,7 @@ static void nskip(int n)
         skip();
 }
 
-static bool is_space()
+static bool is_space(void)
 {
     return next() == ' ' ||
            next() == '\t' ||
@@ -428,7 +419,7 @@ static bool match(char expected)
     scan.current++;
     return true;
 }
-static bool end()
+static bool end(void)
 {
     return *scan.current == '\0';
 }
@@ -443,7 +434,7 @@ static bool alpha(char c)
            (c == '_');
 }
 
-static void skip_line_comment()
+static void skip_line_comment(void)
 {
     for (; *scan.current && *scan.current != '\n'; skip())
         ;
@@ -453,7 +444,7 @@ static void skip_line_comment()
 
     skip();
 }
-static void skip_multi_line_comment()
+static void skip_multi_line_comment(void)
 {
     skip();
     for (; !end(); skip())
@@ -465,7 +456,7 @@ static void skip_multi_line_comment()
             break;
     nskip(2);
 }
-static token skip_comment()
+static token skip_comment(void)
 {
     int type = TOKEN_LINE_COMMENT;
     if (scan.current[1] == '/' || next() == '/')
@@ -479,7 +470,7 @@ static token skip_comment()
     return make_token(type);
 }
 
-static void skip_whitespace()
+static void skip_whitespace(void)
 {
     while (is_space())
     {

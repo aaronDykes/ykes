@@ -4,7 +4,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 
-static void repl();
+static void repl(void);
 static void run_file(const char *path);
 static char *read_file(const char *path);
 
@@ -24,7 +24,7 @@ int main(int argc, char **argv)
     return EXIT_SUCCESS;
 }
 
-static void repl()
+static void repl(void)
 {
 
     initVM();

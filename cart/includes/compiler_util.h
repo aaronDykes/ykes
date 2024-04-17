@@ -119,16 +119,6 @@ static void func_body(Compiler *c, ObjType type, Arena ar);
 static void func_var(Compiler *c);
 
 static void var_dec(Compiler *c);
-static void int_declaration(Compiler *c);
-static void double_declaration(Compiler *c);
-static void long_declaration(Compiler *c);
-static void byte_declaration(Compiler *c);
-static void char_declaration(Compiler *c);
-static void string_declaration(Compiler *c);
-static void stack_declaration(Compiler *c);
-static void array_declaration(Compiler *c);
-static void vector_declaration(Compiler *c);
-static void table_declaration(Compiler *c);
 static void synchronize(Parser *parser);
 
 static void statement(Compiler *c);

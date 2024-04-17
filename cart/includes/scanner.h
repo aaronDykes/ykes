@@ -27,6 +27,6 @@ typedef struct scanner scanner;
 static scanner scan;
 
 void init_scanner(const char *src);
-token scan_token();
+token scan_token(void);
 
 #endif

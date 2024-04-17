@@ -119,8 +119,8 @@ union Free
 static Free *mem;
 // static Free *head;
 
-void initialize_global_memory();
-void destroy_global_memory();
+void initialize_global_memory(void);
+void destroy_global_memory(void);
 
 Arena *arena_alloc_arena(size_t size);
 Arena *arena_realloc_arena(Arena *ar, size_t size);
@@ -139,7 +139,7 @@ Element cpy_array(Element el);
 Arena Ints(int *ints, int len);
 Arena Doubles(double *doubles, int len);
 Arena Longs(long long int *longs, int len);
-Arena Strings();
+Arena Strings(void);
 
 void push_arena(Element *el, Arena ar);
 Element pop_arena(Element *el);
@@ -165,7 +165,7 @@ Arena String(const char *str);
 Arena CString(const char *str);
 Arena Bool(bool boolean);
 Arena Size(size_t Size);
-Arena Null();
+Arena Null(void);
 
 void arena_free(Arena *ar);
 
@@ -188,7 +188,7 @@ Element new_class(Class *classc);
 Element new_instance(Instance *ci);
 Element table_el(Table *t);
 Element vector(Arena *vect);
-Element null_obj();
+Element null_obj(void);
 
 Function *function(Arena name);
 void free_function(Function *func);

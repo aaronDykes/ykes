@@ -71,65 +71,6 @@ static void advance_compiler(Parser *parser)
         current_err(parser->cur.start, parser);
     }
 }
-static bool type_dec(Compiler *c)
-{
-    if (match(TOKEN_VAR, &c->parser))
-    {
-        var_dec(c);
-        return true;
-    }
-    if (match(TOKEN_TYPE_INT, &c->parser))
-    {
-        int_declaration(c);
-        return true;
-    }
-    if (match(TOKEN_TYPE_DOUBLE, &c->parser))
-    {
-        double_declaration(c);
-        return true;
-    }
-    if (match(TOKEN_TYPE_LONG, &c->parser))
-    {
-        long_declaration(c);
-        return true;
-    }
-    if (match(TOKEN_TYPE_BYTE, &c->parser))
-    {
-        byte_declaration(c);
-        return true;
-    }
-    if (match(TOKEN_TYPE_CHAR, &c->parser))
-    {
-        char_declaration(c);
-        return true;
-    }
-    if (match(TOKEN_TYPE_STRING, &c->parser))
-    {
-        string_declaration(c);
-        return true;
-    }
-    if (match(TOKEN_TYPE_STACK, &c->parser))
-    {
-        stack_declaration(c);
-        return true;
-    }
-    if (match(TOKEN_TYPE_ARRAY, &c->parser))
-    {
-        array_declaration(c);
-        return true;
-    }
-    if (match(TOKEN_TYPE_VECTOR, &c->parser))
-    {
-        vector_declaration(c);
-        return true;
-    }
-    if (match(TOKEN_TYPE_TABLE, &c->parser))
-    {
-        table_declaration(c);
-        return true;
-    }
-    return false;
-}
 
 static void declaration(Compiler *c)
 {
@@ -138,26 +79,6 @@ static void declaration(Compiler *c)
         func_declaration(c);
     else if (match(TOKEN_CLASS, &c->parser))
         class_declaration(c);
-    else if (match(TOKEN_TYPE_INT, &c->parser))
-        int_declaration(c);
-    else if (match(TOKEN_TYPE_DOUBLE, &c->parser))
-        double_declaration(c);
-    else if (match(TOKEN_TYPE_LONG, &c->parser))
-        long_declaration(c);
-    else if (match(TOKEN_TYPE_BYTE, &c->parser))
-        byte_declaration(c);
-    else if (match(TOKEN_TYPE_CHAR, &c->parser))
-        char_declaration(c);
-    else if (match(TOKEN_TYPE_STRING, &c->parser))
-        string_declaration(c);
-    else if (match(TOKEN_TYPE_STACK, &c->parser))
-        stack_declaration(c);
-    else if (match(TOKEN_TYPE_ARRAY, &c->parser))
-        array_declaration(c);
-    else if (match(TOKEN_TYPE_VECTOR, &c->parser))
-        vector_declaration(c);
-    else if (match(TOKEN_TYPE_TABLE, &c->parser))
-        table_declaration(c);
     else if (match(TOKEN_VAR, &c->parser))
         var_dec(c);
     else
@@ -388,133 +309,6 @@ static void var_dec(Compiler *c)
     consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
 }
 
-static void int_declaration(Compiler *c)
-{
-    consume(TOKEN_ID, "Expect variable name.", &c->parser);
-
-    Arena ar = parse_id(c);
-    int glob = parse_var(c, ar);
-
-    uint8_t set = 0;
-    if (glob != -1)
-        set = OP_GLOBAL_DEF;
-    else
-    {
-        glob = resolve_local(c, &ar);
-        set = OP_SET_LOCAL;
-    }
-
-    if (match(TOKEN_OP_ASSIGN, &c->parser))
-    {
-        expression(c);
-        if (match(TOKEN_CH_TERNARY, &c->parser))
-            ternary_statement(c);
-        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
-            null_coalescing_statement(c);
-        emit_bytes(c, set, (uint8_t)glob);
-    }
-    else
-        emit_byte(c, OP_NULL);
-
-    consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
-}
-static void double_declaration(Compiler *c)
-{
-    consume(TOKEN_ID, "Expect variable name.", &c->parser);
-    Arena ar = parse_id(c);
-    consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
-}
-static void long_declaration(Compiler *c)
-{
-    consume(TOKEN_ID, "Expect variable name.", &c->parser);
-    Arena ar = parse_id(c);
-    consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
-}
-static void byte_declaration(Compiler *c)
-{
-    consume(TOKEN_ID, "Expect variable name.", &c->parser);
-    Arena ar = parse_id(c);
-    consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
-}
-static void char_declaration(Compiler *c)
-{
-    consume(TOKEN_ID, "Expect variable name.", &c->parser);
-    Arena ar = parse_id(c);
-    consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
-}
-static void string_declaration(Compiler *c)
-{
-    consume(TOKEN_ID, "Expect variable name.", &c->parser);
-    Arena ar = parse_id(c);
-    consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
-}
-static void stack_declaration(Compiler *c)
-{
-    consume(TOKEN_ID, "Expect variable name.", &c->parser);
-    Arena ar = parse_id(c);
-    consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
-}
-static void array_declaration(Compiler *c)
-{
-    consume(TOKEN_CH_LSQUARE, "Expect `[` prior to type specifier", &c->parser);
-
-    T type = 0;
-
-    if (match(TOKEN_TYPE_INT, &c->parser))
-        type = ARENA_INTS;
-    else if (match(TOKEN_TYPE_DOUBLE, &c->parser))
-        type = ARENA_DOUBLES;
-    else if (match(TOKEN_TYPE_LONG, &c->parser))
-        type = ARENA_LONGS;
-    else if (match(TOKEN_TYPE_BYTE, &c->parser))
-        type = ARENA_BYTES;
-    else if (match(TOKEN_TYPE_CHAR, &c->parser))
-        type = ARENA_STR;
-    else if (match(TOKEN_TYPE_STRING, &c->parser))
-        type = ARENA_STRS;
-    else
-        error("Invalid type specifier", &c->parser);
-
-    consume(TOKEN_CH_RSQUARE, "Expect `]` following type specifier", &c->parser);
-    consume(TOKEN_ID, "Expect variable name.", &c->parser);
-    Arena ar = parse_id(c);
-
-    consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
-}
-static void vector_declaration(Compiler *c)
-{
-    consume(TOKEN_ID, "Expect variable name.", &c->parser);
-
-    T type = 0;
-    if (match(TOKEN_CH_LSQUARE, &c->parser))
-    {
-        if (match(TOKEN_TYPE_INT, &c->parser))
-            type = ARENA_INTS;
-        else if (match(TOKEN_TYPE_DOUBLE, &c->parser))
-            type = ARENA_DOUBLES;
-        else if (match(TOKEN_TYPE_LONG, &c->parser))
-            type = ARENA_LONGS;
-        else if (match(TOKEN_TYPE_BYTE, &c->parser))
-            type = ARENA_BYTES;
-        else if (match(TOKEN_TYPE_CHAR, &c->parser))
-            type = ARENA_STR;
-        else if (match(TOKEN_TYPE_STRING, &c->parser))
-            type = ARENA_STRS;
-        else
-            error("Invalid type specifier", &c->parser);
-        consume(TOKEN_CH_RSQUARE, "Expect `]` following type specifier", &c->parser);
-    }
-    Arena ar = parse_id(c);
-    int glob = parse_var(c, ar);
-    consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
-}
-static void table_declaration(Compiler *c)
-{
-    consume(TOKEN_ID, "Expect variable name.", &c->parser);
-    Arena ar = parse_id(c);
-    consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
-}
-
 static void synchronize(Parser *parser)
 {
     parser->panic = false;
@@ -563,7 +357,7 @@ static void statement(Compiler *c)
     else if (is_comment(&c->parser))
         comment(c);
     else
-        return default_expression(c);
+        default_expression(c);
 }
 
 static void rm_statement(Compiler *c)
@@ -609,7 +403,9 @@ static void for_statement(Compiler *c)
     consume(TOKEN_CH_LPAREN, "Expect `(` after to 'for'.", &c->parser);
     if (!match(TOKEN_CH_SEMI, &c->parser))
     {
-        if (!type_dec(c))
+        if (match(TOKEN_VAR, &c->parser))
+            var_dec(c);
+        else
             id(c);
     }
 

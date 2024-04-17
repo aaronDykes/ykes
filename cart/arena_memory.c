@@ -7,18 +7,22 @@
 
 static void *request_system_memory(size_t size)
 {
+
     return mmap(
         NULL,
         size,
         PROT_READ | PROT_WRITE,
-        MADV_RANDOM |
-            MADV_NORMAL |
-            MADV_WILLNEED |
+
+        POSIX_MADV_RANDOM |
+            POSIX_MADV_NORMAL |
+            POSIX_MADV_WILLNEED |
             MAP_PRIVATE |
+#if !defined(_POSIX_C_SOURCE) || defined(_DARWIN_C_SOURCE)
             MAP_ANON,
+#endif
         -1, 0);
 }
-void initialize_global_memory()
+void initialize_global_memory(void)
 {
 
     mem = request_system_memory(OFFSET + (OFFSET * PAGE));
@@ -28,7 +32,7 @@ void initialize_global_memory()
     mem->next->next = NULL;
 }
 
-void destroy_global_memory()
+void destroy_global_memory(void)
 {
 
     mem = mem->next;
@@ -153,7 +157,7 @@ void arena_free(Arena *ar)
     ar = NULL;
 }
 
-static void merge_list()
+static void merge_list(void)
 {
 
     Free *prev = NULL;
@@ -553,11 +557,11 @@ Arena Size(size_t Size)
     ar.as.hash = k;
     return ar;
 }
-Arena Null()
+Arena Null(void)
 {
     Arena ar;
     ar.type = ARENA_NULL;
-    ar.size = sizeof(void);
+    ar.as.Void = NULL;
     return ar;
 }
 
@@ -575,7 +579,7 @@ Arena Longs(long long int *Longs, int len)
     return arena_init(Longs, sizeof(long long int) * len, ARENA_LONGS);
 }
 
-Arena Strings()
+Arena Strings(void)
 {
     return arena_init(NULL, 0, ARENA_STRS);
 }
@@ -900,7 +904,7 @@ Element vector(Arena *vect)
     el.type = VECTOR;
     return el;
 }
-Element null_obj()
+Element null_obj(void)
 {
     Element el;
     el.null = NULL;
@@ -1325,7 +1329,6 @@ void print_line(Element ar)
             return;
         printf("{");
 
-        int count = ar.stack->count - 1;
         if (ar.stack->count == 0)
         {
             printf(" }\n");

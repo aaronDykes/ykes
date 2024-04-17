@@ -38,10 +38,10 @@ struct vm
 
 vm machine;
 
-void initVM();
-void freeVM();
+void initVM(void);
+void freeVM(void);
 
-Interpretation run();
+Interpretation run(void);
 Interpretation interpret(const char *source);
 
 #endif
