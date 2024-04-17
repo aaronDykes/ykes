@@ -191,7 +191,6 @@ void free_ptr(Free *new)
         new->next = free->next;
         free->next = new;
     }
-
     else if (prev && prev < new)
     {
         new->next = prev->next;
