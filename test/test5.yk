@@ -1,22 +1,18 @@
-sr stack_push()
+sr this_is(s)
 {
-
-    sr this_is()
-    {
-        var s = Stack();
-        s.push("hello world!");
-        s.push("Another vector!");
-        s.push("This is a stack value");
-        s.push(69.43022);
-        return s;
-    }
+    s.push("hello world!");
+    s.push("Another vector!");
+    s.push("This is a stack value");
+    s.push(69.43022);
+    return s;
+}
     
 
-    return this_is();
+var hello = this_is(Stack());
 
-}
 
-var hello = stack_push();
+
+
 
 each(var s : hello)
     pout(s);

@@ -204,15 +204,16 @@ void *alloc_ptr(size_t size)
 
     Free *prev = NULL;
     Free *free = NULL;
+    void *ptr = NULL;
+    size_t tmp = 0;
 
     for (free = mem->next; free && free->size < size; free = free->next)
         prev = free;
 
     if (free && free->size >= size)
     {
-
-        size_t tmp = free->size - size;
-        void *ptr = free + tmp;
+        tmp = free->size - size;
+        ptr = free + tmp;
 
         free->size = tmp;
 
@@ -226,13 +227,15 @@ void *alloc_ptr(size_t size)
 
     if (prev)
     {
-        size_t tmp = PAGE;
+        tmp = PAGE;
         while (size > tmp)
             tmp *= INC;
 
         prev->next = request_system_memory(tmp * OFFSET);
         prev->next->size = size;
-        void *ptr = prev->next + OFFSET;
+
+        ptr = prev->next + OFFSET;
+
         prev->next += size + OFFSET;
         prev->next->size = tmp - size;
         return ptr;
@@ -1313,6 +1316,7 @@ void print_line(Element ar)
             return;
         printf("{");
 
+        int count = ar.stack->count - 1;
         if (ar.stack->count == 0)
         {
             printf(" }\n");

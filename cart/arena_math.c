@@ -2310,6 +2310,7 @@ Element _push_array_val(Element val, Element el)
         push_arena(&el, val.arena);
         return el;
     case STACK:
+
         push(&el.stack, val);
         return el;
     default:

@@ -23,10 +23,9 @@ struct CallFrame
 struct vm
 {
     int frame_count;
-    int garbage_count;
-    int garbage_len;
     int argc;
     int cargc;
+
     CallFrame frames[FRAMES_MAX];
     Stack *stack;
     Stack *call_stack;
