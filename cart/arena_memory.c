@@ -469,6 +469,8 @@ Arena Char(char Char)
     ar.type = ARENA_CHAR;
     ar.as.Char = Char;
     ar.size = sizeof(char);
+    long long int k = hash(ar);
+    ar.as.hash = k;
     return ar;
 }
 Arena Int(int Int)
@@ -477,6 +479,8 @@ Arena Int(int Int)
     ar.type = ARENA_INT;
     ar.as.Int = Int;
     ar.size = sizeof(int);
+    long long int k = hash(ar);
+    ar.as.hash = k;
     return ar;
 }
 Arena Byte(uint8_t Byte)
@@ -493,6 +497,8 @@ Arena Long(long long int Long)
     ar.type = ARENA_LONG;
     ar.as.Long = Long;
     ar.size = sizeof(long long int);
+    long long int k = hash(ar);
+    ar.as.hash = k;
     return ar;
 }
 Arena Double(double Double)
@@ -501,6 +507,8 @@ Arena Double(double Double)
     ar.type = ARENA_DOUBLE;
     ar.as.Double = Double;
     ar.size = sizeof(double);
+    long long int h = hash(ar);
+    ar.as.hash = h;
     return ar;
 }
 Arena String(const char *str)
@@ -510,7 +518,7 @@ Arena String(const char *str)
     memcpy(ar.as.String, str, size);
     ar.as.String[size] = '\0';
     ar.size = size;
-    size_t k = hash(ar);
+    long long int k = hash(ar);
     ar.as.hash = k;
     return ar;
 }
@@ -522,9 +530,8 @@ Arena CString(const char *str)
     ar.size = size;
     ar.type = ARENA_CSTR;
     ar.as.len = (int)size;
-    size_t k = hash(ar);
+    long long int k = hash(ar);
     ar.as.hash = k;
-
     return ar;
 }
 
@@ -542,6 +549,8 @@ Arena Size(size_t Size)
     ar.type = ARENA_SIZE;
     ar.as.Size = Size;
     ar.size = 1;
+    long long int k = hash(ar);
+    ar.as.hash = k;
     return ar;
 }
 Arena Null()
@@ -1088,9 +1097,9 @@ Arena native_name(const char *str)
     return ar;
 }
 
-size_t hash(Arena key)
+long long int hash(Arena key)
 {
-    size_t index = 2166136261u;
+    long long int index = 2166136261u;
 
     switch (key.type)
     {

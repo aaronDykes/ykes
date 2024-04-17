@@ -205,7 +205,7 @@ void free_native(Native *native);
 void print(Element ar);
 void print_line(Element ar);
 
-size_t hash(Arena key);
+long long int hash(Arena key);
 void alloc_entry(Table **e, Table el);
 void arena_free_table(Table *t);
 void arena_free_entry(Table *entry);

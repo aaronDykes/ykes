@@ -21,7 +21,7 @@ sr p()
         }
     }
 
-    print_prime(100000);
+    print_prime(1000000);
 }
 
 var start = clock();

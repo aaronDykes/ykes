@@ -5,7 +5,7 @@ sr pr()
     {
         for (var i = 3; i < n; i++)
             if (prime(i))
-                pout i;
+                pout(i);
     }
 
     var start = clock();

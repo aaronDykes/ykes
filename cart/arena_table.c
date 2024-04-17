@@ -23,100 +23,18 @@ void insert_entry(Table **t, Table entry)
         return;
     }
 
-    if (entry.type == NATIVE)
-    {
-        Native *n = find_native_entry(t, &entry.key);
-        if (!n)
-        {
-            ALLOC_ENTRY(&tmp[index].next, entry);
-            return;
-        }
-        n = NULL;
-    }
-    else if (entry.type == CLOSURE)
-    {
-        Closure *c = find_func_entry(t, &entry.key);
-        if (!c)
-        {
-            ALLOC_ENTRY(&tmp[index].next, entry);
-            return;
-        }
-        c = NULL;
-    }
-    else if (entry.type == ARENA)
-    {
-        Arena f = find_arena_entry(t, &entry.key);
-        if (f.type == ARENA_NULL)
-        {
-            ALLOC_ENTRY(&tmp[index].next, entry);
-            return;
-        }
-    }
-    else if (entry.type == CLASS)
-    {
-        Class *c = find_class_entry(t, &entry.key);
-        if (!c)
-        {
-            ALLOC_ENTRY(&tmp[index].next, entry);
-            return;
-        }
-        c = NULL;
-    }
-    else if (entry.type == INSTANCE)
-    {
-        Instance *c = find_instance_entry(t, &entry.key);
-        if (!c)
-        {
-            ALLOC_ENTRY(&tmp[index].next, entry);
-            return;
-        }
-        c = NULL;
-    }
-    else if (entry.type == TABLE)
-    {
-        Table *tab = find_table_entry(t, &entry.key);
-        if (!tab)
-        {
+    Element el = find_entry(t, &entry.key);
 
-            ALLOC_ENTRY(&tmp[index].next, entry);
-            return;
-        }
-        tab = NULL;
-    }
-    else if (entry.type == VECTOR)
+    if (el.type == NULL_OBJ)
     {
-        Arena *ar = find_vector_entry(t, &entry.key);
-        if (!ar)
-        {
-            ALLOC_ENTRY(&tmp[index].next, entry);
-            return;
-        }
-        ar = NULL;
-    }
-    else if (entry.type == STACK)
-    {
-        Stack *ar = find_stack_entry(t, &entry.key);
-        if (!ar)
-        {
-            ALLOC_ENTRY(&tmp[index].next, entry);
-            return;
-        }
-        ar = NULL;
+        ALLOC_ENTRY(&tmp[index].next, entry);
+        return;
     }
 
     for (; ptr; ptr = ptr->next)
-        switch (ptr->key.type)
-        {
-        case ARENA_VAR:
-        case ARENA_FUNC:
-        case ARENA_NATIVE:
-        case ARENA_STR:
-            if (ptr->key.as.hash == entry.key.as.hash)
-                goto END;
-            break;
-        default:
-            break;
-        }
+        if (ptr->key.as.hash == entry.key.as.hash)
+            goto END;
+
     return;
 END:
     if (ptr->val.type != CLASS && ptr->val.type != CLOSURE)
@@ -181,7 +99,6 @@ void delete_entry(Table **t, Arena key)
     {
         FREE_TABLE_ENTRY(&a[index]);
         a[index] = arena_entry(Null(), Null());
-
         return;
     }
 
@@ -195,28 +112,12 @@ void delete_entry(Table **t, Arena key)
     }
 
     for (; tmp->next; tmp = tmp->next)
-        switch (tmp->key.type)
-        {
-        case ARENA_VAR:
-        case ARENA_FUNC:
-            if (tmp->key.as.hash == key.as.hash)
-                goto DEL;
-            break;
-        default:
-            break;
-        }
-
-    switch (tmp->key.type)
-    {
-    case ARENA_VAR:
-    case ARENA_FUNC:
         if (tmp->key.as.hash == key.as.hash)
-            goto DEL_LAST;
-        break;
+            goto DEL;
 
-    default:
-        break;
-    }
+    if (tmp->key.as.hash == key.as.hash)
+        goto DEL_LAST;
+
     return;
 DEL:
     del = tmp->prev;
@@ -233,308 +134,64 @@ DEL_LAST:
 
 Element find_entry(Table **t, Arena *hash)
 {
-
     Table *a = *t;
     size_t index = hash->as.hash & ((a - 1)->len - 1);
     Table entry = a[index];
 
-    Element el = null_obj();
-
+    Element null_ = null_obj();
     if (entry.key.type == ARENA_NULL)
-        return el;
-
-    if (entry.type == ARENA)
-    {
-        Arena ar = find_arena_entry(t, hash);
-        return ar.type == ARENA_NULL ? el : OBJ(ar);
-    }
-    if (entry.type == NATIVE)
-    {
-        Native *n = find_native_entry(t, hash);
-        return n == NULL ? el : NATIVE(n);
-    }
-    if (entry.type == CLOSURE)
-    {
-        Closure *c = find_func_entry(t, hash);
-        return c == NULL ? el : CLOSURE(c);
-    }
-    if (entry.type == CLASS)
-    {
-        Class *c = find_class_entry(t, hash);
-        return !c ? el : CLASS(c);
-    }
-    if (entry.type == INSTANCE)
-    {
-        Instance *c = find_instance_entry(t, hash);
-        return !c ? el : INSTANCE(c);
-    }
-    if (entry.type == TABLE)
-    {
-        Table *tab = find_table_entry(t, hash);
-        return !tab ? el : TABLE(tab);
-    }
-    if (entry.type == VECTOR)
-    {
-        Arena *ar = find_vector_entry(t, hash);
-        return !ar ? el : VECT(ar);
-    }
-    if (entry.type == STACK)
-    {
-        Stack *s = find_stack_entry(t, hash);
-        return !s ? el : STK(s);
-    }
-    return el;
-}
-
-Native *find_native_entry(Table **t, Arena *hash)
-{
-    Table *a = *t;
-    size_t index = hash->as.hash & ((a - 1)->len - 1);
-    Table entry = a[index];
-
-    if (entry.key.type == ARENA_NULL)
-        return NULL;
+        return null_;
 
     if (entry.key.as.hash == hash->as.hash)
-        return entry.val.native;
+        switch (entry.type)
+        {
+        case ARENA:
+            return OBJ(entry.val.arena);
+        case NATIVE:
+            return NATIVE(entry.val.native);
+        case CLOSURE:
+            return CLOSURE(entry.val.closure);
+        case CLASS:
+            return CLASS(entry.val.classc);
+        case INSTANCE:
+            return INSTANCE(entry.val.instance);
+        case TABLE:
+            return TABLE(entry.val.table);
+        case VECTOR:
+            return VECT(entry.val.arena_vector);
+        case STACK:
+            return STK(entry.val.stack);
+        default:
+            return null_;
+        }
 
     Table *tmp = entry.next;
 
     for (; tmp; tmp = tmp->next)
-        switch (tmp->key.type)
-        {
-        case ARENA_NATIVE:
-        case ARENA_STR:
-        case ARENA_FUNC:
-        case ARENA_VAR:
-            if (tmp->key.as.String == hash->as.String)
-                return tmp->val.native;
-            break;
-        default:
-            break;
-        }
+        if (tmp->key.as.hash == hash->as.hash)
+            switch (entry.type)
+            {
+            case ARENA:
+                return OBJ(entry.val.arena);
+            case NATIVE:
+                return NATIVE(entry.val.native);
+            case CLOSURE:
+                return CLOSURE(entry.val.closure);
+            case CLASS:
+                return CLASS(entry.val.classc);
+            case INSTANCE:
+                return INSTANCE(entry.val.instance);
+            case TABLE:
+                return TABLE(entry.val.table);
+            case VECTOR:
+                return VECT(entry.val.arena_vector);
+            case STACK:
+                return STK(entry.val.stack);
+            default:
+                return null_;
+            }
 
-    return NULL;
-}
-
-Class *find_class_entry(Table **t, Arena *hash)
-{
-    Table *a = *t;
-    size_t index = hash->as.hash & ((a - 1)->len - 1);
-    Table entry = a[index];
-
-    if (entry.key.type == ARENA_NULL)
-        return NULL;
-
-    if (entry.key.as.hash == hash->as.hash)
-        return entry.val.classc;
-
-    Table *tmp = entry.next;
-
-    for (; tmp; tmp = tmp->next)
-        switch (tmp->key.type)
-        {
-        case ARENA_VAR:
-        case ARENA_FUNC:
-        case ARENA_NATIVE:
-            // case ARENA_CLASS:
-            if (tmp->key.as.String == hash->as.String)
-                return tmp->val.classc;
-            break;
-        default:
-            break;
-        }
-
-    return NULL;
-}
-
-Instance *find_instance_entry(Table **t, Arena *hash)
-{
-    Table *a = *t;
-    size_t index = hash->as.hash & ((a - 1)->len - 1);
-    Table entry = a[index];
-
-    if (entry.key.type == ARENA_NULL)
-        return NULL;
-
-    if (entry.key.as.hash == hash->as.hash)
-        return entry.val.instance;
-
-    Table *tmp = entry.next;
-
-    for (; tmp; tmp = tmp->next)
-        switch (tmp->key.type)
-        {
-        case ARENA_VAR:
-        case ARENA_FUNC:
-        case ARENA_NATIVE:
-            // case ARENA_CLASS:
-            if (tmp->key.as.String == hash->as.String)
-                return tmp->val.instance;
-            break;
-        default:
-            break;
-        }
-
-    return NULL;
-}
-
-Closure *find_func_entry(Table **t, Arena *hash)
-{
-    Table *a = *t;
-    size_t index = hash->as.hash & ((a - 1)->len - 1);
-    Table entry = a[index];
-
-    if (entry.key.type == ARENA_NULL)
-        return NULL;
-
-    if (strcmp(entry.key.as.String, hash->as.String) == 0)
-        return entry.val.closure;
-
-    Table *tmp = entry.next;
-
-    for (; tmp; tmp = tmp->next)
-        switch (tmp->key.type)
-        {
-        case ARENA_VAR:
-        case ARENA_FUNC:
-        case ARENA_NATIVE:
-        case ARENA_CSTR:
-        case ARENA_STR:
-            if (tmp->key.as.hash == hash->as.hash)
-                return tmp->val.closure;
-            break;
-        default:
-            break;
-        }
-
-    return NULL;
-}
-
-Table *find_table_entry(Table **t, Arena *hash)
-{
-    Table *a = *t;
-    size_t index = hash->as.hash & ((a - 1)->len - 1);
-    Table entry = a[index];
-
-    if (entry.key.type == ARENA_NULL)
-        return NULL;
-
-    if (strcmp(entry.key.as.String, hash->as.String) == 0)
-        return entry.val.table;
-
-    Table *tmp = entry.next;
-
-    for (; tmp; tmp = tmp->next)
-        switch (tmp->key.type)
-        {
-        case ARENA_VAR:
-        case ARENA_FUNC:
-        case ARENA_NATIVE:
-        case ARENA_CSTR:
-        case ARENA_STR:
-            if (tmp->key.as.hash == hash->as.hash)
-                return tmp->val.table;
-            break;
-        default:
-            break;
-        }
-
-    return NULL;
-}
-Arena *find_vector_entry(Table **t, Arena *hash)
-{
-    Table *a = *t;
-    size_t index = hash->as.hash & ((a - 1)->len - 1);
-    Table entry = a[index];
-
-    if (entry.key.type == ARENA_NULL)
-        return NULL;
-
-    if (entry.key.as.hash == hash->as.hash)
-        return entry.val.arena_vector;
-
-    Table *tmp = entry.next;
-
-    for (; tmp; tmp = tmp->next)
-        switch (tmp->key.type)
-        {
-        case ARENA_VAR:
-        case ARENA_FUNC:
-        case ARENA_STR:
-        case ARENA_NATIVE:
-            if (tmp->key.as.hash == hash->as.hash)
-                return tmp->val.arena_vector;
-            break;
-
-        default:
-            break;
-        }
-
-    return NULL;
-}
-Stack *find_stack_entry(Table **t, Arena *hash)
-{
-    Table *a = *t;
-    size_t index = hash->as.hash & ((a - 1)->len - 1);
-    Table entry = a[index];
-
-    if (entry.key.type == ARENA_NULL)
-        return NULL;
-
-    if (entry.key.as.hash == hash->as.hash)
-        return entry.val.stack;
-
-    Table *tmp = entry.next;
-
-    for (; tmp; tmp = tmp->next)
-        switch (tmp->key.type)
-        {
-        case ARENA_VAR:
-        case ARENA_FUNC:
-        case ARENA_STR:
-        case ARENA_NATIVE:
-            if (tmp->key.as.hash == hash->as.hash)
-                return tmp->val.stack;
-            break;
-
-        default:
-            break;
-        }
-
-    return NULL;
-}
-
-Arena find_arena_entry(Table **t, Arena *hash)
-{
-    Table *a = *t;
-    size_t index = hash->as.hash & ((a - 1)->len - 1);
-    Table entry = a[index];
-
-    if (entry.key.type == ARENA_NULL)
-        return Null();
-
-    if (entry.key.as.hash == hash->as.hash)
-        return entry.val.arena;
-
-    Table *tmp = entry.next;
-
-    for (; tmp; tmp = tmp->next)
-        switch (tmp->key.type)
-        {
-        case ARENA_VAR:
-        case ARENA_FUNC:
-        case ARENA_STR:
-        case ARENA_NATIVE:
-            if (tmp->key.as.hash == hash->as.hash)
-                return tmp->val.arena;
-            break;
-
-        default:
-            break;
-        }
-
-    return Null();
+    return null_;
 }
 
 void alloc_entry(Table **e, Table el)

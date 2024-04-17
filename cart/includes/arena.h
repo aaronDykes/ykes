@@ -164,7 +164,7 @@ typedef enum
 } Typed;
 
 typedef union Vector Vector;
-typedef union Value Value;
+typedef struct Value Value;
 typedef struct Arena Arena;
 typedef struct Data Data;
 
@@ -204,25 +204,28 @@ union Vector
     size_t Sizes;
 };
 
-union Value
+struct Value
 {
 
-    struct
+    long long int hash;
+    union
     {
-        size_t hash;
-        int len;
-        int count;
-        char *String;
-    };
+        struct
+        {
+            int len;
+            int count;
+            char *String;
+        };
 
-    size_t Size;
-    uint8_t Byte;
-    int Int;
-    double Double;
-    long long int Long;
-    char Char;
-    bool Bool;
-    void *Void;
+        size_t Size;
+        uint8_t Byte;
+        int Int;
+        double Double;
+        long long int Long;
+        char Char;
+        bool Bool;
+        void *Void;
+    };
 };
 
 struct Arena
