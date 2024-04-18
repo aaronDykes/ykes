@@ -1,8 +1,13 @@
 
-include "oop/Scone.yk";
 include "test1.yk";
+include "oop/Scone.yk";
+include "oop/CoffeeMaker.yk";
 
 
+tables();
 var scone = Scone();
 scone.topping(String("strawberries "), String("cream"), 69); 
-tables();
+
+
+var maker = CoffeeMaker("coffee and chicory");
+maker.brew();

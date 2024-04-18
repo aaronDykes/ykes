@@ -163,8 +163,6 @@ static void include_file(Compiler *c)
 
     c->base->src = result;
     c->parser.cur = scan_token();
-    // parser.pre = parser.cur;
-    // advance_compiler(c);
 }
 
 static void declaration(Compiler *c)
