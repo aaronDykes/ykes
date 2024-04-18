@@ -1,48 +1,6 @@
-sr sum(num1, num2)
-{
-    return num1 + num2;
-}
-
-sr arrays()
-{
-    var ar = ["Hello", "World", "Vector", "of", "Vectors"];
-
-    each(var s : ar)
-        pout(s);
-
-    rm(ar);
-
-}
-arrays();
+include "test1.yk";
 
 
-sr string_access()
-{
-    
-    var ar = ["Hello", "World", "Vector", "of", "Vectors"];
-    
-    ar[0] = "Aaron";
-    ar[1] = "Dykes"; 
-
-    ar.push("Another vector!!");
-    ar.push("VECTORS!!");
-
-
-
-    var i = ar.pop();
- 
-    pout(
-        ar,
-        i,
-        ar.pop(),
-        ar,
-        ar.len
-    );
- 
-
-    rm(ar);
-}
-
-
+tables();
 
  

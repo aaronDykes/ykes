@@ -43,5 +43,6 @@ void freeVM(void);
 
 Interpretation run(void);
 Interpretation interpret(const char *source);
+Interpretation interpret_path(const char *source, const char *path);
 
 #endif

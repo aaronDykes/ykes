@@ -129,6 +129,23 @@ Interpretation interpret(const char *src)
     Interpretation res = run();
     return res;
 }
+Interpretation interpret_path(const char *src, const char *path)
+{
+
+    Function *func = NULL;
+
+    if (!(func = compile_path(src, path)))
+        return INTERPRET_RUNTIME_ERR;
+
+    Closure *clos = new_closure(func);
+    call(clos, 0);
+
+    push(&machine.stack, closure(clos));
+
+    close_upvalues(machine.stack->top - 1);
+    Interpretation res = run();
+    return res;
+}
 
 static Element find(Table *t, Arena ar)
 {

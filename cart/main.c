@@ -48,11 +48,35 @@ static void repl(void)
     freeVM();
 }
 
+static int str_len(char *str)
+{
+    int count = 0;
+    char *s = str;
+
+    while ((*s++))
+        count++;
+    return count;
+}
+
+static void strip_path(char *str)
+{
+    int len = str_len(str) - 1;
+    char *s = str + len;
+
+    for (; *s != '/'; --s, --len)
+        ;
+
+    str[len + 1] = '\0';
+}
+
 static void run_file(const char *path)
 {
     initVM();
     char *source = read_file(path);
-    Interpretation result = interpret(source);
+
+    strip_path(path);
+
+    Interpretation result = interpret_path(source, path);
     free(source);
 
     if (result == INTERPRET_COMPILE_ERR)

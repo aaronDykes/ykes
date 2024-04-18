@@ -6,15 +6,18 @@
 #endif
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 static void init_compiler(Compiler *a, Compiler *b, ObjType type, Arena name)
 {
 
     Local *local = NULL;
+    a->cwd = NULL;
     a->local_count = 0;
     a->scope_depth = 0;
     a->call_count = 0;
     a->class_count = 0;
+    a->src = NULL;
 
     a->array_index = 0;
     a->array_set = 0;
@@ -71,11 +74,79 @@ static void advance_compiler(Parser *parser)
         current_err(parser->cur.start, parser);
     }
 }
+static char *read_file(const char *path)
+{
+
+    FILE *file = fopen(path, "rb");
+
+    if (!file)
+    {
+        fprintf(stderr, "Could not open file \"%s\".\n", path);
+        exit(74);
+    }
+
+    fseek(file, 0L, SEEK_END);
+    size_t fileSize = ftell(file);
+    rewind(file);
+
+    char *buffer = ALLOC(fileSize + 1);
+
+    if (!buffer)
+    {
+        fprintf(stderr, "Not enough memory to read \"%s\".\n", path);
+        exit(74);
+    }
+    size_t bytesRead = fread(buffer, sizeof(char), fileSize, file);
+    buffer[bytesRead] = '\0';
+
+    fclose(file);
+    return buffer;
+}
+
+static void include_file(Compiler *c)
+{
+
+    match(TOKEN_INCLUDE, &c->parser);
+
+    if (c->type != SCRIPT)
+    {
+        error("Can only include files at top level.", &c->parser);
+        exit(1);
+    }
+
+    consume(TOKEN_STR, "Expect file path.", &c->parser);
+    char *name = (char *)parse_string(c);
+    consume(TOKEN_CH_SEMI, "Expect `;` at end of include statement.", &c->parser);
+
+    char *remaining = c->base->src + c->parser.pre.pos + 3;
+
+    char path[CWD_MAX] = {0};
+
+    strcpy(path, c->base->cwd);
+
+    strcat(path, name);
+
+    char *file = read_file(path);
+    size_t len = strlen(file) + strlen(remaining);
+
+    char *result = ALLOC(len);
+
+    strcpy(result, file);
+    strcat(result, remaining);
+
+    init_scanner(result);
+
+    c->parser.cur = scan_token();
+    // parser.pre = parser.cur;
+    // advance_compiler(c);
+}
 
 static void declaration(Compiler *c)
 {
 
-    if (match(TOKEN_FUNC, &c->parser))
+    if (check(TOKEN_INCLUDE, &c->parser))
+        include_file(c);
+    else if (match(TOKEN_FUNC, &c->parser))
         func_declaration(c);
     else if (match(TOKEN_CLASS, &c->parser))
         class_declaration(c);
@@ -1354,7 +1425,7 @@ static void array(Compiler *c)
     consume(TOKEN_CH_RSQUARE, "Expect closing brace after array declaration.", &c->parser);
 }
 
-static void access(Compiler *c)
+static void _access(Compiler *c)
 {
 
     expression(c);
@@ -1679,6 +1750,42 @@ Function *compile(const char *src)
 
     c.init_func = String("init");
     c.base = &c;
+    c.base->cwd = NULL;
+    c.base->calls = GROW_TABLE(NULL, TABLE_SIZE);
+    c.base->classes = GROW_TABLE(NULL, TABLE_SIZE);
+    c.base->len = CString("len");
+    c.base->ar_push = CString("push");
+    c.base->ar_pop = CString("pop");
+
+    c.parser.panic = false;
+    c.parser.err = false;
+
+    advance_compiler(&c.parser);
+
+    while (!match(TOKEN_EOF, &c.parser))
+        declaration(&c);
+    consume(TOKEN_EOF, "Expect end of expression", &c.parser);
+
+    Function *f = end_compile(&c);
+
+    FREE(PTR(c.base->calls - 1));
+    FREE(PTR(c.base->classes - 1));
+    FREE(PTR(c.base->init_func.as.String));
+
+    return c.parser.err ? NULL : f;
+}
+Function *compile_path(const char *src, const char *path)
+{
+    Compiler c;
+
+    init_scanner(src);
+
+    init_compiler(&c, NULL, SCRIPT, func_name("SCRIPT"));
+
+    c.init_func = String("init");
+    c.base = &c;
+    c.base->src = src;
+    c.base->cwd = path;
     c.base->calls = GROW_TABLE(NULL, TABLE_SIZE);
     c.base->classes = GROW_TABLE(NULL, TABLE_SIZE);
     c.base->len = CString("len");

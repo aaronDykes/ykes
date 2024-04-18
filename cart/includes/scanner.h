@@ -10,14 +10,17 @@ struct token
     int type;
     int line;
     int size;
+    int pos;
     const char *start;
 };
 
 struct scanner
 {
+    int line;
+    int pos;
+    const char *src;
     const char *start;
     const char *current;
-    int line;
 };
 
 typedef struct token token;

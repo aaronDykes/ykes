@@ -1,3 +1,7 @@
+include "test1.yk";
+
+
+
 sr this_is(s)
 {
     s.push("hello world!");
@@ -12,10 +16,17 @@ var hello = this_is(Stack());
 
 
 
+hello[hello.len - 1] = Table();
 
 
-each(var s : hello)
-    pout(s);
+hello[hello.len - 1]["entry"] = "This is a table entry";
+hello[hello.len - 1]["Table"] = Table();
+hello[hello.len - 1]["Table"]["entry"] = hello[hello.len - 1]["entry"];
+
+pout(hello[hello.len - 1]["Table"]["entry"]);
+
+
+tables();
 
 
 

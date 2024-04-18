@@ -6,6 +6,7 @@
 #define LOCAL_COUNT 500
 #define CALL_COUNT 255
 #define CLASS_COUNT 50
+#define CWD_MAX 1024
 #define PTR_SIZE(X) sizeof(X) / sizeof(X[0])
 
 struct Parser
@@ -68,6 +69,7 @@ struct Compiler
     int param_count;
     int class_count;
 
+    const char *src;
     uint8_t array_index;
     uint8_t array_set;
     uint8_t array_get;
@@ -81,6 +83,8 @@ struct Compiler
     Arena len;
     Arena ar_push;
     Arena ar_pop;
+
+    const char *cwd;
 
     Compiler *base;
     Compiler *enclosing;
@@ -186,7 +190,7 @@ static void emit_constant(Compiler *c, Arena ar);
 static void emit_return(Compiler *c);
 
 static void array(Compiler *c);
-static void access(Compiler *c);
+static void _access(Compiler *c);
 static void dval(Compiler *c);
 static void ival(Compiler *c);
 static void llint(Compiler *c);
@@ -194,6 +198,7 @@ static void ch(Compiler *c);
 static void boolean(Compiler *c);
 static void cstr(Compiler *c);
 
+static const char *parse_string(Compiler *c);
 static void string(Compiler *c);
 static void array_alloc(Compiler *c);
 static void vector_alloc(Compiler *c);
@@ -231,7 +236,7 @@ static PRule rules[] = {
     [TOKEN_CH_LCURL] = {NULL, NULL, PREC_NONE},
     [TOKEN_CH_RCURL] = {NULL, NULL, PREC_NONE},
 
-    [TOKEN_CH_LSQUARE] = {array, access, PREC_CALL},
+    [TOKEN_CH_LSQUARE] = {array, _access, PREC_CALL},
     [TOKEN_CH_RSQUARE] = {NULL, NULL, PREC_NONE},
 
     [TOKEN_CH_COMMA] = {NULL, NULL, PREC_NONE},

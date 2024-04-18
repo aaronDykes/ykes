@@ -734,6 +734,10 @@ Stack *stack(size_t size)
     Stack *s = NULL;
     s = ALLOC((size * sizeof(Stack)) + sizeof(Stack));
     s->size = size;
+
+    for (size_t i = 0; i < size; i++)
+        s[i].as = null_obj();
+
     (s + 1)->len = (int)size;
     (s + 1)->count = 0;
     (s + 1)->top = s + 1;
@@ -783,9 +787,9 @@ void free_stack(Stack **stack)
         case NATIVE:
             FREE_NATIVE((*stack)[i].as.native);
             break;
-        case CLASS:
-            FREE_CLASS((*stack)[i].as.classc);
-            break;
+        // case CLASS:
+        //     FREE_CLASS((*stack)[i].as.classc);
+        //     break;
         case CLOSURE:
             FREE_CLOSURE(&(*stack)[i].as.closure);
             break;
@@ -1152,8 +1156,6 @@ static void parse_str(const char *str)
             printf("\t"), s++;
         else
             printf("%c", *s);
-
-    // printf("\n");
 }
 
 void print(Element ar)

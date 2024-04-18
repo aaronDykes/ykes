@@ -51,7 +51,7 @@ void popn(Stack **s, int ival)
 
 void push(Stack **s, Element e)
 {
-
+    // "sr tables()\n{\n    var tab = Table(128);\n\n    var nest = Table();\n    var another_nest = Table();\n\n    tab[69.999] = 420;\n    tab['a'] = \"aa\";\n    tab[\"Aaron\"] = \"Aaron\";\n    tab[\"Dykes\"] = \"Dykes\"; \n    tab[\"Table\"] = nest;\n\n    nest[\"nest\"] = \"Another!!!\";\n    nest[\"another\"] = another_nest;\n\n    another_nest[\"nest\"] = \"Another nest!!!!\";\n\n    var t = Table(); \n\n    t[\"Table\"] = tab; \n\n    pout(\n        t[\"Table\"][69.999],\n        t[\"Table\"]['a'],\n        t[\"Table\"][\"Aaron\"],\n        t[\"Table\"][\"Dykes\"],\n        t[\"Table\"][\"Table\"][\"nest\"],\n        t[\"Table\"][\"Table\"][\"another\"][\"nest\"]\n    );\n    \n    rm(t);\n    t = null;\n    \n}\n\n\ntables();\n\n "
     Stack *st = *s;
     check_stack_size(st);
 

@@ -1,13 +1,19 @@
 #include "scanner.h"
 #include <stdlib.h>
 #include "lex_util.h"
+#include "arena_memory.h"
 
 void init_scanner(const char *src)
 {
     scan.start = src;
     scan.current = src;
     scan.line = 1;
+    scan.pos = 0;
+
+    scan.src = ALLOC(strlen(src));
+    strcpy((char *)scan.src, src);
 }
+
 token scan_token(void)
 {
     skip_whitespace();
@@ -106,6 +112,7 @@ static token make_token(int t)
     toke.line = scan.line;
     toke.type = t;
     toke.size = (int)(scan.current - scan.start);
+    toke.pos = scan.pos;
     return toke;
 }
 static token err_token(const char *err)
@@ -252,6 +259,12 @@ static int id_type(void)
             switch (scan.start[1])
             {
             case 'n':
+                if (scan.current - scan.start > 2)
+                    switch (scan.start[2])
+                    {
+                    case 'c':
+                        return check_keyword(3, 4, "lude", TOKEN_INCLUDE);
+                    }
                 return check_keyword(2, 1, "t", TOKEN_TYPE_INT);
             }
         return check_keyword(1, 1, "f", TOKEN_IF);
@@ -389,6 +402,7 @@ static char peek(int n)
 static void skip(void)
 {
     scan.current++;
+    scan.pos++;
 }
 static void nskip(int n)
 {

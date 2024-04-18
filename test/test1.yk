@@ -28,9 +28,8 @@ sr tables()
         t["Table"]["Table"]["nest"],
         t["Table"]["Table"]["another"]["nest"]
     );
-
+    
     rm(t);
+    t = null;
     
 }
-
-tables();
