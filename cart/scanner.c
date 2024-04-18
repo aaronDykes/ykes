@@ -260,12 +260,9 @@ static int id_type(void)
             {
             case 'n':
                 // if (scan.current - scan.start > 2)
-                switch (scan.start[2])
-                {
-                case 'c':
-                    return check_keyword(3, 4, "lude", TOKEN_INCLUDE);
-                }
                 return check_keyword(2, 1, "t", TOKEN_TYPE_INT);
+            case 'm':
+                return check_keyword(2, 4, "port", TOKEN_INCLUDE);
             }
         return check_keyword(1, 1, "f", TOKEN_IF);
     case 'I':

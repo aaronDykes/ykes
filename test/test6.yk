@@ -1,7 +1,7 @@
 
-include "test1.yk";
-include "oop/Scone.yk";
-include "oop/CoffeeMaker.yk";
+import "test1.yk";
+import "oop/Scone.yk";
+import "oop/CoffeeMaker.yk";
 
 
 tables();

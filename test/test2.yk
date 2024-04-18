@@ -1,4 +1,4 @@
-include "test1.yk";
+import "test1.yk";
 
 
 tables();
