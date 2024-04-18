@@ -9,8 +9,6 @@ class Scone {
     
 }
     
-var scone = Scone();
-scone.topping(String("strawberries "), String("cream"), 69); 
 
 
     

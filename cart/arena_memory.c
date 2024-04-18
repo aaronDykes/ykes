@@ -196,6 +196,11 @@ void free_ptr(Free *new)
         new->next = prev->next;
         prev->next = new;
     }
+    // else
+    // {
+    //     new->next = mem->next->next;
+    //     mem->next->next = new;
+    // }
 
     merge_list();
     new = NULL;
@@ -226,7 +231,7 @@ void *alloc_ptr(size_t size)
         else if (!prev && tmp == 0)
             mem->next = free->next;
 
-        return ptr;
+        return ptr + OFFSET;
     }
 
     if (prev)
@@ -296,6 +301,12 @@ void arena_free_arena(Arena *ar)
 {
     if (!(ar - 1))
         return;
+
+    if ((ar - 1)->count == 0)
+    {
+        FREE(PTR(ar - 1));
+        return;
+    }
 
     for (size_t i = 0; i < (ar - 1)->size; i++)
         switch (ar[i].type)
@@ -735,9 +746,6 @@ Stack *stack(size_t size)
     s = ALLOC((size * sizeof(Stack)) + sizeof(Stack));
     s->size = size;
 
-    for (size_t i = 0; i < size; i++)
-        s[i].as = null_obj();
-
     (s + 1)->len = (int)size;
     (s + 1)->count = 0;
     (s + 1)->top = s + 1;
@@ -775,8 +783,14 @@ void free_stack(Stack **stack)
 {
     if (!stack)
         return;
-    if (!(*stack - 1))
+    if (!(*stack) - 1)
         return;
+
+    if (((*stack) - 1)->count == 0)
+    {
+        FREE(PTR((*stack) - 1));
+        return;
+    }
 
     for (size_t i = 0; i < (*stack - 1)->size; i++)
         switch ((*stack)[i].as.type)
@@ -787,9 +801,9 @@ void free_stack(Stack **stack)
         case NATIVE:
             FREE_NATIVE((*stack)[i].as.native);
             break;
-        // case CLASS:
-        //     FREE_CLASS((*stack)[i].as.classc);
-        //     break;
+        case CLASS:
+            FREE_CLASS((*stack)[i].as.classc);
+            break;
         case CLOSURE:
             FREE_CLOSURE(&(*stack)[i].as.closure);
             break;
@@ -1041,6 +1055,11 @@ void arena_free_table(Table *t)
 
     size_t size = (t - 1)->size;
 
+    if ((t - 1)->size == 0)
+    {
+        FREE(PTR(t - 1));
+        return;
+    }
     for (size_t i = 0; i < size; i++)
         FREE_TABLE_ENTRY(&t[i]);
 

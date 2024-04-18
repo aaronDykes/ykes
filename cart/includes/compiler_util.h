@@ -92,6 +92,7 @@ struct Compiler
 
     Table *calls;
     Table *classes;
+    Table *includes;
 
     Class *instances[CALL_COUNT];
     Local locals[LOCAL_COUNT];

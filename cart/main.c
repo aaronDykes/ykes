@@ -74,7 +74,7 @@ static void run_file(const char *path)
     initVM();
     char *source = read_file(path);
 
-    strip_path(path);
+    strip_path((char *)path);
 
     Interpretation result = interpret_path(source, path);
     free(source);

@@ -103,10 +103,27 @@ static char *read_file(const char *path)
     return buffer;
 }
 
-static void include_file(Compiler *c)
+static bool resolve_include(Compiler *c, Arena ar)
 {
 
-    match(TOKEN_INCLUDE, &c->parser);
+    Element el = find_entry(&c->base->includes, &ar);
+
+    if (el.type != NULL_OBJ)
+        return true;
+
+    return false;
+}
+
+static void str_cop(char *src, char *dst)
+{
+    char *tmp = src;
+
+    while ((*tmp++ = *dst++))
+        ;
+}
+
+static void include_file(Compiler *c)
+{
 
     if (c->type != SCRIPT)
     {
@@ -115,27 +132,37 @@ static void include_file(Compiler *c)
     }
 
     consume(TOKEN_STR, "Expect file path.", &c->parser);
-    char *name = (char *)parse_string(c);
+    Arena inc = CString(parse_string(c));
+
+    if (resolve_include(c, inc))
+    {
+        error("Double include.", &c->parser);
+        exit(1);
+    }
+
+    write_table(c->includes, inc, OBJ(inc));
+
     consume(TOKEN_CH_SEMI, "Expect `;` at end of include statement.", &c->parser);
 
-    char *remaining = c->base->src + c->parser.pre.pos + 3;
+    char *remaining = (char *)(c->base->src + c->parser.pre.pos + 3);
 
     char path[CWD_MAX] = {0};
 
-    strcpy(path, c->base->cwd);
+    str_cop(path, c->base->cwd);
 
-    strcat(path, name);
+    strcat(path, inc.as.String);
 
     char *file = read_file(path);
     size_t len = strlen(file) + strlen(remaining);
 
-    char *result = ALLOC(len);
+    char *result = (char *)ALLOC(len);
 
-    strcpy(result, file);
+    strcat(result, file);
     strcat(result, remaining);
 
     init_scanner(result);
 
+    // c->base->src = remaining;
     c->parser.cur = scan_token();
     // parser.pre = parser.cur;
     // advance_compiler(c);
@@ -144,7 +171,7 @@ static void include_file(Compiler *c)
 static void declaration(Compiler *c)
 {
 
-    if (check(TOKEN_INCLUDE, &c->parser))
+    if (match(TOKEN_INCLUDE, &c->parser))
         include_file(c);
     else if (match(TOKEN_FUNC, &c->parser))
         func_declaration(c);
@@ -1788,6 +1815,7 @@ Function *compile_path(const char *src, const char *path)
     c.base->cwd = path;
     c.base->calls = GROW_TABLE(NULL, TABLE_SIZE);
     c.base->classes = GROW_TABLE(NULL, TABLE_SIZE);
+    c.base->includes = GROW_TABLE(NULL, TABLE_SIZE);
     c.base->len = CString("len");
     c.base->ar_push = CString("push");
     c.base->ar_pop = CString("pop");
