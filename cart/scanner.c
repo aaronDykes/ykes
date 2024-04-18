@@ -112,7 +112,7 @@ static token make_token(int t)
     toke.line = scan.line;
     toke.type = t;
     toke.size = (int)(scan.current - scan.start);
-    toke.pos = scan.pos;
+    toke.pos = (t == TOKEN_STR) ? scan.pos + 3 : scan.pos;
     return toke;
 }
 static token err_token(const char *err)
@@ -259,12 +259,12 @@ static int id_type(void)
             switch (scan.start[1])
             {
             case 'n':
-                if (scan.current - scan.start > 2)
-                    switch (scan.start[2])
-                    {
-                    case 'c':
-                        return check_keyword(3, 4, "lude", TOKEN_INCLUDE);
-                    }
+                // if (scan.current - scan.start > 2)
+                switch (scan.start[2])
+                {
+                case 'c':
+                    return check_keyword(3, 4, "lude", TOKEN_INCLUDE);
+                }
                 return check_keyword(2, 1, "t", TOKEN_TYPE_INT);
             }
         return check_keyword(1, 1, "f", TOKEN_IF);

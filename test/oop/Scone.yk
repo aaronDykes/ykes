@@ -6,10 +6,6 @@ class Scone {
         pout(str);
         rm(str);
     }
-    
 }
-    
 
-
-    
 

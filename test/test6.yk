@@ -1,8 +1,8 @@
 
 include "oop/Scone.yk";
+include "test1.yk";
 
 
 var scone = Scone();
 scone.topping(String("strawberries "), String("cream"), 69); 
-
-
+tables();

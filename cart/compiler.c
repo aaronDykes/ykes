@@ -143,8 +143,7 @@ static void include_file(Compiler *c)
     write_table(c->includes, inc, OBJ(inc));
 
     consume(TOKEN_CH_SEMI, "Expect `;` at end of include statement.", &c->parser);
-
-    char *remaining = (char *)(c->base->src + c->parser.pre.pos + 3);
+    char *remaining = (char *)c->parser.cur.start;
 
     char path[CWD_MAX] = {0};
 
@@ -157,12 +156,12 @@ static void include_file(Compiler *c)
 
     char *result = (char *)ALLOC(len);
 
-    strcat(result, file);
+    strcpy(result, file);
     strcat(result, remaining);
 
     init_scanner(result);
 
-    // c->base->src = remaining;
+    c->base->src = result;
     c->parser.cur = scan_token();
     // parser.pre = parser.cur;
     // advance_compiler(c);
