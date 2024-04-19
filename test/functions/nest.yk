@@ -1,34 +1,33 @@
-sr n()
+class N
 {
-  var a = 10;
-
-
-  sr f()
+  nest()
   {
-    a = 69; 
-    return a;
-  }
-  var b = 69;
+    var a = 10;
+    sr f()
+    {
+      a = 69; 
+      return a;
+    }
+    var b = 69;
 
-  sr g() {
-    return b;
-  }
+    sr g() {
+      return b;
+    }
   
-  var c = 69;
+    var c = 69;
 
-  sr h() {
-    return c;
+    sr h() {
+      return c;
+    }
+
+
+    sr sum()
+    {
+      pout(f() + g() + h());
+    }
+
+    return sum;
   }
-
-
-  sr sum()
-  {
-    pout(f() + g() + h());
-  }
-  return sum;
 }
 
 
-var hello = n();
-
-hello();

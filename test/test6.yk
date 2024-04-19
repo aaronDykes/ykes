@@ -1,12 +1,21 @@
 
+import "functions/fizzbang.yk";
 import "test1.yk";
 import "oop/Scone.yk";
 import "oop/CoffeeMaker.yk";
 
+var fb = Fizzbang();
+fb.fb();
 
-tables();
+
+
+
+
+var tab = Tables();
+tab.tables();
+
 var scone = Scone();
-scone.topping(String("strawberries "), String("cream"), 69); 
+scone.topping("strawberries ", "cream", 69); 
 
 
 var maker = CoffeeMaker("coffee and chicory");

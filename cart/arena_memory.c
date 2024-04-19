@@ -196,11 +196,6 @@ void free_ptr(Free *new)
         new->next = prev->next;
         prev->next = new;
     }
-    // else
-    // {
-    //     new->next = mem->next->next;
-    //     mem->next->next = new;
-    // }
 
     merge_list();
     new = NULL;
@@ -222,7 +217,7 @@ void *alloc_ptr(size_t size)
     if (free && free->size >= size)
     {
         tmp = free->size - size;
-        ptr = free + tmp;
+        ptr = free + tmp + OFFSET;
 
         free->size = tmp;
 
@@ -231,7 +226,7 @@ void *alloc_ptr(size_t size)
         else if (!prev && tmp == 0)
             mem->next = free->next;
 
-        return ptr + OFFSET;
+        return ptr;
     }
 
     if (prev)
@@ -410,7 +405,7 @@ Arena arena_realloc(Arena *ar, size_t size, T type)
     a.count = (ar->count > a.len)
                   ? a.len
                   : ar->count;
-    // ARENA_FREE(ar);
+    ARENA_FREE(ar);
     return a;
 }
 Element cpy_array(Element el)
@@ -494,8 +489,8 @@ Arena Int(int Int)
     ar.type = ARENA_INT;
     ar.as.Int = Int;
     ar.size = sizeof(int);
-    long long int k = hash(ar);
-    ar.as.hash = k;
+    // long long int k = hash(ar);
+    ar.as.hash = Int;
     return ar;
 }
 Arena Byte(uint8_t Byte)
@@ -1055,7 +1050,7 @@ void arena_free_table(Table *t)
 
     size_t size = (t - 1)->size;
 
-    if ((t - 1)->size == 0)
+    if ((t - 1)->count == 0)
     {
         FREE(PTR(t - 1));
         return;
@@ -1312,6 +1307,8 @@ void print_line(Element ar)
     }
     if (ar.type == CLASS)
     {
+        if (!ar.classc)
+            return;
         printf("<class: %s>\n", ar.classc->name.as.String);
         return;
     }

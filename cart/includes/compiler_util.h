@@ -69,7 +69,7 @@ struct Compiler
     int param_count;
     int class_count;
 
-    const char *src;
+    // const char *src;
     uint8_t array_index;
     uint8_t array_set;
     uint8_t array_get;

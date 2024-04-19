@@ -17,6 +17,9 @@ sr twod_ar()
             ar[i].len
         );
 
+    each(var i : ar)
+        pout(i, i.len);
+
     pout(ar.pop(), ar);
 
 

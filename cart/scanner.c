@@ -8,10 +8,6 @@ void init_scanner(const char *src)
     scan.start = src;
     scan.current = src;
     scan.line = 1;
-    scan.pos = 0;
-
-    scan.src = ALLOC(strlen(src));
-    strcpy((char *)scan.src, src);
 }
 
 token scan_token(void)
@@ -112,7 +108,6 @@ static token make_token(int t)
     toke.line = scan.line;
     toke.type = t;
     toke.size = (int)(scan.current - scan.start);
-    toke.pos = (t == TOKEN_STR) ? scan.pos + 3 : scan.pos;
     return toke;
 }
 static token err_token(const char *err)
@@ -399,7 +394,6 @@ static char peek(int n)
 static void skip(void)
 {
     scan.current++;
-    scan.pos++;
 }
 static void nskip(int n)
 {

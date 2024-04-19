@@ -1,33 +1,32 @@
 
-sr hello()
+class Fizzbang
 {
 
-    var str;
-    for (var i = 1; i < 100; i++)
-        if ((i % 15) == 0)
-        {
-            str = "FIZZBANG: " + i;
-            pout(str);
-            rm(str);
-        }
-        elif ((i % 5) == 0)
-        {
-            str = "BANG: " + i;
-            pout(str);
-            rm(str);
-        }
-        elif ((i % 3) == 0)
-        {
+    fb()
+    {
+        var str;
+        for (var i = 1; i < 100; i++)
+            if ((i % 15) == 0)
+            {
+                str = "FIZZBANG: " + i;
+                pout(str);
+                rm(str);
+            }
+            elif ((i % 5) == 0)
+            {
+                str = "BANG: " + i;
+                pout(str);
+                rm(str);
+            }
+            elif ((i % 3) == 0)
+            {
 
-            str = "FIZZ: " + i;
-            pout(str);
-            rm(str);
-        }
-        else 
-            pout(i);
+                str = "FIZZ: " + i;
+                pout(str);
+                rm(str);
+            }
+            else 
+                pout(i);
 
+    }
 }
-
-var start = clock();
-hello();
-pout(clock() - start);

@@ -1,41 +1,16 @@
-sr n()
+class N
 {
-    var be = 10;
 
-    sr set()
+    init(a, b, c)
     {
-      be += 69;
+        this.al = b;
+        this.be = a;
+        this.cunt = c;
+
     }
     
-    var al = 100;
-
-    sr f()
-    {
-      set();
-      return al;
-    }
-
     
-    sr g()
-    {
-      return be;
-    }
 
-    var cunt = 420;
 
-    sr h()
-    {
-      return cunt;
-    }
-
-    sr sum()
-    {
-        return f() + g() + h(); 
-    }
-
-   return sum;
 }
 
-
-var hello=n();
-pout(hello());

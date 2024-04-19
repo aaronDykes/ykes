@@ -17,7 +17,7 @@ static void init_compiler(Compiler *a, Compiler *b, ObjType type, Arena name)
     a->scope_depth = 0;
     a->call_count = 0;
     a->class_count = 0;
-    a->src = NULL;
+    // a->src = NULL;
 
     a->array_index = 0;
     a->array_set = 0;
@@ -125,44 +125,60 @@ static void str_cop(char *src, char *dst)
 static void include_file(Compiler *c)
 {
 
+#define SIZE(x, y) \
+    strlen(x) + strlen(y)
+
     if (c->type != SCRIPT)
     {
         error("Can only include files at top level.", &c->parser);
         exit(1);
     }
 
-    consume(TOKEN_STR, "Expect file path.", &c->parser);
-    Arena inc = CString(parse_string(c));
-
-    if (resolve_include(c, inc))
+    Arena result = Null();
+    char *remaining = NULL;
+    do
     {
-        error("Double include.", &c->parser);
-        exit(1);
-    }
+        consume(TOKEN_STR, "Expect file path.", &c->parser);
+        Arena inc = CString(parse_string(c));
 
-    write_table(c->includes, inc, OBJ(inc));
+        if (resolve_include(c, inc))
+        {
+            error("Double include.", &c->parser);
+            exit(1);
+        }
 
-    consume(TOKEN_CH_SEMI, "Expect `;` at end of include statement.", &c->parser);
-    char *remaining = (char *)c->parser.cur.start;
+        write_table(c->includes, inc, OBJ(inc));
 
-    char path[CWD_MAX] = {0};
+        consume(TOKEN_CH_SEMI, "Expect `;` at end of include statement.", &c->parser);
+        remaining = (char *)c->parser.cur.start;
 
-    str_cop(path, c->base->cwd);
+        char path[CWD_MAX] = {0};
 
-    strcat(path, inc.as.String);
+        str_cop(path, (char *)c->base->cwd);
+        strcat(path, inc.as.String);
 
-    char *file = read_file(path);
-    size_t len = strlen(file) + strlen(remaining);
+        char *file = read_file(path);
 
-    char *result = (char *)ALLOC(len);
+        T type = result.type;
+        result = GROW_ARRAY(
+            &result,
+            (type == ARENA_NULL)
+                ? SIZE(file, remaining)
+                : strlen(file) + result.as.len,
+            ARENA_STR);
 
-    strcpy(result, file);
-    strcat(result, remaining);
+        if (type == ARENA_NULL)
+            str_cop(result.as.String, file);
+        else
+            strcat(result.as.String, file);
 
-    init_scanner(result);
+    } while (match(TOKEN_INCLUDE, &c->parser));
 
-    c->base->src = result;
+    strcat(result.as.String, remaining);
+    init_scanner(result.as.String);
     c->parser.cur = scan_token();
+
+#undef SIZE
 }
 
 static void declaration(Compiler *c)
@@ -1346,6 +1362,7 @@ static void dot(Compiler *c)
 
     if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
+        // emit_bytes(c, OP_GET_PROP, (uint8_t)arg);
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
@@ -1353,6 +1370,84 @@ static void dot(Compiler *c)
             null_coalescing_statement(c);
         emit_bytes(c, OP_SET_PROP, (uint8_t)arg);
     }
+    else if (match(TOKEN_ADD_ASSIGN, &c->parser))
+    {
+
+        expression(c);
+        if (match(TOKEN_CH_TERNARY, &c->parser))
+            ternary_statement(c);
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
+            null_coalescing_statement(c);
+        emit_byte(c, OP_ADD);
+        emit_byte(c, OP_SET_PROP);
+    }
+    else if (match(TOKEN_SUB_ASSIGN, &c->parser))
+    {
+
+        expression(c);
+        if (match(TOKEN_CH_TERNARY, &c->parser))
+            ternary_statement(c);
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
+            null_coalescing_statement(c);
+        emit_byte(c, OP_SUB);
+        emit_byte(c, OP_SET_PROP);
+    }
+    else if (match(TOKEN_MUL_ASSIGN, &c->parser))
+    {
+
+        expression(c);
+        if (match(TOKEN_CH_TERNARY, &c->parser))
+            ternary_statement(c);
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
+            null_coalescing_statement(c);
+        emit_byte(c, OP_MUL);
+        emit_byte(c, OP_SET_PROP);
+    }
+    else if (match(TOKEN_DIV_ASSIGN, &c->parser))
+    {
+
+        expression(c);
+        if (match(TOKEN_CH_TERNARY, &c->parser))
+            ternary_statement(c);
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
+            null_coalescing_statement(c);
+        emit_byte(c, OP_DIV);
+        emit_byte(c, OP_SET_PROP);
+    }
+    else if (match(TOKEN_MOD_ASSIGN, &c->parser))
+    {
+
+        expression(c);
+        if (match(TOKEN_CH_TERNARY, &c->parser))
+            ternary_statement(c);
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
+            null_coalescing_statement(c);
+        emit_byte(c, OP_MOD);
+        emit_byte(c, OP_SET_PROP);
+    }
+    else if (match(TOKEN_AND_ASSIGN, &c->parser))
+    {
+
+        expression(c);
+        if (match(TOKEN_CH_TERNARY, &c->parser))
+            ternary_statement(c);
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
+            null_coalescing_statement(c);
+        emit_byte(c, OP_AND);
+        emit_byte(c, OP_SET_PROP);
+    }
+    else if (match(TOKEN_OR__ASSIGN, &c->parser))
+    {
+
+        expression(c);
+        if (match(TOKEN_CH_TERNARY, &c->parser))
+            ternary_statement(c);
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
+            null_coalescing_statement(c);
+        emit_byte(c, OP_OR);
+        emit_byte(c, OP_SET_PROP);
+    }
+
     else
         emit_bytes(c, OP_GET_PROP, (uint8_t)arg);
 }
@@ -1808,7 +1903,7 @@ Function *compile_path(const char *src, const char *path)
 
     c.init_func = String("init");
     c.base = &c;
-    c.base->src = src;
+    // c.base->src = src;
     c.base->cwd = path;
     c.base->calls = GROW_TABLE(NULL, TABLE_SIZE);
     c.base->classes = GROW_TABLE(NULL, TABLE_SIZE);
