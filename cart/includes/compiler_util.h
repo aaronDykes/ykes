@@ -83,6 +83,7 @@ struct Compiler
     Arena len;
     Arena ar_push;
     Arena ar_pop;
+    int current_instance;
 
     const char *cwd;
 

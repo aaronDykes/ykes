@@ -108,7 +108,6 @@ static bool call(Closure *c, uint8_t argc)
     frame->ip = c->func->ch.op_codes.listof.Bytes;
     frame->ip_start = c->func->ch.op_codes.listof.Bytes;
     frame->slots = machine.stack->top - argc - 1;
-    frame->slots->top = machine.stack->top - 1;
     return true;
 }
 
@@ -167,9 +166,8 @@ static bool call_value(Element el, uint8_t argc)
         return true;
     }
     case CLASS:
-        machine.stack->top[-1 - argc].as = INSTANCE(instance(el.classc));
-        return true;
     case INSTANCE:
+        machine.stack->top[-1 - argc].as = el;
         return true;
     default:
         break;
@@ -373,6 +371,7 @@ Interpretation run(void)
                         : frame->closure->upvals[READ_BYTE()];
         }
         break;
+
         case OP_GET_UPVALUE:
             PUSH((*frame->closure->upvals + READ_BYTE())->closed.as);
             break;
@@ -542,12 +541,10 @@ Interpretation run(void)
             break;
         case OP_SET_PROP:
         {
-            Element inst = NPEEK(1);
             Element el = PEEK();
-            inst.instance->classc->fields[READ_BYTE()].as = el;
-            Element res = POP();
-            PEEK() = res;
-            PUSH(res);
+            Element inst = NPEEK(1);
+            write_table(inst.instance->classc->fields, READ_CONSTANT().arena, el);
+            POP();
             break;
         }
         case OP_GET_PROP:
@@ -558,7 +555,9 @@ Interpretation run(void)
                 return INTERPRET_RUNTIME_ERR;
             }
             Instance *inst = POP().instance;
-            Element n = (inst->classc->fields + READ_BYTE())->as;
+            Arena name = READ_CONSTANT().arena;
+
+            Element n = find_entry(&inst->classc->fields, &name);
 
             if (n.type != NULL_OBJ)
             {
@@ -628,15 +627,13 @@ Interpretation run(void)
             PUSH(GET_NATIVE(READ_CONSTANT().arena));
             break;
         case OP_CLASS:
-            PPUSH(INSTANCE(instance(READ_CONSTANT().classc)));
+            PPUSH(INSTANCE(READ_CONSTANT().instance));
             break;
         case OP_GET_CLASS:
             PUSH((machine.class_stack + READ_BYTE())->as);
             break;
         case OP_RM:
             RM();
-            break;
-        case OP_NOOP:
             break;
         case OP_ALLOC_TABLE:
             if (PEEK().type != ARENA && PEEK().arena.type != ARENA_INT)

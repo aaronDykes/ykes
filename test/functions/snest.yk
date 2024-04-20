@@ -1,4 +1,4 @@
-class N
+class Nest
 {
 
     init(a, b, c)
@@ -6,11 +6,8 @@ class N
         this.al = b;
         this.be = a;
         this.cunt = c;
-
     }
     
-    
-
 
 }
 

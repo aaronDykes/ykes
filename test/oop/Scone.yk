@@ -1,4 +1,5 @@
-class Scone {
+class Scone
+{
     
     topping(first, second, third)
     {

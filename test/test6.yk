@@ -1,22 +1,25 @@
 
 import "functions/fizzbang.yk";
 import "test1.yk";
+import "functions/nest.yk";
 import "oop/Scone.yk";
 import "oop/CoffeeMaker.yk";
 
+
+
 var fb = Fizzbang();
-fb.fb();
-
-
-
-
-
+var nt = Nest(10, 20, 420);
 var tab = Tables();
-tab.tables();
-
 var scone = Scone();
-scone.topping("strawberries ", "cream", 69); 
-
-
 var maker = CoffeeMaker("coffee and chicory");
+
+fb.fb();
+scone.topping("strawberries ", "cream", 69); 
+tab.tables();
+pout(nt.sum());
 maker.brew();
+
+
+
+
+

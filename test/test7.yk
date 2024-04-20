@@ -1,0 +1,6 @@
+
+import "functions/nest.yk";
+
+var n = Nest(10, 69, 420);
+
+pout(n.sum());

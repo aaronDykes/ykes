@@ -712,7 +712,7 @@ Class *class(Arena name)
     c = ALLOC(sizeof(Class));
     c->name = name;
     c->init = NULL;
-    c->fields = GROW_STACK(NULL, STACK_SIZE);
+    c->fields = NULL;
     return c;
 }
 
@@ -720,7 +720,7 @@ void free_class(Class *c)
 {
 
     ARENA_FREE(&c->name);
-    FREE_STACK(&c->fields);
+    arena_free_table(c->fields);
     FREE(PTR(c));
 }
 

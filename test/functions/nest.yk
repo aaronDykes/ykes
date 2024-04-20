@@ -1,33 +1,17 @@
-class N
+class Nest
 {
-  nest()
+  init(a, b, c)
   {
-    var a = 10;
-    sr f()
-    {
-      a = 69; 
-      return a;
-    }
-    var b = 69;
-
-    sr g() {
-      return b;
-    }
-  
-    var c = 69;
-
-    sr h() {
-      return c;
-    }
-
-
-    sr sum()
-    {
-      pout(f() + g() + h());
-    }
-
-    return sum;
+    this.a = a;
+    this.b = b;
+    this.c = c;
   }
+  sum()
+  {
+    return this.a + this.b + this.c;
+  }
+  
+
 }
 
 

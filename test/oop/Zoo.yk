@@ -15,21 +15,9 @@ class Zoo
     hay()    { return this.donkey; }
     grass()  { return this.elephant; }
     mouse()  { return this.fox; }
+
+
 }
 
-var zoo = Zoo();
-var sum = 0;
-var start = clock();
 
-while (sum < 100000000)
-{
-  sum += zoo.ant()
-    + zoo.banana()
-    + zoo.tuna()
-    + zoo.hay()
-    + zoo.grass()
-    + zoo.mouse();
-}
 
-pout(clock() - start);
-pout(sum);

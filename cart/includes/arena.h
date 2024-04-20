@@ -61,6 +61,7 @@ typedef enum
 
     OP_FIND_CLOSURE,
     OP_GET_CLOSURE,
+    OP_GET_METHOD,
     OP_GET_CLASS,
     OP_GET_NATIVE,
 
@@ -130,7 +131,6 @@ typedef enum
     OP_CALL,
     OP_METHOD,
 
-    OP_NOOP,
     OP_NULL,
 
     OP_RETURN
@@ -298,7 +298,7 @@ struct Class
 {
     Closure *init;
     Arena name;
-    Stack *fields;
+    Table *fields;
 };
 
 struct Instance

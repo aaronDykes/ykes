@@ -104,6 +104,8 @@ int disassemble_instruction(Chunk *c, int offset)
         return simple_instruction("OP_GET_NATIVE", offset);
     case OP_GET_CLOSURE:
         return simple_instruction("OP_GET_CLOSURE", offset);
+    case OP_GET_METHOD:
+        return simple_instruction("OP_GET_METHOD", offset);
     case OP_GET_CLASS:
         return simple_instruction("OP_GET_CLOSURE", offset);
     case OP_NEG:
@@ -156,8 +158,6 @@ int disassemble_instruction(Chunk *c, int offset)
         return simple_instruction("OP_ALLOC_TABLE", offset);
     case OP_NULL:
         return simple_instruction("OP_NULL", offset);
-    case OP_NOOP:
-        return ++offset;
     case OP_GET_LOCAL:
         return byte_instruction("OP_GET_LOCAL", c, offset);
     case OP_SET_LOCAL:

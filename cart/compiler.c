@@ -17,7 +17,7 @@ static void init_compiler(Compiler *a, Compiler *b, ObjType type, Arena name)
     a->scope_depth = 0;
     a->call_count = 0;
     a->class_count = 0;
-    // a->src = NULL;
+    a->current_instance = -1;
 
     a->array_index = 0;
     a->array_set = 0;
@@ -205,16 +205,17 @@ static void class_declaration(Compiler *c)
 
     Arena ar = parse_id(c);
     Class *classc = class(ar);
+    classc->fields = GROW_TABLE(NULL, STACK_SIZE);
     ClassCompiler *class = ALLOC(sizeof(ClassCompiler));
 
-    write_table(c->base->classes, classc->name, OBJ(Int(c->base->class_count)));
-    c->base->instances[c->base->class_count++] = classc;
+    write_table(c->base->classes, classc->name, OBJ(Int(c->base->class_count++)));
+    c->base->instances[c->base->class_count - 1] = classc;
     class->instance_name = ar;
 
     class->enclosing = c->class_compiler;
     c->class_compiler = class;
 
-    emit_bytes(c, OP_CLASS, add_constant(&c->func->ch, CLASS(classc)));
+    emit_bytes(c, OP_CLASS, add_constant(&c->func->ch, INSTANCE(instance(classc))));
 
     consume(TOKEN_CH_LCURL, "ERROR: Expect ze `{` curl brace", &c->parser);
 
@@ -234,7 +235,7 @@ static void method(Compiler *c, Class *class)
 
     if (ar.as.hash != c->base->init_func.as.hash)
         type = METHOD;
-    write_table(c->base->calls, ar, OBJ(Int(c->base->call_count++)));
+    // write_table(class, ar, OBJ(Int(c->base->method_call_count++)));
 
     method_body(c, type, ar, &class);
 }
@@ -265,6 +266,9 @@ static void method_body(Compiler *c, ObjType type, Arena ar, Class **class)
     Function *f = end_compile(c);
 
     Closure *clos = new_closure(f);
+
+    write_table((*class)->fields, ar, CLOSURE(clos));
+
     end_scope(c);
 
     if (type == INIT)
@@ -844,8 +848,8 @@ static void begin_scope(Compiler *c)
 }
 static void end_scope(Compiler *c)
 {
-    c->scope_depth--;
 
+    c->scope_depth--;
     if (c->local_count > 0 && (c->locals[c->local_count - 1].depth > c->scope_depth))
         emit_bytes(c, OP_POPN, add_constant(&c->func->ch, OBJ(Int(c->local_count - 1))));
 
@@ -1324,13 +1328,6 @@ static void dot(Compiler *c)
 
     Arena ar = parse_id(c);
 
-    int arg = resolve_call(c, &ar);
-    if (arg != -1)
-    {
-        emit_bytes(c, OP_GET_CLOSURE, (uint8_t)arg);
-        return;
-    }
-
     if (ar.as.hash == c->base->len.as.hash)
     {
         emit_byte(c, OP_LEN);
@@ -1357,18 +1354,19 @@ static void dot(Compiler *c)
         return;
     }
 
-    arg = c->base->class_count - 1;
-    push(&c->base->instances[arg]->fields, OBJ(ar));
+    int arg = (c->base->current_instance == -1)
+                  ? c->base->class_count - 1
+                  : c->base->current_instance;
 
     if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
-        // emit_bytes(c, OP_GET_PROP, (uint8_t)arg);
+        // emit_bytes(c, arg);
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
         else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
-        emit_bytes(c, OP_SET_PROP, (uint8_t)arg);
+        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
     }
     else if (match(TOKEN_ADD_ASSIGN, &c->parser))
     {
@@ -1378,8 +1376,7 @@ static void dot(Compiler *c)
             ternary_statement(c);
         else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
-        emit_byte(c, OP_ADD);
-        emit_byte(c, OP_SET_PROP);
+        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
     }
     else if (match(TOKEN_SUB_ASSIGN, &c->parser))
     {
@@ -1389,8 +1386,7 @@ static void dot(Compiler *c)
             ternary_statement(c);
         else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
-        emit_byte(c, OP_SUB);
-        emit_byte(c, OP_SET_PROP);
+        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
     }
     else if (match(TOKEN_MUL_ASSIGN, &c->parser))
     {
@@ -1401,7 +1397,7 @@ static void dot(Compiler *c)
         else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
         emit_byte(c, OP_MUL);
-        emit_byte(c, OP_SET_PROP);
+        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
     }
     else if (match(TOKEN_DIV_ASSIGN, &c->parser))
     {
@@ -1412,7 +1408,7 @@ static void dot(Compiler *c)
         else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
         emit_byte(c, OP_DIV);
-        emit_byte(c, OP_SET_PROP);
+        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
     }
     else if (match(TOKEN_MOD_ASSIGN, &c->parser))
     {
@@ -1423,7 +1419,7 @@ static void dot(Compiler *c)
         else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
         emit_byte(c, OP_MOD);
-        emit_byte(c, OP_SET_PROP);
+        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
     }
     else if (match(TOKEN_AND_ASSIGN, &c->parser))
     {
@@ -1433,8 +1429,7 @@ static void dot(Compiler *c)
             ternary_statement(c);
         else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
-        emit_byte(c, OP_AND);
-        emit_byte(c, OP_SET_PROP);
+        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
     }
     else if (match(TOKEN_OR__ASSIGN, &c->parser))
     {
@@ -1444,12 +1439,15 @@ static void dot(Compiler *c)
             ternary_statement(c);
         else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
-        emit_byte(c, OP_OR);
-        emit_byte(c, OP_SET_PROP);
-    }
 
+        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
+    }
     else
-        emit_bytes(c, OP_GET_PROP, (uint8_t)arg);
+    {
+        // emit_constant(c, ar);
+        emit_bytes(c, OP_GET_PROP, add_constant(&c->func->ch, OBJ(ar)));
+    }
+    c->base->current_instance = -1;
 }
 
 static void int_array(Compiler *c)
@@ -1576,9 +1574,6 @@ static void _this(Compiler *c)
     emit_bytes(
         c, OP_GET_CLASS,
         (uint8_t)arg);
-
-    if (match(TOKEN_CH_DOT, &c->parser))
-        dot(c);
 }
 
 static void id(Compiler *c)
@@ -1600,11 +1595,12 @@ static void id(Compiler *c)
 
     if ((arg = resolve_instance(c, ar)) != -1)
     {
+        c->base->current_instance = arg;
 
         if (c->base->instances[arg]->init)
         {
             emit_bytes(c, OP_CONSTANT, (uint8_t)add_constant(&c->func->ch, CLOSURE(c->base->instances[arg]->init)));
-            consume(TOKEN_CH_LPAREN, "Expect `(` prior to function body", &c->parser);
+            match(TOKEN_CH_LPAREN, &c->parser);
             call(c);
         }
         emit_bytes(c, OP_GET_CLASS, (uint8_t)arg);
@@ -1865,6 +1861,7 @@ Function *compile(const char *src)
     Compiler c;
 
     init_scanner(src);
+
     init_compiler(&c, NULL, SCRIPT, func_name("SCRIPT"));
 
     c.init_func = String("init");
@@ -1872,6 +1869,7 @@ Function *compile(const char *src)
     c.base->cwd = NULL;
     c.base->calls = GROW_TABLE(NULL, TABLE_SIZE);
     c.base->classes = GROW_TABLE(NULL, TABLE_SIZE);
+    c.base->includes = GROW_TABLE(NULL, TABLE_SIZE);
     c.base->len = CString("len");
     c.base->ar_push = CString("push");
     c.base->ar_pop = CString("pop");
@@ -1903,7 +1901,6 @@ Function *compile_path(const char *src, const char *path)
 
     c.init_func = String("init");
     c.base = &c;
-    // c.base->src = src;
     c.base->cwd = path;
     c.base->calls = GROW_TABLE(NULL, TABLE_SIZE);
     c.base->classes = GROW_TABLE(NULL, TABLE_SIZE);

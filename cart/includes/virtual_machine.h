@@ -29,6 +29,7 @@ struct vm
     CallFrame frames[FRAMES_MAX];
     Stack *stack;
     Stack *call_stack;
+    Stack *method_call_stack;
     Stack *class_stack;
     Stack *native_calls;
     Element pop_val;

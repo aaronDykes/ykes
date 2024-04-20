@@ -7,7 +7,6 @@
 
 #define LOAD_FACTOR 0.75
 #define FRAMES_MAX 500
-#define TAKE_OUT_THE_TRASH 250
 #define CAPACITY 64
 #define INC 2
 #define PAGE 16384
@@ -207,6 +206,7 @@ void print_line(Element ar);
 
 long long int hash(Arena key);
 void alloc_entry(Table **e, Table el);
+
 void arena_free_table(Table *t);
 void arena_free_entry(Table *entry);
 

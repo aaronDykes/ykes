@@ -15,8 +15,6 @@ void insert_entry(Table **t, Table entry)
 
     if (e.key.as.hash == entry.key.as.hash)
     {
-        if (e.val.type == CLASS)
-            return;
 
         FREE_ENTRY((tmp + index)->val);
         tmp[index] = new_entry(entry);
@@ -37,8 +35,7 @@ void insert_entry(Table **t, Table entry)
 
     return;
 END:
-    if (ptr->val.type != CLASS && ptr->val.type != CLOSURE)
-        FREE_ENTRY(ptr->val);
+    FREE_ENTRY(ptr->val);
     ptr->val = entry.val;
 }
 
@@ -428,7 +425,6 @@ void write_table(Table *t, Arena a, Element b)
 OVERWRITE:
     insert_entry(&t, Entry(a, b));
 }
-
 Table *arena_alloc_table(size_t size)
 {
     Table *t = ALLOC((size * sizeof(Table)) + sizeof(Table));
