@@ -128,12 +128,12 @@ Interpretation interpret(const char *src)
     Interpretation res = run();
     return res;
 }
-Interpretation interpret_path(const char *src, const char *path)
+Interpretation interpret_path(const char *src, const char *path, const char *name)
 {
 
     Function *func = NULL;
 
-    if (!(func = compile_path(src, path)))
+    if (!(func = compile_path(src, path, name)))
         return INTERPRET_RUNTIME_ERR;
 
     Closure *clos = new_closure(func);

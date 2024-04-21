@@ -3,5 +3,5 @@
 #include "stack.h"
 
 Function *compile(const char *src);
-Function *compile_path(const char *src, const char *path);
+Function *compile_path(const char *src, const char *path, const char *name);
 #endif

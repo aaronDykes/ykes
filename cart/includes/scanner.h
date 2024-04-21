@@ -16,7 +16,6 @@ struct token
 struct scanner
 {
     int line;
-    const char *src;
     const char *start;
     const char *current;
 };

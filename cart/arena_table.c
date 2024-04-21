@@ -16,7 +16,6 @@ void insert_entry(Table **t, Table entry)
     if (e.key.as.hash == entry.key.as.hash)
     {
 
-        FREE_ENTRY((tmp + index)->val);
         tmp[index] = new_entry(entry);
         return;
     }

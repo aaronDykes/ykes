@@ -15,6 +15,7 @@ struct Parser
     token pre;
     bool err;
     bool panic;
+    const char *current_file;
 };
 
 typedef enum
@@ -86,6 +87,7 @@ struct Compiler
     int current_instance;
 
     const char *cwd;
+    const char *current_file;
 
     Compiler *base;
     Compiler *enclosing;

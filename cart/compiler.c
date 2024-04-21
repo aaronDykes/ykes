@@ -31,6 +31,7 @@ static void init_compiler(Compiler *a, Compiler *b, ObjType type, Arena name)
     a->func = NULL;
     a->func = function(name);
     a->type = type;
+    // a->parser.current_file = b->base->current_file;
 
     if (b)
     {
@@ -122,7 +123,21 @@ static void str_cop(char *src, char *dst)
     while ((*tmp++ = *dst++))
         ;
 }
+static char *get_name(char *path)
+{
+    int len = strlen(path) - 1;
+    char *tmp = path + len;
 
+    int count;
+    for (count = 0; tmp[-1] != '/'; --tmp, count++)
+        ;
+
+    char *file = ALLOC((count + 1) * sizeof(char));
+
+    strcpy(file, tmp);
+
+    return file;
+}
 static void include_file(Compiler *c)
 {
 
@@ -135,49 +150,41 @@ static void include_file(Compiler *c)
         exit(1);
     }
 
-    Arena result = Null();
     char *remaining = NULL;
-    do
+
+    consume(TOKEN_STR, "Expect file path.", &c->parser);
+    Arena inc = CString(parse_string(c));
+
+    if (resolve_include(c, inc))
     {
-        consume(TOKEN_STR, "Expect file path.", &c->parser);
-        Arena inc = CString(parse_string(c));
+        error("Double include.", &c->parser);
+        exit(1);
+    }
 
-        if (resolve_include(c, inc))
-        {
-            error("Double include.", &c->parser);
-            exit(1);
-        }
+    write_table(c->includes, inc, OBJ(inc));
 
-        write_table(c->includes, inc, OBJ(inc));
+    consume(TOKEN_CH_SEMI, "Expect `;` at end of include statement.", &c->parser);
+    remaining = (char *)c->parser.cur.start;
 
-        consume(TOKEN_CH_SEMI, "Expect `;` at end of include statement.", &c->parser);
-        remaining = (char *)c->parser.cur.start;
+    char path[CWD_MAX] = {0};
 
-        char path[CWD_MAX] = {0};
+    str_cop(path, (char *)c->base->cwd);
+    strcat(path, inc.as.String);
 
-        str_cop(path, (char *)c->base->cwd);
-        strcat(path, inc.as.String);
+    char *file = read_file(path);
 
-        char *file = read_file(path);
+    Arena result = GROW_ARRAY(
+        NULL,
+        SIZE(file, remaining),
+        ARENA_STR);
 
-        T type = result.type;
-        result = GROW_ARRAY(
-            &result,
-            (type == ARENA_NULL)
-                ? SIZE(file, remaining)
-                : strlen(file) + result.as.len,
-            ARENA_STR);
-
-        if (type == ARENA_NULL)
-            str_cop(result.as.String, file);
-        else
-            strcat(result.as.String, file);
-
-    } while (match(TOKEN_INCLUDE, &c->parser));
+    str_cop(result.as.String, file);
 
     strcat(result.as.String, remaining);
     init_scanner(result.as.String);
     c->parser.cur = scan_token();
+
+    c->parser.current_file = get_name(inc.as.String);
 
 #undef SIZE
 }
@@ -186,7 +193,9 @@ static void declaration(Compiler *c)
 {
 
     if (match(TOKEN_INCLUDE, &c->parser))
+    {
         include_file(c);
+    }
     else if (match(TOKEN_FUNC, &c->parser))
         func_declaration(c);
     else if (match(TOKEN_CLASS, &c->parser))
@@ -1033,7 +1042,7 @@ static void error_at(Token toke, Parser *parser, const char *err)
     parser->panic = true;
     parser->err = true;
 
-    fprintf(stderr, "[line %d] Error", toke->line);
+    fprintf(stderr, "[file: %s, line: %d] Error", parser->current_file, toke->line - 1);
 
     if (toke->type == TOKEN_EOF)
         fprintf(stderr, " at end");
@@ -1908,7 +1917,7 @@ Function *compile(const char *src)
 
     return c.parser.err ? NULL : f;
 }
-Function *compile_path(const char *src, const char *path)
+Function *compile_path(const char *src, const char *path, const char *name)
 {
     Compiler c;
 
@@ -1919,6 +1928,7 @@ Function *compile_path(const char *src, const char *path)
     c.init_func = String("init");
     c.base = &c;
     c.base->cwd = path;
+    c.base->current_file = name;
     c.base->calls = GROW_TABLE(NULL, TABLE_SIZE);
     c.base->classes = GROW_TABLE(NULL, TABLE_SIZE);
     c.base->includes = GROW_TABLE(NULL, TABLE_SIZE);
@@ -1928,6 +1938,7 @@ Function *compile_path(const char *src, const char *path)
 
     c.parser.panic = false;
     c.parser.err = false;
+    c.parser.current_file = name;
 
     advance_compiler(&c.parser);
 

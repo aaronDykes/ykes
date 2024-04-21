@@ -69,14 +69,31 @@ static void strip_path(char *str)
     str[len + 1] = '\0';
 }
 
+static char *get_name(char *path)
+{
+    int len = strlen(path) - 1;
+    char *tmp = path + len;
+
+    int count;
+    for (count = 0; tmp[-1] != '/'; --tmp, count++)
+        ;
+
+    char *file = ALLOC((count + 1) * sizeof(char));
+
+    strcpy(file, tmp);
+
+    return file;
+}
+
 static void run_file(const char *path)
 {
     initVM();
     char *source = read_file(path);
 
+    char *name = get_name((char *)path);
     strip_path((char *)path);
 
-    Interpretation result = interpret_path(source, path);
+    Interpretation result = interpret_path(source, path, name);
     free(source);
 
     if (result == INTERPRET_COMPILE_ERR)

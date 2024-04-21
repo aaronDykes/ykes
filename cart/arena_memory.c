@@ -216,6 +216,7 @@ void *alloc_ptr(size_t size)
 
     if (free && free->size >= size)
     {
+
         tmp = free->size - size;
         ptr = free + tmp + OFFSET;
 
@@ -238,7 +239,7 @@ void *alloc_ptr(size_t size)
         prev->next = request_system_memory(tmp * OFFSET);
         prev->next->size = tmp - size;
 
-        ptr = prev->next + OFFSET + (tmp - size);
+        ptr = prev->next + prev->next->size + OFFSET;
 
         return ptr;
     }
