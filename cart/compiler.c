@@ -1948,6 +1948,8 @@ Function *compile_path(const char *src, const char *path, const char *name)
 
     Function *f = end_compile(&c);
 
+    FREE(PTR(c.parser.current_file));
+
     FREE(PTR(c.base->calls - 1));
     FREE(PTR(c.base->classes - 1));
     FREE(PTR(c.base->init_func.as.String));

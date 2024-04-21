@@ -589,7 +589,7 @@ Interpretation run(void)
         case OP_JMP_NIL:
         {
             uint16_t offset = READ_SHORT();
-            if (!PEEK().stack)
+            if (!not_null(PEEK()))
                 frame->ip += offset;
             break;
         }

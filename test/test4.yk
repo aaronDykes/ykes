@@ -9,7 +9,7 @@ sr twod_ar()
 
     ar[0] = size_ar;
     ar[1] = another;
-    ar[4] = last;
+    ar[2] = last;
 
     for (var i = 0; i < ar.len; i++)
         pout(
@@ -20,7 +20,6 @@ sr twod_ar()
     each(var i : ar)
         pout(i, i.len);
 
-    pout(ar.pop(), ar);
 
 
 

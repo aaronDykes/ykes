@@ -18,9 +18,10 @@ var fib = FIB();
 
 p.res();
 fb.fb();
+fib.res();
 scone.topping("strawberries ", "cream", 69); 
-tab.tables();
 pout(nt.sum());
 maker.brew();
+
 
 
