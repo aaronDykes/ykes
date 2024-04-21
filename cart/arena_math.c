@@ -2161,11 +2161,11 @@ Element _get_each_access(Element b, int index)
             goto ERR;
         }
     case VECTOR:
-        if (index > (b.arena_vector - 1)->count + 1)
+        if (index > (b.arena_vector - 1)->count - 1)
             return nil;
         return OBJ(*(b.arena_vector + index));
     case STACK:
-        if (index > b.stack->count)
+        if (index > b.stack->count - 1)
             return nil;
         return b.stack[index].as;
     default:
