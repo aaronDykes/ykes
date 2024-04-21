@@ -5,6 +5,7 @@ import "oop/CoffeeMaker.yk";
 import "functions/nest.yk";
 import "functions/prime.yk";
 import "oop/Scone.yk";
+import "functions/fib.yk";
 import "functions/getset.yk";
 
 
@@ -15,6 +16,7 @@ var tab = Tables();
 var scone = Scone();
 var maker = CoffeeMaker("coffee and chicory");
 var gs = GetSet(10);
+var fib = FIB();
 
 var p = Prime();
 
@@ -27,6 +29,8 @@ maker.brew();
 
 gs.setter(69);
 pout(gs.getter());
+
+fib.res();
 
 
 

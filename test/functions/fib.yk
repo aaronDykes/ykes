@@ -1,18 +1,24 @@
-sr fib(n) {
-  if (n < 2) return n;
-  return fib(n - 2) + fib(n - 1);
-}
-
-
-sr print_fib(n)
+class FIB
 {
-  for (var i = 1; i < n; i++)
-    pout(fib(i));
+    fib(n) {
+        if (n < 2) return n;
+        return this.fib(n - 2) + this.fib(n - 1);
+    }
+
+
+    print_fib(n)
+    {
+        for (var i = 1; i < n; i++)
+          pout(this.fib(i));
+    }
+
+
+    res()
+    {
+        var start = clock();
+        this.print_fib(30);
+        pout(clock() - start);
+    }
+
+
 }
-
-var start = clock();
-
-print_fib(30);
-
-
-pout(clock() - start);
