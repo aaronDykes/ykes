@@ -547,6 +547,9 @@ Interpretation run(void)
             POP();
             break;
         }
+        case OP_PUSH_TOP:
+            PUSH(PEEK());
+            break;
         case OP_GET_PROP:
         {
             if (PEEK().type != INSTANCE)
@@ -565,7 +568,7 @@ Interpretation run(void)
                 break;
             }
 
-            runtime_error("ERROR: Undefined property '%s'.", n.arena.as.String);
+            runtime_error("ERROR: Undefined property '%s'.", name.as.String);
             return INTERPRET_RUNTIME_ERR;
         }
         case OP_CALL:

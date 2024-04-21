@@ -100,6 +100,8 @@ int disassemble_instruction(Chunk *c, int offset)
         return byte_instruction("OP_GET_UPVALUE", c, offset);
     case OP_SET_UPVALUE:
         return byte_instruction("OP_SET_UPVALUE", c, offset);
+    case OP_PUSH_TOP:
+        return byte_instruction("OP_PUSH_TOP", c, offset);
     case OP_GET_NATIVE:
         return simple_instruction("OP_GET_NATIVE", offset);
     case OP_GET_CLOSURE:

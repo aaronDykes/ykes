@@ -56,6 +56,7 @@ typedef enum
     OP_RM,
     OP_CLOSE_UPVAL,
 
+    OP_PUSH_TOP,
     OP_GET_PROP,
     OP_SET_PROP,
 

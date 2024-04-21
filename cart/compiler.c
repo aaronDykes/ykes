@@ -1371,16 +1371,21 @@ static void dot(Compiler *c)
     else if (match(TOKEN_ADD_ASSIGN, &c->parser))
     {
 
+        emit_byte(c, OP_PUSH_TOP);
+        emit_bytes(c, OP_GET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
         else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
+        emit_byte(c, OP_ADD);
         emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
     }
     else if (match(TOKEN_SUB_ASSIGN, &c->parser))
     {
 
+        emit_byte(c, OP_PUSH_TOP);
+        emit_bytes(c, OP_GET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
@@ -1391,6 +1396,8 @@ static void dot(Compiler *c)
     else if (match(TOKEN_MUL_ASSIGN, &c->parser))
     {
 
+        emit_byte(c, OP_PUSH_TOP);
+        emit_bytes(c, OP_GET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
@@ -1402,6 +1409,8 @@ static void dot(Compiler *c)
     else if (match(TOKEN_DIV_ASSIGN, &c->parser))
     {
 
+        emit_byte(c, OP_PUSH_TOP);
+        emit_bytes(c, OP_GET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
@@ -1412,6 +1421,8 @@ static void dot(Compiler *c)
     }
     else if (match(TOKEN_MOD_ASSIGN, &c->parser))
     {
+        emit_byte(c, OP_PUSH_TOP);
+        emit_bytes(c, OP_GET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
 
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
@@ -1424,6 +1435,8 @@ static void dot(Compiler *c)
     else if (match(TOKEN_AND_ASSIGN, &c->parser))
     {
 
+        emit_byte(c, OP_PUSH_TOP);
+        emit_bytes(c, OP_GET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
@@ -1433,6 +1446,8 @@ static void dot(Compiler *c)
     }
     else if (match(TOKEN_OR__ASSIGN, &c->parser))
     {
+        emit_byte(c, OP_PUSH_TOP);
+        emit_bytes(c, OP_GET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
 
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
@@ -1443,10 +1458,7 @@ static void dot(Compiler *c)
         emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
     }
     else
-    {
-        // emit_constant(c, ar);
         emit_bytes(c, OP_GET_PROP, add_constant(&c->func->ch, OBJ(ar)));
-    }
     c->base->current_instance = -1;
 }
 

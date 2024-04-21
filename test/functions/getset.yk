@@ -1,22 +1,20 @@
-var glob_set = 0;
-var glob_get = 0;
 
-sr n()
+class GetSet
 {
 
-    var a = "initial";
+    init(set)
+    {
+        this.set = set;
+    }
+
+    setter(set)
+    {
+        this.set += set;
+    }
+    getter()
+    {
+        return this.set;
+    }
     
-    sr set() { a = "I'm updated"; }
-    sr get() { return a; }
-
-
-
-    glob_set = set;
-    glob_get = get;
 }
-
-
-n();
-glob_set();
-pout(glob_get());
 
