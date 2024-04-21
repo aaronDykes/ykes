@@ -6,7 +6,6 @@ class GetSet
     {
         this.set = set;
     }
-
     setter(set)
     {
         this.set += set;
