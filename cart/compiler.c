@@ -6,6 +6,7 @@
 #endif
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <unistd.h>
 
 static void init_compiler(Compiler *a, Compiler *b, ObjType type, Arena name)
@@ -610,7 +611,6 @@ static void each_statement(Compiler *c)
     emit_loop(c, start);
 
     patch_jump(c, exit);
-    // emit_byte(c, OP_POP);
 }
 
 static void consume_if(Compiler *c)
@@ -1067,6 +1067,16 @@ static void emit_constant(Compiler *c, Arena ar)
         add_constant(&c->func->ch, OBJ(ar)));
 }
 
+static void pi(Compiler *c)
+{
+    emit_constant(c, Double(M_PI));
+}
+
+static void euler(Compiler *c)
+{
+    emit_constant(c, Double(M_E));
+}
+
 static void dval(Compiler *c)
 {
     double val = strtod(c->parser.pre.start, NULL);
@@ -1354,13 +1364,8 @@ static void dot(Compiler *c)
         return;
     }
 
-    int arg = (c->base->current_instance == -1)
-                  ? c->base->class_count - 1
-                  : c->base->current_instance;
-
     if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
-        // emit_bytes(c, arg);
         expression(c);
         if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);

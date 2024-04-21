@@ -114,6 +114,9 @@ enum
     TOKEN_PRINT,
     TOKEN_RETURN,
 
+    TOKEN_PI,
+    TOKEN_EULER,
+
     TOKEN_SUPER,
     TOKEN_THIS,
     TOKEN_TRUE,

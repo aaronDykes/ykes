@@ -194,6 +194,10 @@ static void emit_return(Compiler *c);
 static void array(Compiler *c);
 static void _access(Compiler *c);
 static void dval(Compiler *c);
+static void pi(Compiler *c);
+
+static void euler(Compiler *c);
+
 static void ival(Compiler *c);
 static void llint(Compiler *c);
 static void ch(Compiler *c);
@@ -325,6 +329,9 @@ static PRule rules[] = {
     [TOKEN_TYPE_STRING] = {NULL, NULL, PREC_NONE},
     [TOKEN_TYPE_CHAR] = {NULL, NULL, PREC_NONE},
     [TOKEN_TYPE_BYTE] = {NULL, NULL, PREC_NONE},
+
+    [TOKEN_PI] = {pi, NULL, PREC_NONE},
+    [TOKEN_EULER] = {euler, NULL, PREC_NONE},
 
     [TOKEN_WHILE] = {NULL, NULL, PREC_NONE},
     [TOKEN_ERR] = {NULL, NULL, PREC_NONE},

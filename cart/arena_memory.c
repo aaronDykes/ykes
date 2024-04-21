@@ -286,7 +286,6 @@ Arena *arena_realloc_arena(Arena *ar, size_t size)
     (ptr - 1)->count = (ar - 1)->count;
 
     FREE(PTR(ar - 1));
-    // arena_free_arena(ar);
     return ptr;
 }
 

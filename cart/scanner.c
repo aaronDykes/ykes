@@ -225,6 +225,7 @@ static int id_type(void)
         return check_keyword(1, 6, "oubles", TOKEN_ALLOC_DOUBLES);
     case 'e':
         if (scan.current - scan.start > 1)
+        {
             switch (scan.start[1])
             {
             case 'a':
@@ -238,6 +239,8 @@ static int id_type(void)
                     return check_keyword(3, 1, "f", TOKEN_ELIF);
                 }
             }
+        }
+        return check_keyword(1, 0, "", TOKEN_EULER);
     case 'f':
         if (scan.current - scan.start > 1)
             switch (scan.start[1])
@@ -286,6 +289,7 @@ static int id_type(void)
             case 'o':
                 return check_keyword(2, 2, "ut", TOKEN_PRINT);
             }
+        return check_keyword(1, 1, "i", TOKEN_PI);
     case 'r':
         if (scan.current - scan.start > 1)
             switch (scan.start[1])

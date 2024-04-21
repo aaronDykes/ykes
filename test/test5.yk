@@ -2,18 +2,14 @@ import "test1.yk";
 
 
 
-sr this_is(s)
-{
-    s.push("hello world!");
-    s.push("Another vector!");
-    s.push("This is a stack value");
-    s.push(69.43022);
-    return s;
-}
     
 
-var hello = this_is(Stack());
+var hello = Stack();
 
+hello.push("hello world!");
+hello.push("Another vector!");
+hello.push("This is a stack value");
+hello.push(69.43022);
 
 
 hello[hello.len - 1] = Table();
@@ -26,7 +22,9 @@ hello[hello.len - 1]["Table"]["entry"] = hello[hello.len - 1]["entry"];
 pout(hello[hello.len - 1]["Table"]["entry"]);
 
 
-tables();
+var t = Tables();
+t.tables();
+
 rm(hello);
 
 

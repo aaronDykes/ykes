@@ -9,15 +9,14 @@ import "functions/getset.yk";
 
 
 
+var p = Prime();
 var fb = Fizzbang();
 var nt = Nest(10, 20, 420);
 var tab = Tables();
 var scone = Scone();
 var maker = CoffeeMaker("coffee and chicory");
-var gs = GetSet(10);
+var gs = GetSet(pi);
 var fib = FIB();
-
-var p = Prime();
 
 p.res();
 fb.fb();
@@ -29,8 +28,4 @@ maker.brew();
 gs.setter(69);
 pout(gs.getter());
 fib.res();
-
-
-
-
 
