@@ -236,12 +236,10 @@ void *alloc_ptr(size_t size)
             tmp *= INC;
 
         prev->next = request_system_memory(tmp * OFFSET);
-        prev->next->size = size;
-
-        ptr = prev->next + OFFSET;
-
-        prev->next += size + OFFSET;
         prev->next->size = tmp - size;
+
+        ptr = prev->next + OFFSET + (tmp - size);
+
         return ptr;
     }
 

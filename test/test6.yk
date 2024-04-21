@@ -1,4 +1,3 @@
-
 import "functions/fizzbang.yk";
 import "test1.yk";
 import "oop/CoffeeMaker.yk";
@@ -29,7 +28,6 @@ maker.brew();
 
 gs.setter(69);
 pout(gs.getter());
-
 fib.res();
 
 

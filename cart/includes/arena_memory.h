@@ -116,7 +116,6 @@ union Free
 };
 
 static Free *mem;
-// static Free *head;
 
 void initialize_global_memory(void);
 void destroy_global_memory(void);

@@ -5,7 +5,6 @@ class FIB
         return this.fib(n - 2) + this.fib(n - 1);
     }
 
-
     print_fib(n)
     {
         for (var i = 1; i < n; i++)
