@@ -17,6 +17,7 @@
 #define MIN_SIZE 8
 #define NATIVE_STACK_SIZE 32
 #define TABLE_SIZE 128
+#define MACHINE_STACK 256
 #define IP_SIZE 100
 #define MEM_OFFSET 1
 #define OFFSET sizeof(Free)
@@ -25,7 +26,7 @@
     alloc_ptr(size + OFFSET)
 
 #define PTR(ptr) \
-    ((Free *)ptr - 1)
+    (((Free *)ptr) - 1)
 
 #define FREE(ptr) \
     free_ptr(ptr)
@@ -44,8 +45,6 @@
 #define ARENA_FREE(ar) \
     arena_free(ar)
 
-#define GROW_TABLE(ar, size) \
-    arena_realloc_table(ar, size)
 #define ALLOC_ENTRY(a, b) \
     alloc_entry(a, b)
 #define FREE_TABLE_ENTRY(ar) \

@@ -29,6 +29,7 @@ static void init_compiler(Compiler *a, Compiler *b, ObjType type, Arena name)
     a->calls = NULL;
     a->classes = NULL;
     a->func = NULL;
+    a->func = NULL;
     a->func = function(name);
     a->type = type;
     // a->parser.current_file = b->base->current_file;
@@ -91,7 +92,8 @@ static char *read_file(const char *path)
     size_t fileSize = ftell(file);
     rewind(file);
 
-    char *buffer = ALLOC(fileSize + 1);
+    char *buffer = NULL;
+    buffer = ALLOC(fileSize + 1);
 
     if (!buffer)
     {
@@ -132,7 +134,8 @@ static char *get_name(char *path)
     for (count = 0; tmp[-1] != '/'; --tmp, count++)
         ;
 
-    char *file = ALLOC((count + 1) * sizeof(char));
+    char *file = NULL;
+    file = ALLOC((count + 1) * sizeof(char));
 
     strcpy(file, tmp);
 
@@ -193,9 +196,7 @@ static void declaration(Compiler *c)
 {
 
     if (match(TOKEN_INCLUDE, &c->parser))
-    {
         include_file(c);
-    }
     else if (match(TOKEN_FUNC, &c->parser))
         func_declaration(c);
     else if (match(TOKEN_CLASS, &c->parser))
@@ -1233,6 +1234,16 @@ static void parse_native_argc1(Compiler *c)
     emit_bytes(c, OP_GET_NATIVE, (uint8_t)arg);
     consume(TOKEN_CH_LPAREN, "Expect `(` prior to function call", &c->parser);
     call_expect_arity(c, 1);
+}
+static void parse_native_argc2(Compiler *c)
+{
+
+    char *ch = (char *)c->parser.pre.start;
+    ch[c->parser.pre.size] = '\0';
+    int arg = add_constant(&c->func->ch, OBJ(native_name(ch)));
+    emit_bytes(c, OP_GET_NATIVE, (uint8_t)arg);
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to function call", &c->parser);
+    call_expect_arity(c, 2);
 }
 
 static Arena parse_func_id(Compiler *c)

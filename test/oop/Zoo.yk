@@ -8,7 +8,6 @@ class Zoo
         this.donkey   = 1;
         this.elephant = 1;
         this.fox      = 1;
-        this.sum      = 0;
     }
     ant()    { return this.aardvark; }
     banana() { return this.baboon; }
@@ -19,15 +18,15 @@ class Zoo
 
     res()
     {
-        var start = clock();
+        this.sum = 0;
 
-        for (; this.sum < 100000000000; ) {
-            this.sum += this.ant()
-                + this.banana()
-                + this.tuna()
-                + this.hay()
-                + this.grass()
-                + this.mouse();
+        for (; this.sum < 10000000000; ) {
+            this.sum += this.aardvark
+                + this.elephant
+                + this.baboon
+                + this.cat
+                + this.donkey
+                + this.elephant;
         }
         pout(
             this.sum

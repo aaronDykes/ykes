@@ -7,6 +7,9 @@
 #define FREE_TABLE(ar) \
     arena_realloc_table(ar, 0)
 
+#define GROW_TABLE(ar, size) \
+    arena_realloc_table(ar, size)
+
 void insert_entry(Table **t, Table entry);
 void delete_entry(Table **t, Arena key);
 

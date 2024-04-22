@@ -1,0 +1,12 @@
+
+sr file_read(path)
+{
+
+    var str = file("r", path);
+    pout(str);
+
+
+}
+
+file_read("test/test1.yk");
+file_read("test/test6.yk");

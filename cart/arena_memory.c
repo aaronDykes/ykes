@@ -251,7 +251,8 @@ void *alloc_ptr(size_t size)
 }
 Arena *arena_alloc_arena(size_t size)
 {
-    Arena *p = ALLOC((size * sizeof(Arena)) + sizeof(Arena));
+    Arena *p = NULL;
+    p = ALLOC((size * sizeof(Arena)) + sizeof(Arena));
 
     p->size = size;
     p->count = 0;
@@ -337,7 +338,8 @@ void arena_free_arena(Arena *ar)
 Arena arena_alloc(size_t size, T type)
 {
 
-    void *ptr = ALLOC(size);
+    void *ptr = NULL;
+    ptr = ALLOC(size);
     return arena_init(ptr, size, type);
 }
 
@@ -722,7 +724,8 @@ void free_class(Class *c)
 
 Instance *instance(Class *classc)
 {
-    Instance *ic = ALLOC(sizeof(Instance));
+    Instance *ic = NULL;
+    ic = ALLOC(sizeof(Instance));
     ic->classc = classc;
     return ic;
 }
@@ -753,7 +756,8 @@ Stack *realloc_stack(Stack *st, size_t size)
         st = NULL;
         return NULL;
     }
-    Stack *s = NEW_STACK(size);
+    Stack *s = NULL;
+    s = NEW_STACK(size);
 
     if (!st)
         return s;
@@ -773,7 +777,6 @@ Stack *realloc_stack(Stack *st, size_t size)
     FREE(PTR((st - 1)));
     --st;
     st = NULL;
-    // (st - 1) = NULL;
     return s;
 }
 void free_stack(Stack **stack)
@@ -826,7 +829,10 @@ void free_stack(Stack **stack)
 
 Upval **upvals(size_t size)
 {
-    Upval **up = ALLOC((sizeof(Upval *) * size) + sizeof(Upval *));
+    Upval **up = NULL;
+    ALLOC((sizeof(Upval *) * size) + sizeof(Upval *));
+
+    *up = NULL;
     *up = ALLOC(sizeof(Upval));
 
     (*up)->size = size;
@@ -848,11 +854,8 @@ void free_upvals(Upval **up)
 
     FREE(PTR(((*up) - 1)));
     FREE(PTR((up - 1)));
-    // (up - 1) = NULL;
     --up;
     up = NULL;
-
-    // --(*up) = NULL;
 }
 
 Stack value(Element e)
@@ -960,7 +963,8 @@ void free_function(Function *func)
 
 Native *native(NativeFn func, Arena ar)
 {
-    Native *native = ALLOC(sizeof(Native));
+    Native *native = NULL;
+    native = ALLOC(sizeof(Native));
     native->fn = func;
     native->obj = ar;
     return native;
@@ -978,7 +982,8 @@ void free_native(Native *native)
 }
 Closure *new_closure(Function *func)
 {
-    Closure *closure = ALLOC(sizeof(Closure));
+    Closure *closure = NULL;
+    closure = ALLOC(sizeof(Closure));
     closure->func = func;
     if (!func)
     {
@@ -1007,7 +1012,8 @@ void free_closure(Closure **closure)
 
 Upval *upval(Stack *index)
 {
-    Upval *up = ALLOC(sizeof(Upval));
+    Upval *up = NULL;
+    up = ALLOC(sizeof(Upval));
     up->index = index;
     up->closed = *index;
     up->next = NULL;

@@ -74,7 +74,8 @@ void free_entry(Element el)
 
 void delete_entry(Table **t, Arena key)
 {
-    Table *a = *t;
+    Table *a = NULL;
+    a = *t;
     size_t index = key.as.hash & ((a - 1)->len - 1);
     Table e = a[index];
 
@@ -192,16 +193,19 @@ Element find_entry(Table **t, Arena *hash)
 
 void alloc_entry(Table **e, Table el)
 {
-    Table *tmp = *e;
+    Table *tmp = NULL;
+    tmp = *e;
 
     if (!tmp)
     {
+        *e = NULL;
         *e = ALLOC(sizeof(Table));
         **e = el;
         return;
     }
     for (; tmp->next; tmp = tmp->next)
         ;
+    tmp->next = NULL;
     tmp->next = ALLOC(sizeof(Table));
     *tmp->next = el;
     tmp->next->prev = tmp;
@@ -386,7 +390,7 @@ Table *arena_realloc_table(Table *t, size_t size)
             insert_entry(&ptr, new_entry(*tab));
     }
 
-    FREE(PTR(t - 1));
+    FREE(PTR((t - 1)));
     --t;
     t = NULL;
     return ptr;
@@ -431,7 +435,8 @@ OVERWRITE:
 
 Table *arena_alloc_table(size_t size)
 {
-    Table *t = ALLOC((size * sizeof(Table)) + sizeof(Table));
+    Table *t = NULL;
+    t = ALLOC((size * sizeof(Table)) + OFFSET);
 
     size_t n = (size_t)size + 1;
 

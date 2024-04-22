@@ -5,17 +5,23 @@
 #include <time.h>
 #include <stdio.h>
 #include <math.h>
+#include <limits.h>
 
 void initVM(void)
 {
 
     initialize_global_memory();
 
+    machine.stack = NULL;
+    machine.call_stack = NULL;
+    machine.class_stack = NULL;
+    machine.native_calls = NULL;
+    machine.glob = NULL;
+
     machine.stack = GROW_STACK(NULL, STACK_SIZE);
     machine.call_stack = GROW_STACK(NULL, STACK_SIZE);
     machine.class_stack = GROW_STACK(NULL, STACK_SIZE);
     machine.native_calls = GROW_STACK(NULL, STACK_SIZE);
-
     machine.glob = GROW_TABLE(NULL, TABLE_SIZE);
 
     machine.argc = 0;
@@ -24,6 +30,7 @@ void initVM(void)
     define_native(native_name("clock"), clock_native);
     define_native(native_name("square"), square_native);
     define_native(native_name("prime"), prime_native);
+    define_native(native_name("file"), file_native);
 }
 void freeVM(void)
 {
@@ -32,6 +39,13 @@ void freeVM(void)
     FREE_STACK(&machine.call_stack);
     FREE_STACK(&machine.class_stack);
     FREE_STACK(&machine.native_calls);
+
+    machine.glob = NULL;
+    machine.stack = NULL;
+    machine.call_stack = NULL;
+    machine.class_stack = NULL;
+    machine.native_calls = NULL;
+
     destroy_global_memory();
 }
 
@@ -80,6 +94,42 @@ static inline Element prime_native(int argc, Stack *args)
 static inline Element clock_native(int argc, Stack *args)
 {
     return OBJ(Double((double)clock() / CLOCKS_PER_SEC));
+}
+static char *get_file(const char *path)
+{
+
+    char rest[PATH_MAX];
+    char *tmp = realpath(path, rest);
+    FILE *file = fopen(path, "r");
+
+    if (!file)
+    {
+        fprintf(stderr, "Could not open file \"%s\".\n", path);
+        exit(74);
+    }
+
+    fseek(file, 0L, SEEK_END);
+    size_t fileSize = ftell(file);
+    rewind(file);
+
+    char *buffer = NULL;
+    buffer = ALLOC(fileSize + 1);
+
+    if (!buffer)
+    {
+        fprintf(stderr, "Not enough memory to read \"%s\".\n", path);
+        exit(74);
+    }
+    size_t bytesRead = fread(buffer, sizeof(char), fileSize, file);
+    buffer[bytesRead] = '\0';
+
+    fclose(file);
+    return buffer;
+}
+
+static inline Element file_native(int argc, Stack *argv)
+{
+    return OBJ(CString(get_file(argv[1].as.arena.as.String)));
 }
 
 static inline Element square_native(int argc, Stack *args)

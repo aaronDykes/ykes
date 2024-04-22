@@ -251,6 +251,8 @@ static int id_type(void)
                 return check_keyword(2, 3, "lse", TOKEN_FALSE);
             case 'r':
                 return check_keyword(2, 2, "ee", TOKEN_OP_FREE);
+            case 'i':
+                return check_keyword(2, 2, "le", TOKEN_FILE);
             }
     case 'i':
         if (scan.current - scan.start > 1)

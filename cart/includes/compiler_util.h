@@ -223,6 +223,7 @@ static void push_array_val(Compiler *c);
 
 static void parse_native_argc0(Compiler *c);
 static void parse_native_argc1(Compiler *c);
+static void parse_native_argc2(Compiler *c);
 
 static void dot(Compiler *c);
 static void _this(Compiler *c);
@@ -318,6 +319,7 @@ static PRule rules[] = {
     [TOKEN_CLOCK] = {parse_native_argc0, NULL, PREC_CALL},
     [TOKEN_SQRT] = {parse_native_argc1, NULL, PREC_CALL},
     [TOKEN_PRIME] = {parse_native_argc1, NULL, PREC_CALL},
+    [TOKEN_FILE] = {parse_native_argc2, NULL, PREC_CALL},
 
     [TOKEN_PRINT] = {NULL, NULL, PREC_NONE},
     [TOKEN_RETURN] = {NULL, NULL, PREC_NONE},
