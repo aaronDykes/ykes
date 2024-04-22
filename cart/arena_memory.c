@@ -274,6 +274,8 @@ Arena *arena_realloc_arena(Arena *ar, size_t size)
     if (size == 0)
     {
         arena_free_arena(ar);
+        --ar;
+        ar = NULL;
         return NULL;
     }
 
@@ -290,6 +292,8 @@ Arena *arena_realloc_arena(Arena *ar, size_t size)
     (ptr - 1)->count = (ar - 1)->count;
 
     FREE(PTR((ar - 1)));
+    --ar;
+    ar = NULL;
     return ptr;
 }
 
@@ -301,6 +305,8 @@ void arena_free_arena(Arena *ar)
     if ((ar - 1)->count == 0)
     {
         FREE(PTR((ar - 1)));
+        --ar;
+        ar = NULL;
         return;
     }
 
@@ -324,6 +330,8 @@ void arena_free_arena(Arena *ar)
         }
 
     FREE(PTR(((ar - 1))));
+    --ar;
+    ar = NULL;
 }
 
 Arena arena_alloc(size_t size, T type)
@@ -490,7 +498,6 @@ Arena Int(int Int)
     ar.type = ARENA_INT;
     ar.as.Int = Int;
     ar.size = sizeof(int);
-    // long long int k = hash(ar);
     ar.as.hash = Int;
     return ar;
 }
@@ -677,18 +684,6 @@ Element pop_long(Element *el)
     return tmp;
 }
 
-// void push_char(Element *el, char Char)
-// {
-//     if (el->arena.as.len < el->arena.as.count + 1)
-//     {
-//         el->arena.as.len = GROW_CAPACITY(el->arena.as.len);
-//         el->arena.size = el->arena.as.len * sizeof(char);
-//         el->arena = GROW_ARRAY(&el->arena, el->arena.size, ARENA_STR);
-//     }
-//     // if (el->arena.count =)
-//     el->arena.as.String[el->arena.count++] = (char *)String;
-// }
-
 void push_string(Element *el, const char *String)
 {
     if (el->arena.len < el->arena.count + 1)
@@ -734,6 +729,7 @@ Instance *instance(Class *classc)
 void free_instance(Instance *ic)
 {
     FREE(PTR(ic));
+    ic = NULL;
 }
 
 Stack *stack(size_t size)
@@ -753,6 +749,8 @@ Stack *realloc_stack(Stack *st, size_t size)
     if (size == 0)
     {
         FREE_STACK(&st);
+        --st;
+        st = NULL;
         return NULL;
     }
     Stack *s = NEW_STACK(size);
@@ -773,6 +771,9 @@ Stack *realloc_stack(Stack *st, size_t size)
     s->top = s;
     s->top += s->count;
     FREE(PTR((st - 1)));
+    --st;
+    st = NULL;
+    // (st - 1) = NULL;
     return s;
 }
 void free_stack(Stack **stack)
@@ -785,6 +786,7 @@ void free_stack(Stack **stack)
     if (((*stack) - 1)->count == 0)
     {
         FREE(PTR(((*stack) - 1)));
+        stack = NULL;
         return;
     }
 
@@ -819,6 +821,7 @@ void free_stack(Stack **stack)
             break;
         }
     FREE(PTR(((*stack) - 1)));
+    stack = NULL;
 }
 
 Upval **upvals(size_t size)
@@ -845,6 +848,11 @@ void free_upvals(Upval **up)
 
     FREE(PTR(((*up) - 1)));
     FREE(PTR((up - 1)));
+    // (up - 1) = NULL;
+    --up;
+    up = NULL;
+
+    // --(*up) = NULL;
 }
 
 Stack value(Element e)
@@ -947,6 +955,7 @@ void free_function(Function *func)
     free_chunk(&func->ch);
 
     FREE(PTR(func));
+    func = NULL;
 }
 
 Native *native(NativeFn func, Arena ar)
@@ -964,8 +973,8 @@ void free_native(Native *native)
         return;
 
     ARENA_FREE(&native->obj);
-
     FREE(PTR(native));
+    native = NULL;
 }
 Closure *new_closure(Function *func)
 {
@@ -992,6 +1001,8 @@ void free_closure(Closure **closure)
 
     FREE_UPVALS((*closure)->upvals);
     FREE(PTR(closure));
+    (*closure) = NULL;
+    closure = NULL;
 }
 
 Upval *upval(Stack *index)
@@ -1054,12 +1065,16 @@ void arena_free_table(Table *t)
     if ((t - 1)->count == 0)
     {
         FREE(PTR((t - 1)));
+        --t;
+        t = NULL;
         return;
     }
     for (size_t i = 0; i < size; i++)
         FREE_TABLE_ENTRY(&t[i]);
 
     FREE(PTR((t - 1)));
+    --t;
+    t = NULL;
 }
 
 void arena_free_entry(Table *entry)

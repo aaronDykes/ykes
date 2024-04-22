@@ -365,6 +365,8 @@ Table *arena_realloc_table(Table *t, size_t size)
     if (size == 0)
     {
         arena_free_table(t);
+        --t;
+        t = NULL;
         return NULL;
     }
     size_t new_size = 0;
@@ -385,6 +387,8 @@ Table *arena_realloc_table(Table *t, size_t size)
     }
 
     FREE(PTR(t - 1));
+    --t;
+    t = NULL;
     return ptr;
 }
 
