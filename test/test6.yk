@@ -1,6 +1,7 @@
 import "functions/fizzbang.yk";
 import "test1.yk";
 import "functions/nest.yk";
+import "oop/Zoo.yk";
 import "functions/prime.yk";
 import "oop/CoffeeMaker.yk";
 import "oop/Scone.yk";
@@ -15,13 +16,14 @@ var tab = Tables();
 var scone = Scone();
 var maker = CoffeeMaker("coffee and chicory");
 var fib = FIB();
+var z = Zoo();
 
-p.res();
+// p.res();
 fb.fb();
 fib.res();
 scone.topping("strawberries ", "cream", 69); 
 pout(nt.sum());
 maker.brew();
-
+z.res();
 
 

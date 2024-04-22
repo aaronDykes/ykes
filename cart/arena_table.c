@@ -424,6 +424,7 @@ void write_table(Table *t, Arena a, Element b)
 OVERWRITE:
     insert_entry(&t, Entry(a, b));
 }
+
 Table *arena_alloc_table(size_t size)
 {
     Table *t = ALLOC((size * sizeof(Table)) + sizeof(Table));

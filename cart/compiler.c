@@ -245,7 +245,6 @@ static void method(Compiler *c, Class *class)
 
     if (ar.as.hash != c->base->init_func.as.hash)
         type = METHOD;
-    // write_table(class, ar, OBJ(Int(c->base->method_call_count++)));
 
     method_body(c, type, ar, &class);
 }
@@ -1950,9 +1949,9 @@ Function *compile_path(const char *src, const char *path, const char *name)
 
     FREE(PTR(c.parser.current_file));
 
-    FREE(PTR(c.base->calls - 1));
-    FREE(PTR(c.base->classes - 1));
-    FREE(PTR(c.base->init_func.as.String));
+    FREE(PTR((c.base->calls - 1)));
+    FREE(PTR((c.base->classes - 1)));
+    FREE(PTR((c.base->init_func.as.String)));
 
     return c.parser.err ? NULL : f;
 }

@@ -208,8 +208,7 @@ void *alloc_ptr(size_t size)
 
     Free *prev = NULL;
     Free *free = NULL;
-    void *ptr = NULL;
-    size_t tmp = 0;
+    Free *alloced = NULL;
 
     for (free = mem->next; free && free->size < size; free = free->next)
         prev = free;
@@ -217,8 +216,10 @@ void *alloc_ptr(size_t size)
     if (free && free->size >= size)
     {
 
-        tmp = free->size - size;
-        ptr = free + tmp + OFFSET;
+        size_t tmp = free->size - size;
+        alloced = free + tmp;
+        alloced->size = tmp - OFFSET;
+        alloced += 1;
 
         free->size = tmp;
 
@@ -227,21 +228,23 @@ void *alloc_ptr(size_t size)
         else if (!prev && tmp == 0)
             mem->next = free->next;
 
-        return ptr;
+        return alloced;
     }
 
     if (prev)
     {
-        tmp = PAGE;
+        size_t tmp = PAGE;
         while (size > tmp)
             tmp *= INC;
 
         prev->next = request_system_memory(tmp * OFFSET);
         prev->next->size = tmp - size;
 
-        ptr = prev->next + prev->next->size + OFFSET;
+        alloced = prev->next + prev->next->size;
+        alloced->size = prev->next->size - OFFSET;
+        alloced += 1;
 
-        return ptr;
+        return alloced;
     }
 
     return NULL;
@@ -286,7 +289,7 @@ Arena *arena_realloc_arena(Arena *ar, size_t size)
 
     (ptr - 1)->count = (ar - 1)->count;
 
-    FREE(PTR(ar - 1));
+    FREE(PTR((ar - 1)));
     return ptr;
 }
 
@@ -297,7 +300,7 @@ void arena_free_arena(Arena *ar)
 
     if ((ar - 1)->count == 0)
     {
-        FREE(PTR(ar - 1));
+        FREE(PTR((ar - 1)));
         return;
     }
 
@@ -320,7 +323,7 @@ void arena_free_arena(Arena *ar)
             return;
         }
 
-    FREE(PTR((ar - 1)));
+    FREE(PTR(((ar - 1))));
 }
 
 Arena arena_alloc(size_t size, T type)
@@ -769,7 +772,7 @@ Stack *realloc_stack(Stack *st, size_t size)
     s->count = st->count;
     s->top = s;
     s->top += s->count;
-    FREE(PTR(st - 1));
+    FREE(PTR((st - 1)));
     return s;
 }
 void free_stack(Stack **stack)
@@ -781,7 +784,7 @@ void free_stack(Stack **stack)
 
     if (((*stack) - 1)->count == 0)
     {
-        FREE(PTR((*stack) - 1));
+        FREE(PTR(((*stack) - 1)));
         return;
     }
 
@@ -1050,7 +1053,7 @@ void arena_free_table(Table *t)
 
     if ((t - 1)->count == 0)
     {
-        FREE(PTR(t - 1));
+        FREE(PTR((t - 1)));
         return;
     }
     for (size_t i = 0; i < size; i++)

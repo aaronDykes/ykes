@@ -22,10 +22,10 @@
 #define OFFSET sizeof(Free)
 
 #define ALLOC(size) \
-    alloc_ptr(size)
+    alloc_ptr(size + OFFSET)
 
 #define PTR(ptr) \
-    ((Free *)ptr - OFFSET)
+    ((Free *)ptr - 1)
 
 #define FREE(ptr) \
     free_ptr(ptr)
