@@ -5,7 +5,6 @@
 #include <time.h>
 #include <stdio.h>
 #include <math.h>
-#include <limits.h>
 
 void initVM(void)
 {
@@ -98,9 +97,11 @@ static inline Element clock_native(int argc, Stack *args)
 static char *get_file(const char *path)
 {
 
-    char rest[PATH_MAX];
-    char *tmp = realpath(path, rest);
-    FILE *file = fopen(path, "r");
+    char rest[PATH_MAX] = {0};
+    char *tmp = NULL;
+    tmp = realpath(path, rest);
+    FILE *file = NULL;
+    file = fopen(tmp, "r");
 
     if (!file)
     {
@@ -129,7 +130,9 @@ static char *get_file(const char *path)
 
 static inline Element file_native(int argc, Stack *argv)
 {
-    return OBJ(CString(get_file(argv[1].as.arena.as.String)));
+    if (strcmp(argv->as.arena.as.String, "r") == 0)
+        return OBJ(CString(get_file(argv[1].as.arena.as.String)));
+    return null_obj();
 }
 
 static inline Element square_native(int argc, Stack *args)

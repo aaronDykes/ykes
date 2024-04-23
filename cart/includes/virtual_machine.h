@@ -3,6 +3,7 @@
 
 #include "debug.h"
 #include "arena_table.h"
+#include <limits.h>
 
 typedef enum
 {

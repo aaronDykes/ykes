@@ -3,6 +3,8 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <pwd.h>
+#include <unistd.h>
 
 static void repl(void);
 static void run_file(const char *path);
@@ -85,12 +87,36 @@ static char *get_name(char *path)
     return file;
 }
 
+static char *get_full_path(char *path)
+{
+    // char res[PATH_MAX] = {0};
+
+    char *ptr = NULL;
+    char *tmp = NULL;
+    tmp = realpath(path, NULL);
+
+    if (tmp)
+    {
+        ptr = ALLOC(strlen(tmp));
+        strcpy(ptr, tmp);
+    }
+    else
+    {
+        fprintf(stderr, "Could not open file \"%s\".\n", path);
+        exit(74);
+    }
+    return ptr;
+}
+
 static void run_file(const char *path)
 {
     initVM();
-    char *source = read_file(path);
 
-    char *name = get_name((char *)path);
+    char *source = NULL;
+    source = read_file(get_full_path((char *)path));
+
+    char *name = NULL;
+    name = get_name((char *)path);
     strip_path((char *)path);
 
     Interpretation result = interpret_path(source, path, name);
@@ -107,9 +133,10 @@ static void run_file(const char *path)
 static char *read_file(const char *path)
 {
 
-    FILE *file = fopen(path, "rb");
-
-    if (!file)
+    FILE *file = NULL;
+    if (path)
+        file = fopen(path, "rb");
+    else if (!file)
     {
         fprintf(stderr, "Could not open file \"%s\".\n", path);
         exit(74);

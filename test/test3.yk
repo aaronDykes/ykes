@@ -8,5 +8,5 @@ sr file_read(path)
 
 }
 
-file_read("test/test1.yk");
-file_read("test/test6.yk");
+file_read("/Users/kern/ykes/test/test1.yk");
+file_read("/Users/kern/ykes/test/test6.yk");
