@@ -128,11 +128,74 @@ static char *get_file(const char *path)
     return buffer;
 }
 
+static void append_file(const char *path, const char *data)
+{
+    FILE *f = NULL;
+
+    char *tmp = NULL;
+    tmp = realpath(path, NULL);
+    if (!tmp)
+    {
+        fprintf(stderr, "Unable to open file: %s\n", tmp);
+        exit(1);
+    }
+
+    f = fopen(tmp, "a");
+
+    if (!f)
+    {
+        fprintf(stderr, "Unable to open file: %s\n", path);
+        exit(1);
+    }
+
+    fprintf(f, "\n%s", data);
+    fclose(f);
+
+    tmp = NULL;
+    f = NULL;
+}
+static void write_file(const char *path, const char *data)
+{
+    FILE *f = NULL;
+
+    char *tmp = NULL;
+    tmp = realpath(path, NULL);
+    if (!tmp)
+    {
+        fprintf(stderr, "Unable to open file: %s\n", tmp);
+        exit(1);
+    }
+
+    f = fopen(tmp, "w");
+
+    if (!f)
+    {
+        fprintf(stderr, "Unable to open file: %s\n", path);
+        exit(1);
+    }
+
+    fprintf(f, "%s", data);
+    fclose(f);
+
+    tmp = NULL;
+    f = NULL;
+}
+
 static inline Element file_native(int argc, Stack *argv)
 {
-    if (strcmp(argv->as.arena.as.String, "r") == 0)
+    switch (*argv->as.arena.as.String)
+    {
+    case 'r':
         return OBJ(CString(get_file(argv[1].as.arena.as.String)));
-    return null_obj();
+    case 'w':
+        write_file(argv[1].as.arena.as.String, argv[2].as.arena.as.String);
+        return null_obj();
+    case 'a':
+        append_file(argv[1].as.arena.as.String, argv[2].as.arena.as.String);
+        return null_obj();
+    default:
+        return null_obj();
+    }
 }
 
 static inline Element square_native(int argc, Stack *args)

@@ -6,7 +6,14 @@ sr file_read(path)
     pout(str);
 
 
+    file(
+        "a", 
+        "/Users/kern/ykes/test/test7.yk", 
+        "var str=69;"
+    );
+
+
 }
 
 file_read("/Users/kern/ykes/test/test1.yk");
-file_read("/Users/kern/ykes/test/test6.yk");
+// file_read("/Users/kern/ykes/test/test6.yk");

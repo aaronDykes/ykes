@@ -1235,7 +1235,7 @@ static void parse_native_argc1(Compiler *c)
     consume(TOKEN_CH_LPAREN, "Expect `(` prior to function call", &c->parser);
     call_expect_arity(c, 1);
 }
-static void parse_native_argc2(Compiler *c)
+static void parse_native_var_arg(Compiler *c)
 {
 
     char *ch = (char *)c->parser.pre.start;
@@ -1243,7 +1243,7 @@ static void parse_native_argc2(Compiler *c)
     int arg = add_constant(&c->func->ch, OBJ(native_name(ch)));
     emit_bytes(c, OP_GET_NATIVE, (uint8_t)arg);
     consume(TOKEN_CH_LPAREN, "Expect `(` prior to function call", &c->parser);
-    call_expect_arity(c, 2);
+    call(c);
 }
 
 static Arena parse_func_id(Compiler *c)

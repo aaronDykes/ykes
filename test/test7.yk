@@ -1,6 +1,4 @@
-
-import "functions/nest.yk";
-
-var n = Nest(10, 69, 420);
-
-pout(n.sum());
+var str='b';
+var str=69;
+var str=69;
+var str=69;

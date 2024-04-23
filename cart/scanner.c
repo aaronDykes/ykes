@@ -97,6 +97,8 @@ token scan_token(void)
         return character();
     case '"':
         return string();
+    case '\\':
+        return scan_token();
     }
     return err_token("ERROR: invalid token");
 }
@@ -411,6 +413,7 @@ static bool is_space(void)
 {
     return next() == ' ' ||
            next() == '\t' ||
+           next() == '\\' ||
            next() == '\r' ||
            next() == '\n';
 }
@@ -490,6 +493,9 @@ static void skip_whitespace(void)
         case '\n':
             scan.line++;
             break;
+        // case '\\':
+        // skip();
+        // break;
         case '/':
             if (scan.current[1] == '*' || scan.current[1] == '/')
                 skip_comment();
