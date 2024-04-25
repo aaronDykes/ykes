@@ -1,24 +1,31 @@
 
-sr file_read(path)
+class Blue
 {
 
-    var str = file("r", path);
-    pout(str);
+    init(read_path, write_path)
+    {
+        this.read_path = read_path;
+        this.write_path = write_path;
+    }
 
+    file_read_write()
+    {
 
+        var str = file("r", this.read_path);
+        pout(str);
 
-    file(
-        "a", 
-        "/Users/kern/ykes/test/test7.yk", 
-        "var okay=69420;"
-    );
-    file(
-        "a", 
-        "/Users/kern/ykes/test/test7.yk", 
-        "var str=69;"
-    );
+        file(
+            "a", 
+            this.write_path,
+            "var okay=69420;"
+        );
+        file(
+            "a", 
+            this.write_path,
+            "var str=69;"
+        );
+    }
 
 
 }
 
-file_read("/Users/kern/ykes/test/test1.yk");
