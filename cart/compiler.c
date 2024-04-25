@@ -1235,12 +1235,25 @@ static void parse_native_argc1(Compiler *c)
     consume(TOKEN_CH_LPAREN, "Expect `(` prior to function call", &c->parser);
     call_expect_arity(c, 1);
 }
+
+static int resolve_native(Compiler *c, Arena *ar)
+{
+
+    Element el = find_entry(&c->base->natives, ar);
+
+    if (el.type == ARENA && el.arena.type == ARENA_INT)
+        return el.arena.as.Int;
+
+    return -1;
+}
 static void parse_native_var_arg(Compiler *c)
 {
 
     char *ch = (char *)c->parser.pre.start;
     ch[c->parser.pre.size] = '\0';
-    int arg = add_constant(&c->func->ch, OBJ(native_name(ch)));
+
+    Arena ar = native_name(ch);
+    int arg = resolve_native(c, &ar);
     emit_bytes(c, OP_GET_NATIVE, (uint8_t)arg);
     consume(TOKEN_CH_LPAREN, "Expect `(` prior to function call", &c->parser);
     call(c);
@@ -1629,6 +1642,13 @@ static void id(Compiler *c)
         return;
     }
 
+    // if ((arg = resolve_native(c, &ar) != -1))
+    // {
+    //     parse_native_var_arg(c, arg);
+    //     // emit_bytes(c, OP_GET_NATIVE, (uint8_t)arg);
+    //     return;
+    // }
+
     if ((arg = resolve_instance(c, ar)) != -1)
     {
         c->base->current_instance = arg;
@@ -1942,6 +1962,7 @@ Function *compile_path(const char *src, const char *path, const char *name)
     c.base->calls = GROW_TABLE(NULL, TABLE_SIZE);
     c.base->classes = GROW_TABLE(NULL, TABLE_SIZE);
     c.base->includes = GROW_TABLE(NULL, TABLE_SIZE);
+    c.base->natives = GROW_TABLE(NULL, TABLE_SIZE);
     c.base->len = CString("len");
     c.base->ar_push = CString("push");
     c.base->ar_pop = CString("pop");
@@ -1949,6 +1970,16 @@ Function *compile_path(const char *src, const char *path, const char *name)
     c.parser.panic = false;
     c.parser.err = false;
     c.parser.current_file = name;
+
+    write_table(c.base->natives, CString("clock"), OBJ(Int(c.base->native_count++)));
+    write_table(c.base->natives, CString("square"), OBJ(Int(c.base->native_count++)));
+    write_table(c.base->natives, CString("prime"), OBJ(Int(c.base->native_count++)));
+    write_table(c.base->natives, CString("file"), OBJ(Int(c.base->native_count++)));
+
+    // "clock";
+    // "square";
+    // "prime";
+    // "file";
 
     advance_compiler(&c.parser);
 
@@ -1959,8 +1990,8 @@ Function *compile_path(const char *src, const char *path, const char *name)
     Function *f = end_compile(&c);
 
     FREE(PTR(c.parser.current_file));
-
     FREE(PTR((c.base->calls - 1)));
+    FREE(PTR((c.base->natives - 1)));
     FREE(PTR((c.base->classes - 1)));
     FREE(PTR((c.base->init_func.as.String)));
 

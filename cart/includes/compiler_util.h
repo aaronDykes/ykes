@@ -69,6 +69,7 @@ struct Compiler
     int call_count;
     int param_count;
     int class_count;
+    int native_count;
 
     // const char *src;
     uint8_t array_index;
@@ -96,6 +97,7 @@ struct Compiler
     Table *calls;
     Table *classes;
     Table *includes;
+    Table *natives;
 
     Class *instances[CALL_COUNT];
     Local locals[LOCAL_COUNT];
@@ -316,9 +318,9 @@ static PRule rules[] = {
     [TOKEN_ELIF] = {NULL, NULL, PREC_OR},
     [TOKEN_NULL] = {boolean, NULL, PREC_NONE},
 
-    [TOKEN_CLOCK] = {parse_native_argc0, NULL, PREC_CALL},
-    [TOKEN_SQRT] = {parse_native_argc1, NULL, PREC_CALL},
-    [TOKEN_PRIME] = {parse_native_argc1, NULL, PREC_CALL},
+    [TOKEN_CLOCK] = {parse_native_var_arg, NULL, PREC_CALL},
+    [TOKEN_SQRT] = {parse_native_var_arg, NULL, PREC_CALL},
+    [TOKEN_PRIME] = {parse_native_var_arg, NULL, PREC_CALL},
     [TOKEN_FILE] = {parse_native_var_arg, NULL, PREC_CALL},
 
     [TOKEN_PRINT] = {NULL, NULL, PREC_NONE},

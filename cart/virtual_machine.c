@@ -743,7 +743,8 @@ Interpretation run(void)
             PUSH((machine.call_stack + READ_BYTE())->as);
             break;
         case OP_GET_NATIVE:
-            PUSH(GET_NATIVE(READ_CONSTANT().arena));
+            PUSH((machine.native_calls + READ_BYTE())->as);
+            // PUSH(GET_NATIVE(READ_CONSTANT().arena));
             break;
         case OP_CLASS:
             PPUSH(INSTANCE(READ_CONSTANT().instance));

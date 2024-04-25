@@ -6,6 +6,12 @@ sr file_read(path)
     pout(str);
 
 
+
+    file(
+        "a", 
+        "/Users/kern/ykes/test/test7.yk", 
+        "var okay=69420;"
+    );
     file(
         "a", 
         "/Users/kern/ykes/test/test7.yk", 
@@ -16,4 +22,3 @@ sr file_read(path)
 }
 
 file_read("/Users/kern/ykes/test/test1.yk");
-// file_read("/Users/kern/ykes/test/test6.yk");
