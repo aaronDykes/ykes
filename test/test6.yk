@@ -25,12 +25,12 @@ var b = Blue(
 );
 b.file_read_write();
 
-// p.res();
-// fb.fb();
-// fib.res();
-// scone.topping("strawberries ", "cream", 69); 
-// pout(nt.sum());
-// maker.brew();
-// tab.tables();
-// z.res();
+p.res();
+fb.fb();
+fib.res();
+scone.topping("strawberries ", "cream", 69); 
+pout(nt.sum());
+maker.brew();
+tab.tables();
+z.res();
 

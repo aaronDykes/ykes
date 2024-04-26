@@ -589,8 +589,16 @@ Interpretation run(void)
             PUSH(OBJ(_and(POP().arena, POP().arena)));
             break;
         case OP_GET_ACCESS:
-            PUSH(_get_access(POP(), POP()));
-            break;
+        {
+
+            Element el = _get_access(POP(), POP());
+            if (el.type != NULL_OBJ)
+            {
+                PUSH(el);
+                break;
+            }
+            return INTERPRET_RUNTIME_ERR;
+        }
         case OP_RESET_ARGC:
             machine.cargc = 0;
             machine.argc = 0;
@@ -609,10 +617,15 @@ Interpretation run(void)
 
             Element e1 = POP();
             Element e2 = POP();
-            PUSH(_push_array_val(e1, e2));
-            PUSH(OBJ(Bool(e2.type == VECTOR || e2.type == STACK)));
+            Element res = _push_array_val(e1, e2);
+            if (res.type != NULL_OBJ)
+            {
+                PUSH(res);
+                PUSH(OBJ(Bool(e2.type == VECTOR || e2.type == STACK)));
+                break;
+            }
+            return INTERPRET_RUNTIME_ERR;
         }
-        break;
         case OP_POP__ARRAY_VAL:
         {
             Element p = PEEK();
@@ -659,6 +672,11 @@ Interpretation run(void)
         {
             Element el = PEEK();
             Element inst = NPEEK(1);
+            if (inst.type != INSTANCE)
+            {
+                runtime_error("ERROR: Can only set properties of an instance.");
+                return INTERPRET_RUNTIME_ERR;
+            }
             write_table(inst.instance->classc->fields, READ_CONSTANT().arena, el);
             POP();
             break;
@@ -744,7 +762,6 @@ Interpretation run(void)
             break;
         case OP_GET_NATIVE:
             PUSH((machine.native_calls + READ_BYTE())->as);
-            // PUSH(GET_NATIVE(READ_CONSTANT().arena));
             break;
         case OP_CLASS:
             PPUSH(INSTANCE(READ_CONSTANT().instance));
@@ -764,8 +781,20 @@ Interpretation run(void)
             PUSH(TABLE(GROW_TABLE(NULL, POP().arena.as.Int)));
             break;
         case OP_GET_GLOBAL:
-            PUSH(FIND_GLOB(READ_CONSTANT().arena));
-            break;
+        {
+
+            Arena var = READ_CONSTANT().arena;
+            Element el = FIND_GLOB(var);
+
+            if (el.type != NULL_OBJ)
+            {
+                PUSH(el);
+                break;
+            }
+
+            runtime_error("ERROR: Undefined property '%s'.", var.as.String);
+            return INTERPRET_RUNTIME_ERR;
+        }
         case OP_SET_GLOBAL:
         case OP_GLOBAL_DEF:
         {

@@ -36,7 +36,7 @@ static Arena add_arena_size(size_t size, Arena ar)
 
     default:
         log_err("ERROR: addition type mismatch\n");
-        return ar;
+        exit(1);
     }
 }
 static Arena sub_arena_size(size_t size, Arena ar)
@@ -56,8 +56,8 @@ static Arena sub_arena_size(size_t size, Arena ar)
 
     default:
         log_err("ERROR: subtraction type mismatch\n");
+        exit(1);
     }
-    return ar;
 }
 static Arena mul_arena_size(size_t size, Arena ar)
 {
@@ -76,7 +76,7 @@ static Arena mul_arena_size(size_t size, Arena ar)
 
     default:
         log_err("ERROR: multiplication type mismatch\n");
-        return ar;
+        exit(1);
     }
 }
 static Arena div_arena_size(size_t size, Arena ar)
@@ -105,7 +105,7 @@ static Arena div_arena_size(size_t size, Arena ar)
         return Size(size / ar.as.Size);
     default:
         log_err("ERROR: division type mismatch\n");
-        return ar;
+        exit(1);
     }
 ERR:
     log_err("ERROR: divide by zero\n");
@@ -128,8 +128,9 @@ static Arena mod_arena_size(size_t size, Arena ar)
         return Size(size % ar.as.Size);
     default:
         log_err("ERROR: modulo type mismatch\n");
-        return ar;
+        exit(1);
     }
+    return Null();
 }
 
 static Arena add_arena_char(char ch, Arena ar)
@@ -153,8 +154,10 @@ static Arena add_arena_char(char ch, Arena ar)
     case ARENA_SIZE:
         return Num(ch + ar.as.Size);
     default:
-        return ar;
+        log_err("ERROR: addition type mismatch\n");
+        exit(1);
     }
+    return Null();
 }
 static Arena sub_arena_char(char ch, Arena ar)
 {
@@ -177,6 +180,7 @@ static Arena sub_arena_char(char ch, Arena ar)
         return (test > 0) ? Char((char)test) : Num(test);
     default:
         log_err("ERROR: subtraction type mismatch\n");
+        exit(1);
     }
     return ar;
 }
@@ -199,6 +203,7 @@ static Arena mul_arena_char(char ch, Arena ar)
         break;
     default:
         log_err("ERROR: multiplication type mismatch\n");
+        exit(1);
     }
     return ar;
 }
@@ -228,6 +233,7 @@ static Arena div_arena_char(char ch, Arena ar)
         return Double((double)ch / ar.as.Size);
     default:
         log_err("ERROR: division type mismatch\n");
+        exit(1);
     }
 ERR:
     log_err("ERROR: divide by zero\n");
@@ -248,6 +254,7 @@ static Arena mod_arena_char(char ch, Arena ar)
         return Num(ch % ar.as.Size);
     default:
         log_err("ERROR: modulo type mismatch\n");
+        exit(1);
     }
     return ar;
 }
@@ -271,6 +278,7 @@ static Arena add_arena_int(int ival, Arena ar)
         return Num((long long int)ival + ar.as.Size);
     default:
         log_err("ERROR: addition type mismatch\n");
+        exit(1);
     }
     return ar;
 }
@@ -290,6 +298,7 @@ static Arena sub_arena_int(int ival, Arena ar)
         return Num(ival - ar.as.Size);
     default:
         log_err("ERROR: subtraction type mismatch\n");
+        exit(1);
     }
     return ar;
 }
@@ -309,6 +318,7 @@ static Arena mul_arena_int(int ival, Arena ar)
         return Num(ival * ar.as.Size);
     default:
         log_err("ERROR: multiplication type mismatch\n");
+        exit(1);
     }
     return ar;
 }
@@ -338,6 +348,7 @@ static Arena div_arena_int(int ival, Arena ar)
         return Double((double)ival / ar.as.Size);
     default:
         log_err("ERROR: division type mismatch\n");
+        exit(1);
     }
 ERR:
     log_err("ERROR: divide by zero\n");
@@ -358,6 +369,7 @@ static Arena mod_arena_int(int ival, Arena ar)
         return Int(ival % ar.as.Size);
     default:
         log_err("ERROR: modulo type mismatch\n");
+        exit(1);
     }
     return ar;
 }
@@ -381,6 +393,7 @@ static Arena add_arena_long(long long int llint, Arena ar)
         return Num(llint + ar.as.Size);
     default:
         log_err("ERROR: subtraction type mismatch\n");
+        exit(1);
     }
     return ar;
 }
@@ -401,6 +414,7 @@ static Arena sub_arena_long(long long int llint, Arena ar)
         return Long(llint - ar.as.Size);
     default:
         log_err("ERROR: subtraction type mismatch\n");
+        exit(1);
     }
     return ar;
 }
@@ -420,7 +434,7 @@ static Arena mul_arena_long(long long int llint, Arena ar)
         return Long(llint * ar.as.Size);
     default:
         log_err("ERROR: multiplication type mismatch\n");
-        return Null();
+        exit(1);
     }
     return ar;
 }
@@ -448,7 +462,7 @@ static Arena div_arena_long(long long int llint, Arena ar)
         return Double((double)llint / ar.as.Size);
     default:
         log_err("ERROR: division type mismatch\n");
-        return Null();
+        exit(1);
     }
 ERR:
     log_err("ERROR: divide by zero\n");
@@ -468,7 +482,7 @@ static Arena mod_arena_long(long long int llint, Arena ar)
         return Long(llint % ar.as.Size);
     default:
         log_err("ERROR: modulo type mismatch\n");
-        return ar;
+        exit(1);
     }
 }
 
@@ -488,7 +502,7 @@ static Arena add_arena_double(double dval, Arena ar)
         return Double(dval + ar.as.Size);
     default:
         log_err("ERROR: addition type mismatch\n");
-        return ar;
+        exit(1);
     }
 }
 static Arena sub_arena_double(double dval, Arena ar)
@@ -507,7 +521,7 @@ static Arena sub_arena_double(double dval, Arena ar)
         return Double(dval - ar.as.Size);
     default:
         log_err("ERROR: subtraction type mismatch\n");
-        return ar;
+        exit(1);
     }
 }
 static Arena mul_arena_double(double dval, Arena ar)
@@ -527,6 +541,7 @@ static Arena mul_arena_double(double dval, Arena ar)
 
     default:
         log_err("ERROR: multiplication type mismatch\n");
+        exit(1);
     }
     return ar;
 }
@@ -556,7 +571,7 @@ static Arena div_arena_double(double dval, Arena ar)
         return Double(dval / ar.as.Size);
     default:
         log_err("ERROR: division type mismatch\n");
-        return ar;
+        exit(1);
     }
 ERR:
     log_err("ERROR: divide by zero\n");
@@ -582,6 +597,7 @@ static Arena char_eq(char ch, Arena ar)
         return Bool(ch == (int)ar.as.Size);
     default:
         log_err("ERROR: comparison type mismatch\n");
+        exit(1);
     }
     return Bool(false);
 }
@@ -603,6 +619,7 @@ static Arena char_ne(char ch, Arena ar)
         return Bool(ch != (int)ar.as.Size);
     default:
         log_err("ERROR: comparison type mismatch\n");
+        exit(1);
     }
     return Bool(false);
 }
@@ -622,7 +639,7 @@ static Arena char_lt(char ch, Arena ar)
         return Bool(ch < (int)ar.as.Size);
     default:
         log_err("ERROR: comparison type mismatch");
-        return Bool(false);
+        exit(1);
     }
 }
 static Arena char_le(char ch, Arena ar)
@@ -642,7 +659,7 @@ static Arena char_le(char ch, Arena ar)
 
     default:
         log_err("ERROR: comparison type mismatch");
-        return Bool(false);
+        exit(1);
     }
 }
 static Arena char_gt(char ch, Arena ar)
@@ -661,7 +678,7 @@ static Arena char_gt(char ch, Arena ar)
         return Bool(ch > (int)ar.as.Size);
     default:
         log_err("ERROR: comparison type mismatch");
-        return Bool(false);
+        exit(1);
     }
 }
 static Arena char_ge(char ch, Arena ar)
@@ -680,7 +697,7 @@ static Arena char_ge(char ch, Arena ar)
         return Bool(ch >= (int)ar.as.Size);
     default:
         log_err("ERROR: comparison type mismatch");
-        return Bool(false);
+        exit(1);
     }
 }
 
@@ -703,7 +720,7 @@ static Arena int_eq(int ival, Arena ar)
         return Bool(ival == (int)ar.as.Size);
     default:
         log_err("ERROR: comparison type mismatch");
-        return Bool(false);
+        exit(1);
     }
 }
 static Arena int_ne(int ival, Arena ar)
@@ -725,7 +742,7 @@ static Arena int_ne(int ival, Arena ar)
         return Bool(ival != (int)ar.as.Size);
     default:
         log_err("ERROR: comparison type mismatch");
-        return Bool(false);
+        exit(1);
     }
 }
 static Arena int_lt(int ival, Arena ar)
@@ -743,7 +760,8 @@ static Arena int_lt(int ival, Arena ar)
     case ARENA_SIZE:
         return Bool(ival < (int)ar.as.Size);
     default:
-        return Bool(false);
+        log_err("ERROR: comparison type mismatch");
+        exit(1);
     }
 }
 static Arena int_le(int ival, Arena ar)
@@ -763,7 +781,7 @@ static Arena int_le(int ival, Arena ar)
 
     default:
         log_err("ERROR: comparison type mismatch");
-        return Bool(false);
+        exit(1);
     }
 }
 static Arena int_gt(int ival, Arena ar)
@@ -782,7 +800,7 @@ static Arena int_gt(int ival, Arena ar)
         return Bool(ival > (int)ar.as.Size);
     default:
         log_err("ERROR: comparison type mismatch");
-        return Bool(false);
+        exit(1);
     }
 }
 static Arena int_ge(int ival, Arena ar)
@@ -801,7 +819,7 @@ static Arena int_ge(int ival, Arena ar)
         return Bool(ival >= (int)ar.as.Size);
     default:
         log_err("ERROR: comparison type mismatch");
-        return Bool(false);
+        exit(1);
     }
 }
 
@@ -824,7 +842,7 @@ static Arena long_eq(long long int llint, Arena ar)
         return Bool(llint == (int)ar.as.Size);
     default:
         log_err("ERROR: comparison type mismatch");
-        return Bool(false);
+        exit(1);
     }
 }
 static Arena long_ne(long long int llint, Arena ar)
@@ -846,7 +864,7 @@ static Arena long_ne(long long int llint, Arena ar)
         return Bool(llint != (int)ar.as.Size);
     default:
         log_err("ERROR: comparison type mismatch");
-        return Bool(false);
+        exit(1);
     }
 }
 static Arena long_lt(long long int llint, Arena ar)
@@ -865,7 +883,7 @@ static Arena long_lt(long long int llint, Arena ar)
         return Bool(llint < (int)ar.as.Size);
     default:
         log_err("ERROR: comparison type mismatch");
-        return Bool(false);
+        exit(1);
     }
 }
 static Arena long_le(long long int llint, Arena ar)
@@ -885,7 +903,7 @@ static Arena long_le(long long int llint, Arena ar)
 
     default:
         log_err("ERROR: comparison type mismatch");
-        return Bool(false);
+        exit(1);
     }
 }
 static Arena long_gt(long long int llint, Arena ar)
@@ -904,7 +922,7 @@ static Arena long_gt(long long int llint, Arena ar)
         return Bool(llint > (int)ar.as.Size);
     default:
         log_err("ERROR: comparison type mismatch");
-        return Bool(false);
+        exit(1);
     }
 }
 static Arena long_ge(long long int llint, Arena ar)
@@ -924,7 +942,7 @@ static Arena long_ge(long long int llint, Arena ar)
         return Bool(llint >= (int)ar.as.Size);
     default:
         log_err("ERROR: comparison type mismatch");
-        return Bool(false);
+        exit(1);
     }
 }
 
@@ -944,7 +962,7 @@ static Arena double_eq(double dval, Arena ar)
         return Bool(dval == (int)ar.as.Size);
     default:
         log_err("ERROR: comparison type mismatch");
-        return Bool(false);
+        exit(1);
     }
 }
 static Arena double_ne(double dval, Arena ar)
@@ -963,7 +981,7 @@ static Arena double_ne(double dval, Arena ar)
         return Bool(dval != (int)ar.as.Size);
     default:
         log_err("ERROR: comparison type mismatch");
-        return Bool(false);
+        exit(1);
     }
 }
 static Arena double_lt(double dval, Arena ar)
@@ -982,7 +1000,8 @@ static Arena double_lt(double dval, Arena ar)
         return Bool(dval < (int)ar.as.Size);
 
     default:
-        return Bool(false);
+        log_err("ERROR: comparison type mismatch");
+        exit(1);
     }
 }
 static Arena double_le(double dval, Arena ar)
@@ -1000,6 +1019,8 @@ static Arena double_le(double dval, Arena ar)
     case ARENA_SIZE:
         return Bool(dval <= (int)ar.as.Size);
     default:
+        log_err("ERROR: comparison type mismatch");
+        exit(1);
         return Bool(false);
     }
 }
@@ -1018,6 +1039,8 @@ static Arena double_gt(double dval, Arena ar)
     case ARENA_SIZE:
         return Bool(dval > (int)ar.as.Size);
     default:
+        log_err("ERROR: comparison type mismatch");
+        exit(1);
         return Bool(false);
     }
 }
@@ -1036,6 +1059,8 @@ static Arena double_ge(double dval, Arena ar)
     case ARENA_SIZE:
         return Bool(dval >= (int)ar.as.Size);
     default:
+        log_err("ERROR: comparison type mismatch");
+        exit(1);
         return Bool(false);
     }
 }
@@ -1055,6 +1080,8 @@ static Arena size_eq(size_t size, Arena ar)
     case ARENA_SIZE:
         return Bool(size == ar.as.Size);
     default:
+        log_err("ERROR: comparison type mismatch");
+        exit(1);
         return Bool(false);
     }
 }
@@ -1073,6 +1100,8 @@ static Arena size_ne(size_t size, Arena ar)
     case ARENA_SIZE:
         return Bool(size != ar.as.Size);
     default:
+        log_err("ERROR: comparison type mismatch");
+        exit(1);
         return Bool(false);
     }
 }
@@ -1091,6 +1120,8 @@ static Arena size_lt(size_t size, Arena ar)
     case ARENA_SIZE:
         return Bool(size < ar.as.Size);
     default:
+        log_err("ERROR: comparison type mismatch");
+        exit(1);
         return Bool(false);
     }
 }
@@ -1109,6 +1140,8 @@ static Arena size_le(size_t size, Arena ar)
     case ARENA_SIZE:
         return Bool(size <= ar.as.Size);
     default:
+        log_err("ERROR: comparison type mismatch");
+        exit(1);
         return Bool(false);
     }
 }
@@ -1128,6 +1161,8 @@ static Arena size_gt(size_t size, Arena ar)
     case ARENA_SIZE:
         return Bool(size > ar.as.Size);
     default:
+        log_err("ERROR: comparison type mismatch");
+        exit(1);
         return Bool(false);
     }
 }
@@ -1146,6 +1181,8 @@ static Arena size_ge(size_t size, Arena ar)
     case ARENA_SIZE:
         return Bool(size >= ar.as.Size);
     default:
+        log_err("ERROR: comparison type mismatch");
+        exit(1);
         return Bool(false);
     }
 }
@@ -1176,6 +1213,7 @@ static Arena _access_ints(int *Ints, Arena a, int len)
         return Int(Ints[a.as.Size]);
     default:
         log_err("Invalid indexing type.");
+        exit(1);
         return Null();
     }
 
@@ -1209,6 +1247,7 @@ static Arena _access_longs(long long int *Longs, Arena a, int len)
         return Long(Longs[a.as.Size]);
     default:
         log_err("Invalid indexing type.");
+        exit(1);
         return Null();
     }
 
@@ -1243,6 +1282,7 @@ static Arena _access_doubles(double *Doubles, Arena a, int len)
         return Double(Doubles[a.as.Size]);
     default:
         log_err("Invalid indexing type.");
+        exit(1);
         return Null();
     }
 ERR:
@@ -1275,6 +1315,7 @@ static Arena _access_string(char *String, Arena a, int len)
         return Char(String[a.as.Size]);
     default:
         log_err("Invalid indexing type.");
+        exit(1);
         return Null();
     }
 ERR:
@@ -1307,6 +1348,7 @@ static Arena _access_strings(char **Strings, Arena a, int len)
         return CString(Strings[a.as.Size]);
     default:
         log_err("Invalid indexing type.");
+        exit(1);
         return Null();
     }
 ERR:
@@ -1340,6 +1382,7 @@ static Arena _access_arena(Arena *vect, Arena index, int len)
         return vect[(int)index.as.Size];
     default:
         log_err("Invalid indexing type.");
+        exit(1);
         return Null();
     }
 ERR:
@@ -1372,7 +1415,7 @@ static Element _access_stack(Stack *vect, Arena index, int len)
         return vect[(int)index.as.Size].as;
     default:
         log_err("Invalid indexing type.");
-        return null_obj();
+        exit(1);
     }
 ERR:
     log_err("ERROR: Array index out of bounds.");
@@ -1423,6 +1466,7 @@ static void _set_int_index(Arena *Ints, Arena index, int Int)
         return;
     default:
         log_err("Invalid indexing type.");
+        exit(1);
     }
 ERR:
     log_err("ERROR: Array index out of bounds.");
@@ -1472,6 +1516,7 @@ static void _set_long_index(Arena *Longs, Arena index, long long int Long)
         return;
     default:
         log_err("Invalid indexing type.");
+        exit(1);
     }
 ERR:
     log_err("ERROR: Array index out of bounds.");
@@ -1521,6 +1566,7 @@ static void _set_double_index(Arena *Doubles, Arena index, double Double)
         return;
     default:
         log_err("Invalid indexing type.");
+        exit(1);
     }
 ERR:
     log_err("ERROR: Array index out of bounds.");
@@ -1570,6 +1616,7 @@ static void _set_string_index(Arena *String, Arena index, char Char)
         return;
     default:
         log_err("Invalid indexing type.");
+        exit(1);
     }
 ERR:
     log_err("ERROR: Array index out of bounds.");
@@ -1619,6 +1666,7 @@ static void _set_strings_index(Arena *Strings, Arena index, char *String)
         return;
     default:
         log_err("Invalid indexing type.");
+        exit(1);
     }
 ERR:
     log_err("ERROR: Array index out of bounds.");
@@ -1668,6 +1716,7 @@ static void _set_stack_index(Stack **vect, Arena index, Element val)
         return;
     default:
         log_err("Invalid indexing type.");
+        exit(1);
     }
 ERR:
     log_err("ERROR: Array index out of bounds.");
@@ -1718,6 +1767,7 @@ static void _set_arena_index(Arena **vect, Arena index, Arena val)
         return;
     default:
         log_err("Invalid indexing type.");
+        exit(1);
     }
 ERR:
     log_err("ERROR: Array index out of bounds.");
@@ -2208,7 +2258,7 @@ Element _get_access(Element a, Element b)
     default:
     ERR:
         log_err("ERROR: access type mismatch.");
-        return OBJ(Null());
+        return null_obj();
     }
 }
 void _set_access(Element val, Arena index, Element b)
@@ -2268,6 +2318,7 @@ void _set_access(Element val, Arena index, Element b)
     default:
     ERR:
         log_err("ERROR: access type mismatch.");
+        exit(1);
     }
 }
 
@@ -2315,7 +2366,7 @@ Element _push_array_val(Element val, Element el)
         return el;
     default:
     ERR:
-        log_err("ERROR: push type mismatch.");
+        log_err("ERROR: pushing to invalid data structure.");
         return null_obj();
     }
 }
@@ -2350,7 +2401,6 @@ Element _pop_array_val(Element val)
         return (--val.stack->top)->as;
     default:
     ERR:
-        log_err("ERROR: push type mismatch.");
         return null_obj();
     }
 }

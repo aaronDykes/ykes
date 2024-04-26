@@ -1642,13 +1642,6 @@ static void id(Compiler *c)
         return;
     }
 
-    // if ((arg = resolve_native(c, &ar) != -1))
-    // {
-    //     parse_native_var_arg(c, arg);
-    //     // emit_bytes(c, OP_GET_NATIVE, (uint8_t)arg);
-    //     return;
-    // }
-
     if ((arg = resolve_instance(c, ar)) != -1)
     {
         c->base->current_instance = arg;
