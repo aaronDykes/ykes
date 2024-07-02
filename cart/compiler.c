@@ -1934,9 +1934,9 @@ Function *compile(const char *src)
 
     Function *f = end_compile(&c);
 
-    FREE(PTR(c.base->calls - 1));
-    FREE(PTR(c.base->classes - 1));
-    FREE(PTR(c.base->init_func.as.String));
+    FREE((c.base->calls - 1));
+    FREE((c.base->classes - 1));
+    FREE((c.base->init_func.as.String));
 
     return c.parser.err ? NULL : f;
 }
@@ -1982,11 +1982,11 @@ Function *compile_path(const char *src, const char *path, const char *name)
 
     Function *f = end_compile(&c);
 
-    FREE(PTR(c.parser.current_file));
-    FREE(PTR((c.base->calls - 1)));
-    FREE(PTR((c.base->natives - 1)));
-    FREE(PTR((c.base->classes - 1)));
-    FREE(PTR((c.base->init_func.as.String)));
+    FREE((char *)(c.parser.current_file));
+    FREE(((c.base->calls - 1)));
+    FREE(((c.base->natives - 1)));
+    FREE(((c.base->classes - 1)));
+    FREE(((c.base->init_func.as.String)));
 
     return c.parser.err ? NULL : f;
 }

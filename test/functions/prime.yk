@@ -4,7 +4,9 @@ class Prime
     {
         if (l == 9) 
             return false;
-        for (var i = 2; i < square(l); i++)
+        var n = square(l);
+
+        for (var i = 2; i < n; i++)
             if (l % i == 0)
                 return false;
         return true;
@@ -22,7 +24,7 @@ class Prime
     res()
     {
         var start = clock();
-        this.print_prime(100000);
+        this.print_prime(1000000);
         pout(clock() - start);
     }
 

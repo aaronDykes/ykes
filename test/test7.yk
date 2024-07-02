@@ -1,18 +1,10 @@
-var okay=69420;
-var str=69;
-var okay=69420;
-var str=69;
-var okay=69420;
-var str=69;
-var okay=69420;
-var str=69;
-var okay=69420;
-var str=69;
-var okay=69420;
-var str=69;
-var okay=69420;
-var str=69;
-var okay=69420;
-var str=69;
-var okay=69420;
-var str=69;
+
+sr fun()
+{
+    for (var i = 0; i < 10000; i++)
+        pout(i);
+}
+
+var start = clock();
+fun();
+pout(clock() - start);

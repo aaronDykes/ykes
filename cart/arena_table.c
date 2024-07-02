@@ -390,7 +390,7 @@ Table *arena_realloc_table(Table *t, size_t size)
             insert_entry(&ptr, new_entry(*tab));
     }
 
-    FREE(PTR((t - 1)));
+    FREE(((t - 1)));
     --t;
     t = NULL;
     return ptr;
@@ -436,7 +436,7 @@ OVERWRITE:
 Table *arena_alloc_table(size_t size)
 {
     Table *t = NULL;
-    t = ALLOC((size * sizeof(Table)) + OFFSET);
+    t = ALLOC((size * sizeof(Table)) + sizeof(Table));
 
     size_t n = (size_t)size + 1;
 

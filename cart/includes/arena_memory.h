@@ -9,10 +9,10 @@
 #define FRAMES_MAX 500
 #define CAPACITY 64
 #define INC 2
-#define PAGE 16384
+#define ARM64_PAGE 16384
 #define PAGE_COUNT 16
 #define INIT_GLOBAL \
-    (PAGE * PAGE_COUNT)
+    (ARM64_PAGE * PAGE_COUNT)
 #define STACK_SIZE 64
 #define MIN_SIZE 8
 #define NATIVE_STACK_SIZE 32
@@ -23,13 +23,13 @@
 #define OFFSET sizeof(Free)
 
 #define ALLOC(size) \
-    alloc_ptr(size + OFFSET)
+    _malloc_(size + OFFSET)
 
 #define PTR(ptr) \
     (((Free *)ptr) - 1)
 
 #define FREE(ptr) \
-    free_ptr(ptr)
+    _free_(ptr)
 
 #define GROW_CAPACITY(capacity) \
     ((capacity) < CAPACITY ? CAPACITY : capacity * INC)
@@ -123,8 +123,8 @@ Arena *arena_alloc_arena(size_t size);
 Arena *arena_realloc_arena(Arena *ar, size_t size);
 void arena_free_arena(Arena *ar);
 
-void *alloc_ptr(size_t size);
-void free_ptr(Free *new);
+void *_malloc_(size_t size);
+void _free_(void *new);
 void free_garbage(Free **new);
 
 Arena arena_init(void *data, size_t size, T type);

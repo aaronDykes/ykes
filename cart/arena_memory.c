@@ -17,34 +17,30 @@ static void *request_system_memory(size_t size)
             POSIX_MADV_NORMAL |
             POSIX_MADV_WILLNEED |
             MAP_PRIVATE |
-#if !defined(_POSIX_C_SOURCE) || defined(_DARWIN_C_SOURCE)
-            MAP_ANON,
-#endif
+            MAP_ANONYMOUS,
         -1, 0);
 }
 void initialize_global_memory(void)
 {
 
-    mem = request_system_memory(OFFSET + (OFFSET * PAGE));
+    mem = request_system_memory(ARM64_PAGE);
     mem->size = OFFSET;
-    mem->next = mem + OFFSET;
-    mem->next->size = PAGE;
-    mem->next->next = NULL;
+    mem->next = NULL;
 }
 
 void destroy_global_memory(void)
 {
 
-    mem = mem->next;
-    mem->size += OFFSET;
-
+    Free *tmp = NULL;
     while (mem)
     {
 
-        Free *tmp = mem->next;
+        tmp = mem->next;
         munmap(mem, mem->size);
         mem = tmp;
     }
+    tmp = NULL;
+    mem = NULL;
 }
 
 Arena arena_init(void *data, size_t size, T type)
@@ -153,7 +149,7 @@ void arena_free(Arena *ar)
         return;
     }
 
-    FREE(PTR(new));
+    FREE(new);
     ar = NULL;
 }
 
@@ -161,11 +157,11 @@ static void merge_list(void)
 {
 
     Free *prev = NULL;
-    for (Free *free = mem->next; free; free = free->next)
+    for (Free *free = mem; free; free = free->next)
     {
 
         prev = free;
-        if (free->next && ((unsigned long)free + OFFSET + free->size) == (unsigned long)free->next)
+        if (free->next && ((char *)free + OFFSET + free->size) == (char *)free->next)
         {
             prev->size += free->next->size;
             prev->next = free->next->next;
@@ -173,78 +169,85 @@ static void merge_list(void)
     }
 }
 
-void free_ptr(Free *new)
+void _free_(void *new)
 {
 
-    if (!new)
+    Free *ptr = NULL;
+    ptr = PTR(new);
+
+    if (!ptr)
         return;
-    if (new->size == 0)
+    if (ptr->size == 0)
         return;
 
     Free *free = NULL, *prev = NULL;
 
-    for (free = mem->next; free->next && (((unsigned long)free < (unsigned long)new)); free = free->next)
+    for (free = mem; free->next && free < ptr; free = free->next)
         prev = free->next;
 
-    if (free && free < new)
+    if (free && free < ptr)
     {
-        new->next = free->next;
-        free->next = new;
+        ptr->next = free->next;
+        free->next = ptr;
     }
-    else if (prev && prev < new)
+    else if (prev && prev < ptr)
     {
-        new->next = prev->next;
-        prev->next = new;
+        ptr->next = prev->next;
+        prev->next = ptr;
     }
 
     merge_list();
+    ptr = NULL;
     new = NULL;
     prev = NULL;
     free = NULL;
 }
 
-void *alloc_ptr(size_t size)
+void *init_alloced_ptr(void *ptr, size_t size)
+{
+    Free *alloced = NULL;
+    alloced = ptr;
+    alloced->size = size - OFFSET;
+    alloced->next = NULL;
+    return 1 + alloced;
+}
+void init_free_ptr(Free **ptr, size_t alloc_size, size_t size)
+{
+    (*ptr)->next = request_system_memory(alloc_size);
+    (*ptr)->next->size = alloc_size - size - OFFSET;
+    (*ptr)->next->next = NULL;
+}
+
+void *_malloc_(size_t size)
 {
 
     Free *prev = NULL;
     Free *free = NULL;
     Free *alloced = NULL;
 
-    for (free = mem->next; free && free->size < size; free = free->next)
+    for (free = mem; free && free->size < size; free = free->next)
         prev = free;
 
     if (free && free->size >= size)
     {
 
-        size_t tmp = free->size - size;
-        alloced = free + tmp;
-        alloced->size = tmp - OFFSET;
-        alloced += 1;
+        free->size -= size;
 
-        free->size = tmp;
-
-        if (prev && tmp == 0)
+        if (prev && free->size == 0)
             prev->next = free->next;
-        else if (!prev && tmp == 0)
+        else if (!prev && free->size == 0)
             mem->next = free->next;
 
-        return alloced;
+        return init_alloced_ptr((char *)(free + 1) + free->size, size);
     }
 
     if (prev)
     {
-        size_t tmp = PAGE;
+        size_t tmp = ARM64_PAGE;
         while (size > tmp)
             tmp *= INC;
-
-        prev->next = request_system_memory(tmp * OFFSET);
-        prev->next->size = tmp - size;
-
-        alloced = prev->next + prev->next->size;
-        alloced->size = prev->next->size - OFFSET;
-        alloced += 1;
-
-        return alloced;
+        init_free_ptr(&prev, tmp, size);
+        return init_alloced_ptr((char *)(prev->next + 1) + prev->next->size, size);
     }
 
     return NULL;
@@ -292,7 +295,7 @@ Arena *arena_realloc_arena(Arena *ar, size_t size)
 
     (ptr - 1)->count = (ar - 1)->count;
 
-    FREE(PTR((ar - 1)));
+    FREE((ar - 1));
     --ar;
     ar = NULL;
     return ptr;
@@ -305,7 +308,7 @@ void arena_free_arena(Arena *ar)
 
     if ((ar - 1)->count == 0)
     {
-        FREE(PTR((ar - 1)));
+        FREE((ar - 1));
         --ar;
         ar = NULL;
         return;
@@ -330,7 +333,7 @@ void arena_free_arena(Arena *ar)
             return;
         }
 
-    FREE(PTR(((ar - 1))));
+    FREE(((ar - 1)));
     --ar;
     ar = NULL;
 }
@@ -719,7 +722,7 @@ void free_class(Class *c)
 
     ARENA_FREE(&c->name);
     arena_free_table(c->fields);
-    FREE(PTR(c));
+    FREE(c);
 }
 
 Instance *instance(Class *classc)
@@ -731,7 +734,7 @@ Instance *instance(Class *classc)
 }
 void free_instance(Instance *ic)
 {
-    FREE(PTR(ic));
+    FREE(ic);
     ic = NULL;
 }
 
@@ -774,7 +777,7 @@ Stack *realloc_stack(Stack *st, size_t size)
     s->count = st->count;
     s->top = s;
     s->top += s->count;
-    FREE(PTR((st - 1)));
+    FREE((st - 1));
     --st;
     st = NULL;
     return s;
@@ -788,7 +791,7 @@ void free_stack(Stack **stack)
 
     if (((*stack) - 1)->count == 0)
     {
-        FREE(PTR(((*stack) - 1)));
+        FREE(((*stack) - 1));
         stack = NULL;
         return;
     }
@@ -823,7 +826,7 @@ void free_stack(Stack **stack)
         default:
             break;
         }
-    FREE(PTR(((*stack) - 1)));
+    FREE(((*stack) - 1));
     stack = NULL;
 }
 
@@ -852,8 +855,8 @@ void free_upvals(Upval **up)
     for (size_t i = 0; i < ((*up) - 1)->size; i++)
         (*up)[i].index = NULL;
 
-    FREE(PTR(((*up) - 1)));
-    FREE(PTR((up - 1)));
+    FREE(((*up) - 1));
+    FREE((up - 1));
     --up;
     up = NULL;
 }
@@ -957,7 +960,7 @@ void free_function(Function *func)
         FREE_ARRAY(&func->name);
     free_chunk(&func->ch);
 
-    FREE(PTR(func));
+    FREE(func);
     func = NULL;
 }
 
@@ -977,7 +980,7 @@ void free_native(Native *native)
         return;
 
     ARENA_FREE(&native->obj);
-    FREE(PTR(native));
+    FREE(native);
     native = NULL;
 }
 Closure *new_closure(Function *func)
@@ -1005,7 +1008,7 @@ void free_closure(Closure **closure)
         return;
 
     FREE_UPVALS((*closure)->upvals);
-    FREE(PTR(closure));
+    FREE(closure);
     (*closure) = NULL;
     closure = NULL;
 }
@@ -1070,7 +1073,7 @@ void arena_free_table(Table *t)
 
     if ((t - 1)->count == 0)
     {
-        FREE(PTR((t - 1)));
+        FREE(((t - 1)));
         --t;
         t = NULL;
         return;
@@ -1078,7 +1081,7 @@ void arena_free_table(Table *t)
     for (size_t i = 0; i < size; i++)
         FREE_TABLE_ENTRY(&t[i]);
 
-    FREE(PTR((t - 1)));
+    FREE(((t - 1)));
     --t;
     t = NULL;
 }

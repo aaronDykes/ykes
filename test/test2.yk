@@ -1,6 +1,7 @@
-import "test1.yk";
+import "./test1.yk";
 
 
-tables();
+var t = Tables();
+t.tables();
 
  

@@ -7,7 +7,7 @@
 #define CALL_COUNT 255
 #define CLASS_COUNT 50
 #define CWD_MAX 1024
-#define PTR_SIZE(X) sizeof(X) / sizeof(X[0])
+#define _SIZE(X) sizeof(X) / sizeof(X[0])
 
 struct Parser
 {
