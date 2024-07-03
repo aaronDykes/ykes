@@ -323,21 +323,6 @@ static void close_upvalues(stack *local)
         machine.open_upvals = up->next;
     }
 }
-closure *traverse_stack_closure(arena *ar)
-{
-    for (stack *s = machine.call_stack->top - 1; s >= machine.call_stack; s--)
-        if (s->as.closure->func->name.as.hash == ar->as.hash)
-            return s->as.closure;
-    return NULL;
-}
-
-native *traverse_stack_native(arena *ar)
-{
-    for (stack *s = machine.native_calls->top - 1; s >= machine.native_calls; s--)
-        if (s->as.native->obj.as.hash == ar->as.hash)
-            return s->as.native;
-    return NULL;
-}
 
 static void free_asterisk(element el)
 {
@@ -845,7 +830,7 @@ Interpretation run(void)
                 POP();
                 return INTERPRET_SUCCESS;
             }
-            for (stack *s = machine.stack; s < machine.stack->top; s++)
+            for (stack *s = frame->slots; s < machine.stack->top; s++)
                 POP();
 
             machine.stack->top = frame->slots;
