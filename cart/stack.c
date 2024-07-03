@@ -4,17 +4,18 @@
 void write_chunk(chunk *c, uint8_t byte, int line)
 {
 
+    size_t size = 0;
     if (c->op_codes.len < c->op_codes.count + 1)
     {
 
-        c->op_codes.len = GROW_CAPACITY(c->op_codes.len);
-        c->op_codes = GROW_ARENA(&c->op_codes, c->op_codes.len * sizeof(uint8_t), ARENA_BYTES);
+        size = c->op_codes.size * INC;
+        c->op_codes = GROW_ARENA(&c->op_codes, size * sizeof(uint8_t), ARENA_BYTES);
     }
 
     if (c->lines.len < c->lines.count + 1)
     {
-        c->lines.len = GROW_CAPACITY(c->lines.len);
-        c->lines = GROW_ARENA(&c->lines, c->lines.len * sizeof(int), ARENA_INTS);
+        size = c->lines.size * INC;
+        c->lines = GROW_ARENA(&c->lines, size * sizeof(int), ARENA_INTS);
     }
 
     c->lines.listof.Ints[c->lines.count++] = line;

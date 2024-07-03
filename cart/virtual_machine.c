@@ -18,9 +18,9 @@ void initVM(void)
     machine.glob = NULL;
 
     machine.stack = GROW_STACK(NULL, STACK_SIZE);
-    machine.call_stack = GROW_STACK(NULL, STACK_SIZE);
-    machine.class_stack = GROW_STACK(NULL, STACK_SIZE);
-    machine.native_calls = GROW_STACK(NULL, STACK_SIZE);
+    machine.call_stack = GROW_STACK(NULL, MIN_SIZE);
+    machine.class_stack = GROW_STACK(NULL, MIN_SIZE);
+    machine.native_calls = GROW_STACK(NULL, MIN_SIZE);
     machine.glob = GROW_TABLE(NULL, STACK_SIZE);
 
     machine.argc = 0;
@@ -344,10 +344,10 @@ static void free_asterisk(element el)
     switch (el.type)
     {
     case ARENA:
-        if (el._arena.type == ARENA_VAR)
-            delete_entry(&machine.glob, el._arena);
-        else
-            ARENA_FREE(&el._arena);
+        // if (el._arena.type == ARENA_VAR)
+        //     delete_entry(&machine.glob, el._arena);
+        // else
+        ARENA_FREE(&el._arena);
         break;
     case SCRIPT:
     case CLOSURE:
@@ -778,10 +778,10 @@ Interpretation run(void)
         {
             instance *ic = NULL;
             ic = _instance((machine.class_stack + READ_BYTE())->as.classc);
-            ic->fields = GROW_TABLE(NULL, STACK_SIZE);
+            ic->fields = GROW_TABLE(ic->classc->closures, STACK_SIZE);
             PUSH(INSTANCE(ic));
-            break;
         }
+        break;
         case OP_RM:
             RM();
             break;

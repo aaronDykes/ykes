@@ -1,6 +1,7 @@
 #include "arena_table.h"
+#include "table_util.h"
 
-void insert_entry(table **t, table entry)
+static void insert_entry(table **t, table entry)
 {
     table *tmp = *t;
     size_t index = entry.key.as.hash & ((tmp - 1)->len - 1);
@@ -24,7 +25,7 @@ void insert_entry(table **t, table entry)
 
     if (el.type == NULL_OBJ)
     {
-        ALLOC_ENTRY(&tmp[index].next, entry);
+        alloc_entry(&tmp[index].next, entry);
         return;
     }
 
@@ -38,7 +39,7 @@ END:
     ptr->val = entry.val;
 }
 
-void delete_entry(table **t, arena key)
+static void delete_entry(table **t, arena key)
 {
     table *a = NULL;
     a = *t;
@@ -157,7 +158,7 @@ element find_entry(table **t, arena *hash)
     return null_;
 }
 
-void alloc_entry(table **e, table el)
+static void alloc_entry(table **e, table el)
 {
     table *tmp = NULL;
     tmp = *e;
@@ -203,6 +204,8 @@ table new_entry(table t)
     }
     el.next = NULL;
     el.prev = NULL;
+    el.next = t.next;
+    el.prev = t.prev;
     el.type = t.type;
     return el;
 }
@@ -243,7 +246,18 @@ table arena_entry(arena key, arena val)
     el.type = ARENA;
     return el;
 }
-table func_entry(closure *clos)
+static table null_entry()
+{
+    table el;
+    el.key = Null();
+    el.val = null_obj();
+    el.next = NULL;
+    el.prev = NULL;
+    el.size = 0;
+    el.type = NULL_OBJ;
+    return el;
+}
+static table func_entry(closure *clos)
 {
     table el;
     el.key = clos->func->name;
@@ -254,7 +268,7 @@ table func_entry(closure *clos)
     el.type = CLOSURE;
     return el;
 }
-table native_entry(native *func)
+static table native_entry(native *func)
 {
     table el;
     el.key = func->obj;
@@ -265,7 +279,7 @@ table native_entry(native *func)
     el.type = NATIVE;
     return el;
 }
-table class_entry(class *c)
+static table class_entry(class *c)
 {
     table el;
     el.key = c->name;
@@ -276,7 +290,7 @@ table class_entry(class *c)
     el.type = CLASS;
     return el;
 }
-table instance_entry(arena ar, instance *c)
+static table instance_entry(arena ar, instance *c)
 {
     table el;
     el.key = ar;
@@ -288,7 +302,7 @@ table instance_entry(arena ar, instance *c)
     return el;
 }
 
-table table_entry(arena ar, table *t)
+static table table_entry(arena ar, table *t)
 {
     table el;
     el.key = ar;
@@ -299,7 +313,7 @@ table table_entry(arena ar, table *t)
     el.type = TABLE;
     return el;
 }
-table vector_entry(arena ar, arena *arena_vector)
+static table vector_entry(arena ar, arena *arena_vector)
 {
     table el;
     el.key = ar;
@@ -310,7 +324,7 @@ table vector_entry(arena ar, arena *arena_vector)
     el.type = VECTOR;
     return el;
 }
-table stack_entry(arena ar, stack *s)
+static table stack_entry(arena ar, stack *s)
 {
     table el;
     el.key = ar;
@@ -339,22 +353,14 @@ table *realloc_table(table *t, size_t size)
         t = NULL;
         return NULL;
     }
-    size_t new_size = 0;
 
-    if (size > (t - 1)->size)
-        new_size = (t - 1)->size;
-    else
-        new_size = size;
+    size_t new_size =
+        (size > (t - 1)->size) ? (t - 1)->size : size;
 
     ptr = alloc_table(size);
 
     for (size_t i = 0; i < new_size; i++)
-    {
         ptr[i] = new_entry(t[i]);
-
-        for (table *tab = t[i].next; tab; tab = tab->next)
-            insert_entry(&ptr, new_entry(*tab));
-    }
 
     FREE(t - 1);
     --t;
@@ -407,7 +413,7 @@ table *alloc_table(size_t size)
     size_t n = (size_t)size + 1;
 
     for (size_t i = 1; i < n; i++)
-        t[i] = arena_entry(Null(), Null());
+        t[i] = null_entry();
 
     t->size = n;
     t->len = (int)size;

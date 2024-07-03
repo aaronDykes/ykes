@@ -96,7 +96,8 @@ void *init_alloced_ptr(void *ptr, size_t size)
     alloced = ptr;
     alloced->size = size - OFFSET;
     alloced->next = NULL;
-    return 1 + alloced;
+
+    return memset(1 + alloced, 0, size - OFFSET);
 }
 void init_free_ptr(_free **ptr, size_t alloc_size, size_t size)
 {
@@ -139,6 +140,11 @@ void *_malloc_(size_t size)
     return NULL;
 }
 
+void *_calloc_(int val, size_t size)
+{
+    return memset(ALLOC(size), val, size);
+}
+
 void *_realloc_(void *ptr, size_t old_size, size_t size)
 {
 
@@ -156,9 +162,11 @@ void *_realloc_(void *ptr, size_t old_size, size_t size)
     }
 
     void *alloced = NULL;
-    alloced = ALLOC(size);
+    alloced = CALLOC(0, size);
 
-    memcpy(alloced, ptr, size);
+    size_t new_size = (size < old_size) ? size : old_size;
+
+    memcpy(alloced, ptr, new_size);
     FREE(ptr);
 
     return alloced;

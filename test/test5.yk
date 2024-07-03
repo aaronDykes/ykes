@@ -4,7 +4,7 @@ import "test1.yk";
 
     
 
-var hello = stack();
+var hello = Stack();
 
 hello.push("hello world!");
 hello.push("Another vector!");

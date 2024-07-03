@@ -184,6 +184,8 @@ arena arena_realloc(arena *ar, size_t size, T type)
     default:
         return Null();
     }
+    ar->len *= INC;
+    ar->size *= INC;
 
     return *ar;
 }

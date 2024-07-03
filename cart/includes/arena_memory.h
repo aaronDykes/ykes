@@ -26,8 +26,6 @@
 #define ARENA_FREE(ar) \
     arena_free(ar)
 
-#define ALLOC_ENTRY(a, b) \
-    alloc_entry(a, b)
 #define FREE_TABLE_ENTRY(ar) \
     free_entry(ar)
 
@@ -110,7 +108,6 @@ native *_native(NativeFn native, arena ar);
 void free_native(native *nat);
 
 void free_table(table *t);
-void alloc_entry(table **e, table el);
 void free_entry(table *entry);
 
 class *_class(arena name);

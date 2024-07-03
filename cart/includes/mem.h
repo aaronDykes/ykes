@@ -9,6 +9,9 @@
 #define REALLOC(ptr, old_size, size) \
     _realloc_(ptr, old_size, size)
 
+#define CALLOC(val, size) \
+    _calloc_(val, size)
+
 #define FREE(ptr) \
     _free_(ptr)
 
@@ -38,6 +41,7 @@ void destroy_global_memory(void);
 
 void *_malloc_(size_t size);
 void *_realloc_(void *ptr, size_t old_size, size_t size);
+void *_calloc_(int val, size_t size);
 void _free_(void *new);
 
 #endif

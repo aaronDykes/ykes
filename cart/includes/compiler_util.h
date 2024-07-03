@@ -117,17 +117,20 @@ struct compiler_stack
 
 struct compiler
 {
-
     counter count;
     current array;
-    hash_ref _hash_ref;
+
     meta meta;
+    hash_ref _hash_ref;
     lookup lookup;
-    compiler_stack stack;
+
     parser parser;
     function *func;
+
     compiler *base;
     compiler *enclosing;
+
+    compiler_stack stack;
     class_compiler *class_compiler;
 };
 
