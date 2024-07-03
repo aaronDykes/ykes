@@ -96,7 +96,6 @@ void *init_alloced_ptr(void *ptr, size_t size)
     alloced = ptr;
     alloced->size = size - OFFSET;
     alloced->next = NULL;
-    memset(alloced, 0, alloced->size);
     return 1 + alloced;
 }
 void init_free_ptr(_free **ptr, size_t alloc_size, size_t size)
@@ -159,7 +158,6 @@ void *_realloc_(void *ptr, size_t old_size, size_t size)
     void *alloced = NULL;
     alloced = ALLOC(size);
 
-    memset(alloced, 0, size);
     memcpy(alloced, ptr, size);
     FREE(ptr);
 

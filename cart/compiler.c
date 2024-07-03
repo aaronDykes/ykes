@@ -32,17 +32,17 @@ static void init_compiler(compiler *a, compiler *b, ObjType type, arena name)
     a->lookup.class = NULL;
     a->lookup.include = NULL;
 
-    a->ykes.class_compiler = NULL;
-    a->ykes.func = NULL;
-    a->ykes.func = _function(name);
+    a->class_compiler = NULL;
+    a->func = NULL;
+    a->func = _function(name);
 
     if (b)
     {
-        a->ykes.base = b->ykes.base;
-        a->ykes.parser = b->ykes.parser;
-        a->ykes.enclosing = b;
+        a->base = b->base;
+        a->parser = b->parser;
+        a->enclosing = b;
         a->count.scope = b->count.scope;
-        a->ykes.class_compiler = b->ykes.class_compiler;
+        a->class_compiler = b->class_compiler;
 
         _local = &b->stack.local[b->count.local++];
     }
@@ -112,7 +112,7 @@ static char *read_file(const char *path)
 static bool resolve_include(compiler *c, arena ar)
 {
 
-    element el = find_entry(&c->ykes.base->lookup.include, &ar);
+    element el = find_entry(&c->base->lookup.include, &ar);
 
     if (el.type != NULL_OBJ)
         return true;
@@ -151,29 +151,29 @@ static void include_file(compiler *c)
 
     if (c->meta.type != SCRIPT)
     {
-        error("Can only include files at top level.", &c->ykes.parser);
+        error("Can only include files at top level.", &c->parser);
         exit(1);
     }
 
     char *remaining = NULL;
 
-    consume(TOKEN_STR, "Expect file path.", &c->ykes.parser);
+    consume(TOKEN_STR, "Expect file path.", &c->parser);
     arena inc = CString(parse_string(c));
 
     if (resolve_include(c, inc))
     {
-        error("Double include.", &c->ykes.parser);
+        error("Double include.", &c->parser);
         exit(1);
     }
 
-    write_table(c->ykes.base->lookup.include, inc, OBJ(inc));
+    write_table(c->base->lookup.include, inc, OBJ(inc));
 
-    consume(TOKEN_CH_SEMI, "Expect `;` at end of include statement.", &c->ykes.parser);
-    remaining = (char *)c->ykes.parser.cur.start;
+    consume(TOKEN_CH_SEMI, "Expect `;` at end of include statement.", &c->parser);
+    remaining = (char *)c->parser.cur.start;
 
     char path[CWD_MAX] = {0};
 
-    str_cop(path, (char *)c->ykes.base->meta.cwd);
+    str_cop(path, (char *)c->base->meta.cwd);
     strcat(path, inc.as.String);
 
     char *file = read_file(path);
@@ -187,9 +187,9 @@ static void include_file(compiler *c)
 
     strcat(result.as.String, remaining);
     init_scanner(result.as.String);
-    c->ykes.parser.cur = scan_token();
+    c->parser.cur = scan_token();
 
-    c->ykes.parser.current_file = get_name(inc.as.String);
+    c->parser.current_file = get_name(inc.as.String);
 
 #undef SIZE
 }
@@ -197,56 +197,56 @@ static void include_file(compiler *c)
 static void declaration(compiler *c)
 {
 
-    if (match(TOKEN_INCLUDE, &c->ykes.parser))
+    if (match(TOKEN_INCLUDE, &c->parser))
         include_file(c);
-    else if (match(TOKEN_FUNC, &c->ykes.parser))
+    else if (match(TOKEN_FUNC, &c->parser))
         func_declaration(c);
-    else if (match(TOKEN_CLASS, &c->ykes.parser))
+    else if (match(TOKEN_CLASS, &c->parser))
         class_declaration(c);
-    else if (match(TOKEN_VAR, &c->ykes.parser))
+    else if (match(TOKEN_VAR, &c->parser))
         var_dec(c);
     else
         statement(c);
 
-    if (c->ykes.parser.panic)
-        synchronize(&c->ykes.parser);
+    if (c->parser.panic)
+        synchronize(&c->parser);
 }
 
 static void class_declaration(compiler *c)
 {
-    consume(TOKEN_ID, "ERROR: Expect class name.", &c->ykes.parser);
+    consume(TOKEN_ID, "ERROR: Expect class name.", &c->parser);
 
     arena ar = parse_id(c);
     class *classc = _class(ar);
     classc->closures = GROW_TABLE(NULL, STACK_SIZE);
     class_compiler *cc = ALLOC(sizeof(class_compiler));
 
-    write_table(c->ykes.base->lookup.class, classc->name, OBJ(Int(c->ykes.base->count.class ++)));
-    c->ykes.base->stack.instance[c->ykes.base->count.class - 1] = classc;
+    write_table(c->base->lookup.class, classc->name, OBJ(Int(c->base->count.class ++)));
+    c->base->stack.instance[c->base->count.class - 1] = classc;
     cc->instance_name = ar;
 
-    cc->enclosing = c->ykes.class_compiler;
-    c->ykes.class_compiler = cc;
+    cc->enclosing = c->class_compiler;
+    c->class_compiler = cc;
 
-    emit_bytes(c, OP_CLASS, add_constant(&c->ykes.func->ch, CLASS(classc)));
+    emit_bytes(c, OP_CLASS, add_constant(&c->func->ch, CLASS(classc)));
 
-    consume(TOKEN_CH_LCURL, "ERROR: Expect ze `{` curl brace", &c->ykes.parser);
+    consume(TOKEN_CH_LCURL, "ERROR: Expect ze `{` curl brace", &c->parser);
 
-    while (!check(TOKEN_CH_RCURL, &c->ykes.parser) && !check(TOKEN_EOF, &c->ykes.parser))
+    while (!check(TOKEN_CH_RCURL, &c->parser) && !check(TOKEN_EOF, &c->parser))
         method(c, classc);
 
-    consume(TOKEN_CH_RCURL, "ERROR: Expect ze `}` curl brace", &c->ykes.parser);
-    c->ykes.class_compiler = c->ykes.class_compiler->enclosing;
+    consume(TOKEN_CH_RCURL, "ERROR: Expect ze `}` curl brace", &c->parser);
+    c->class_compiler = c->class_compiler->enclosing;
 }
 
 static void method(compiler *c, class *class)
 {
-    consume(TOKEN_ID, "ERROR: Expect method identifier.", &c->ykes.parser);
+    consume(TOKEN_ID, "ERROR: Expect method identifier.", &c->parser);
     arena ar = parse_func_id(c);
 
     ObjType type = INIT;
 
-    if (ar.as.hash != c->ykes.base->_hash_ref.init.as.hash)
+    if (ar.as.hash != c->base->_hash_ref.init.as.hash)
         type = METHOD;
 
     method_body(c, type, ar, &class);
@@ -259,18 +259,18 @@ static void method_body(compiler *c, ObjType type, arena ar, class **class)
 
     c = &co;
     begin_scope(c);
-    consume(TOKEN_CH_LPAREN, "Expect `(` after function name.", &c->ykes.parser);
-    if (!check(TOKEN_CH_RPAREN, &c->ykes.parser))
+    consume(TOKEN_CH_LPAREN, "Expect `(` after function name.", &c->parser);
+    if (!check(TOKEN_CH_RPAREN, &c->parser))
         do
         {
-            c->ykes.func->arity++;
-            if (c->ykes.func->arity > 255)
-                current_err("Cannot declare more than 255 function parameters", &c->ykes.parser);
+            c->func->arity++;
+            if (c->func->arity > 255)
+                current_err("Cannot declare more than 255 function parameters", &c->parser);
             func_var(c);
 
-        } while (match(TOKEN_CH_COMMA, &c->ykes.parser));
-    consume(TOKEN_CH_RPAREN, "Expect `)` after function parameters.", &c->ykes.parser);
-    consume(TOKEN_CH_LCURL, "Expect `{` prior to function body.", &c->ykes.parser);
+        } while (match(TOKEN_CH_COMMA, &c->parser));
+    consume(TOKEN_CH_RPAREN, "Expect `)` after function parameters.", &c->parser);
+    consume(TOKEN_CH_LCURL, "Expect `{` prior to function body.", &c->parser);
 
     parse_block(c);
 
@@ -286,11 +286,11 @@ static void method_body(compiler *c, ObjType type, arena ar, class **class)
     if (type == INIT)
         (*class)->init = clos;
 
-    c = c->ykes.enclosing;
+    c = c->enclosing;
 
     emit_bytes(
         c, OP_METHOD,
-        add_constant(&c->ykes.func->ch, CLOSURE(clos)));
+        add_constant(&c->func->ch, CLOSURE(clos)));
 
     for (int i = 0; i < tmp->count.upvalue; i++)
     {
@@ -309,26 +309,26 @@ static int argument_list(compiler *c)
 {
     uint8_t argc = 0;
 
-    if (match(TOKEN_CH_RPAREN, &c->ykes.parser))
+    if (match(TOKEN_CH_RPAREN, &c->parser))
         return 0;
     do
     {
         expression(c);
         if (argc == 255)
-            current_err("Cannot pass more than 255 function parameters", &c->ykes.parser);
+            current_err("Cannot pass more than 255 function parameters", &c->parser);
         argc++;
 
-    } while (match(TOKEN_CH_COMMA, &c->ykes.parser));
-    consume(TOKEN_CH_RPAREN, "Expect `)` after function args", &c->ykes.parser);
+    } while (match(TOKEN_CH_COMMA, &c->parser));
+    consume(TOKEN_CH_RPAREN, "Expect `)` after function args", &c->parser);
     return argc;
 }
 
 static void func_declaration(compiler *c)
 {
-    consume(TOKEN_ID, "Expect function name.", &c->ykes.parser);
+    consume(TOKEN_ID, "Expect function name.", &c->parser);
     arena ar = parse_func_id(c);
 
-    write_table(c->ykes.base->lookup.call, ar, OBJ(Int(c->ykes.base->count.call++)));
+    write_table(c->base->lookup.call, ar, OBJ(Int(c->base->count.call++)));
     func_body(c, CLOSURE, ar);
 }
 
@@ -339,18 +339,18 @@ static void func_body(compiler *c, ObjType type, arena ar)
 
     c = &co;
     begin_scope(c);
-    consume(TOKEN_CH_LPAREN, "Expect `(` after function name.", &c->ykes.parser);
-    if (!check(TOKEN_CH_RPAREN, &c->ykes.parser))
+    consume(TOKEN_CH_LPAREN, "Expect `(` after function name.", &c->parser);
+    if (!check(TOKEN_CH_RPAREN, &c->parser))
         do
         {
-            c->ykes.func->arity++;
-            if (c->ykes.func->arity > 255)
-                current_err("Cannot declare more than 255 function parameters", &c->ykes.parser);
+            c->func->arity++;
+            if (c->func->arity > 255)
+                current_err("Cannot declare more than 255 function parameters", &c->parser);
             func_var(c);
 
-        } while (match(TOKEN_CH_COMMA, &c->ykes.parser));
-    consume(TOKEN_CH_RPAREN, "Expect `)` after function parameters.", &c->ykes.parser);
-    consume(TOKEN_CH_LCURL, "Expect `{` prior to function body.", &c->ykes.parser);
+        } while (match(TOKEN_CH_COMMA, &c->parser));
+    consume(TOKEN_CH_RPAREN, "Expect `)` after function parameters.", &c->parser);
+    consume(TOKEN_CH_LCURL, "Expect `{` prior to function body.", &c->parser);
 
     parse_block(c);
 
@@ -360,11 +360,11 @@ static void func_body(compiler *c, ObjType type, arena ar)
     closure *clos = _closure(f);
     end_scope(c);
 
-    c = c->ykes.enclosing;
+    c = c->enclosing;
 
     emit_bytes(
         c, OP_CLOSURE,
-        add_constant(&c->ykes.func->ch, CLOSURE(clos)));
+        add_constant(&c->func->ch, CLOSURE(clos)));
 
     for (int i = 0; i < tmp->count.upvalue; i++)
     {
@@ -375,7 +375,7 @@ static void func_body(compiler *c, ObjType type, arena ar)
 
 static void func_var(compiler *c)
 {
-    consume(TOKEN_ID, "Expect variable name.", &c->ykes.parser);
+    consume(TOKEN_ID, "Expect variable name.", &c->parser);
 
     arena ar = parse_id(c);
 
@@ -393,7 +393,7 @@ static void func_var(compiler *c)
 
 static void var_dec(compiler *c)
 {
-    consume(TOKEN_ID, "Expect variable name.", &c->ykes.parser);
+    consume(TOKEN_ID, "Expect variable name.", &c->parser);
 
     arena ar = parse_id(c);
     int glob = parse_var(c, ar);
@@ -407,19 +407,19 @@ static void var_dec(compiler *c)
         set = OP_SET_LOCAL;
     }
 
-    if (match(TOKEN_OP_ASSIGN, &c->ykes.parser))
+    if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
         expression(c);
-        if (match(TOKEN_CH_TERNARY, &c->ykes.parser))
+        if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
-        else if (match(TOKEN_CH_NULL_COALESCING, &c->ykes.parser))
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
         emit_bytes(c, set, (uint8_t)glob);
     }
     else
         emit_byte(c, OP_NULL);
 
-    consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->ykes.parser);
+    consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
 }
 
 static void synchronize(parser *parser)
@@ -449,34 +449,34 @@ static void synchronize(parser *parser)
 static void statement(compiler *c)
 {
 
-    if (match(TOKEN_PRINT, &c->ykes.parser))
+    if (match(TOKEN_PRINT, &c->parser))
         print_statement(c);
-    else if (match(TOKEN_OP_REM, &c->ykes.parser))
+    else if (match(TOKEN_OP_REM, &c->parser))
         rm_statement(c);
-    else if (match(TOKEN_IF, &c->ykes.parser))
+    else if (match(TOKEN_IF, &c->parser))
         if_statement(c);
-    else if (match(TOKEN_WHILE, &c->ykes.parser))
+    else if (match(TOKEN_WHILE, &c->parser))
         while_statement(c);
-    else if (match(TOKEN_FOR, &c->ykes.parser))
+    else if (match(TOKEN_FOR, &c->parser))
         for_statement(c);
-    else if (match(TOKEN_SWITCH, &c->ykes.parser))
+    else if (match(TOKEN_SWITCH, &c->parser))
         switch_statement(c);
-    else if (match(TOKEN_CH_LCURL, &c->ykes.parser))
+    else if (match(TOKEN_CH_LCURL, &c->parser))
         block(c);
-    else if (match(TOKEN_EACH, &c->ykes.parser))
+    else if (match(TOKEN_EACH, &c->parser))
         each_statement(c);
-    else if (match(TOKEN_RETURN, &c->ykes.parser))
+    else if (match(TOKEN_RETURN, &c->parser))
         return_statement(c);
-    else if (is_comment(&c->ykes.parser))
-        advance_compiler(&c->ykes.parser);
+    else if (is_comment(&c->parser))
+        advance_compiler(&c->parser);
     else
         default_expression(c);
 }
 
 static void rm_statement(compiler *c)
 {
-    consume(TOKEN_CH_LPAREN, "Expect `(` prior to rm expression.", &c->ykes.parser);
-    if (match(TOKEN_ID, &c->ykes.parser))
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to rm expression.", &c->parser);
+    if (match(TOKEN_ID, &c->parser))
         ;
 
     arena ar = parse_id(c);
@@ -489,13 +489,13 @@ static void rm_statement(compiler *c)
         get = OP_GET_UPVALUE;
     else
     {
-        arg = add_constant(&c->ykes.func->ch, OBJ(ar));
+        arg = add_constant(&c->func->ch, OBJ(ar));
         get = OP_GET_GLOBAL;
     }
     emit_bytes(c, get, (uint8_t)arg);
     emit_byte(c, OP_RM);
-    consume(TOKEN_CH_RPAREN, "Expect `)` after rm statement", &c->ykes.parser);
-    consume(TOKEN_CH_SEMI, "Expect `;` at end of statement", &c->ykes.parser);
+    consume(TOKEN_CH_RPAREN, "Expect `)` after rm statement", &c->parser);
+    consume(TOKEN_CH_SEMI, "Expect `;` at end of statement", &c->parser);
 }
 
 static inline bool is_comment(parser *parser)
@@ -506,32 +506,32 @@ static inline bool is_comment(parser *parser)
 static void for_statement(compiler *c)
 {
     begin_scope(c);
-    consume(TOKEN_CH_LPAREN, "Expect `(` after to 'for'.", &c->ykes.parser);
-    if (!match(TOKEN_CH_SEMI, &c->ykes.parser))
+    consume(TOKEN_CH_LPAREN, "Expect `(` after to 'for'.", &c->parser);
+    if (!match(TOKEN_CH_SEMI, &c->parser))
     {
-        if (match(TOKEN_VAR, &c->ykes.parser))
+        if (match(TOKEN_VAR, &c->parser))
             var_dec(c);
         else
             id(c);
     }
 
-    int start = c->ykes.func->ch.op_codes.count;
+    int start = c->func->ch.op_codes.count;
     int exit = -1;
-    if (!match(TOKEN_CH_SEMI, &c->ykes.parser))
+    if (!match(TOKEN_CH_SEMI, &c->parser))
     {
         expression(c);
-        consume(TOKEN_CH_SEMI, "Expect `;` after 'for' condition.", &c->ykes.parser);
+        consume(TOKEN_CH_SEMI, "Expect `;` after 'for' condition.", &c->parser);
         exit = emit_jump(c, OP_JMPF);
         emit_byte(c, OP_POP);
     }
-    if (!match(TOKEN_CH_RPAREN, &c->ykes.parser))
+    if (!match(TOKEN_CH_RPAREN, &c->parser))
     {
         int body_jump = emit_jump(c, OP_JMP);
-        int inc_start = c->ykes.func->ch.op_codes.count;
+        int inc_start = c->func->ch.op_codes.count;
 
         expression(c);
         emit_byte(c, OP_POP);
-        consume(TOKEN_CH_RPAREN, "Expect `)` after 'for' statement.", &c->ykes.parser);
+        consume(TOKEN_CH_RPAREN, "Expect `)` after 'for' statement.", &c->parser);
 
         emit_loop(c, start);
         start = inc_start;
@@ -552,11 +552,11 @@ static void for_statement(compiler *c)
 
 static void while_statement(compiler *c)
 {
-    int start = c->ykes.func->ch.op_codes.count;
+    int start = c->func->ch.op_codes.count;
 
-    consume(TOKEN_CH_LPAREN, "Expect `(` after 'while'.", &c->ykes.parser);
+    consume(TOKEN_CH_LPAREN, "Expect `(` after 'while'.", &c->parser);
     expression(c);
-    consume(TOKEN_CH_RPAREN, "Expect `)` after 'while' condition.", &c->ykes.parser);
+    consume(TOKEN_CH_RPAREN, "Expect `)` after 'while' condition.", &c->parser);
 
     int exit_jmp = emit_jump(c, OP_JMPF);
     emit_byte(c, OP_POP);
@@ -574,20 +574,20 @@ static void each_statement(compiler *c)
 {
     emit_byte(c, OP_RESET_ARGC);
 
-    consume(TOKEN_CH_LPAREN, "Expect `(` prior to each expression.", &c->ykes.parser);
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to each expression.", &c->parser);
 
     arena ar;
     int glob = 0;
     uint8_t set = 0;
 
-    if (match(TOKEN_VAR, &c->ykes.parser))
+    if (match(TOKEN_VAR, &c->parser))
     {
-        consume(TOKEN_ID, "Expect identifier after var keyword", &c->ykes.parser);
+        consume(TOKEN_ID, "Expect identifier after var keyword", &c->parser);
         ar = parse_id(c);
         glob = parse_var(c, ar);
     }
     else
-        error("Expect variable declaration at start of each expression", &c->ykes.parser);
+        error("Expect variable declaration at start of each expression", &c->parser);
 
     if (glob != -1)
         set = OP_SET_GLOBAL;
@@ -598,9 +598,9 @@ static void each_statement(compiler *c)
         glob = resolve_local(c, &ar);
         set = OP_SET_LOCAL;
     }
-    consume(TOKEN_CH_COLON, "Expect `:` between variable declaration and identifier", &c->ykes.parser);
+    consume(TOKEN_CH_COLON, "Expect `:` between variable declaration and identifier", &c->parser);
 
-    int start = c->ykes.func->ch.op_codes.count;
+    int start = c->func->ch.op_codes.count;
 
     id(c);
     emit_byte(c, OP_EACH_ACCESS);
@@ -608,7 +608,7 @@ static void each_statement(compiler *c)
 
     emit_bytes(c, set, (uint8_t)glob);
 
-    consume(TOKEN_CH_RPAREN, "Expect `)` following an each expression.", &c->ykes.parser);
+    consume(TOKEN_CH_RPAREN, "Expect `)` following an each expression.", &c->parser);
 
     statement(c);
     emit_loop(c, start);
@@ -618,42 +618,42 @@ static void each_statement(compiler *c)
 
 static void consume_if(compiler *c)
 {
-    consume(TOKEN_CH_LPAREN, "Expect `(` after an 'if'.", &c->ykes.parser);
+    consume(TOKEN_CH_LPAREN, "Expect `(` after an 'if'.", &c->parser);
     expression(c);
-    consume(TOKEN_CH_RPAREN, "Expect `)` after an 'if' condtion.", &c->ykes.parser);
+    consume(TOKEN_CH_RPAREN, "Expect `)` after an 'if' condtion.", &c->parser);
 }
 static void consume_elif(compiler *c)
 {
-    consume(TOKEN_CH_LPAREN, "Expect `(` after an 'elif'.", &c->ykes.parser);
+    consume(TOKEN_CH_LPAREN, "Expect `(` after an 'elif'.", &c->parser);
     expression(c);
-    consume(TOKEN_CH_RPAREN, "Expect `)` after an 'elif' condtion.", &c->ykes.parser);
+    consume(TOKEN_CH_RPAREN, "Expect `)` after an 'elif' condtion.", &c->parser);
 }
 
 static arena consume_switch(compiler *c)
 {
-    consume(TOKEN_CH_LPAREN, "Expect `(` after a 'switch'.", &c->ykes.parser);
+    consume(TOKEN_CH_LPAREN, "Expect `(` after a 'switch'.", &c->parser);
     arena args = get_id(c);
-    consume(TOKEN_CH_RPAREN, "Expect `)` after a 'switch' condtion.", &c->ykes.parser);
+    consume(TOKEN_CH_RPAREN, "Expect `)` after a 'switch' condtion.", &c->parser);
     return args;
 }
 
 static void switch_statement(compiler *c)
 {
     arena args = consume_switch(c);
-    bool expect = match(TOKEN_CH_LCURL, &c->ykes.parser);
+    bool expect = match(TOKEN_CH_LCURL, &c->parser);
 
     case_statement(c, args);
 
-    if (match(TOKEN_DEFAULT, &c->ykes.parser))
+    if (match(TOKEN_DEFAULT, &c->parser))
     {
-        consume(TOKEN_CH_COLON, "Expect `:` prior to case body.", &c->ykes.parser);
+        consume(TOKEN_CH_COLON, "Expect `:` prior to case body.", &c->parser);
         statement(c);
     }
     if (expect)
-        consume(TOKEN_CH_RCURL, "Expect `}` after switch body", &c->ykes.parser);
+        consume(TOKEN_CH_RCURL, "Expect `}` after switch body", &c->parser);
 
-    element el = OBJ(c->ykes.func->ch.cases);
-    push_int(&el, c->ykes.func->ch.op_codes.count);
+    element el = OBJ(c->func->ch.cases);
+    push_int(&el, c->func->ch.op_codes.count);
 }
 
 static void case_statement(compiler *c, arena args)
@@ -661,22 +661,22 @@ static void case_statement(compiler *c, arena args)
     uint8_t get = args.listof.Ints[1];
     uint8_t arg = args.listof.Ints[0];
 
-    while (match(TOKEN_CASE, &c->ykes.parser))
+    while (match(TOKEN_CASE, &c->parser))
     {
         expression(c);
-        consume(TOKEN_CH_COLON, "Expect `:` prior to case body.", &c->ykes.parser);
+        consume(TOKEN_CH_COLON, "Expect `:` prior to case body.", &c->parser);
         emit_bytes(c, get, (uint8_t)arg);
         emit_byte(c, OP_SEQ);
 
         int tr = emit_jump_long(c, OP_JMPC);
-        int begin = c->ykes.func->ch.op_codes.count;
+        int begin = c->func->ch.op_codes.count;
         emit_byte(c, OP_POP);
         statement(c);
         emit_byte(c, OP_JMPL);
         emit_bytes(
             c,
-            (c->ykes.func->ch.cases.count >> 8) & 0xFF,
-            (c->ykes.func->ch.cases.count & 0xFF));
+            (c->func->ch.cases.count >> 8) & 0xFF,
+            (c->func->ch.cases.count & 0xFF));
         patch_jump_long(c, begin, tr);
     }
 
@@ -699,28 +699,28 @@ static void if_statement(compiler *c)
 
     elif_statement(c);
 
-    if (match(TOKEN_ELSE, &c->ykes.parser))
+    if (match(TOKEN_ELSE, &c->parser))
         statement(c);
 
-    element el = OBJ(c->ykes.func->ch.cases);
-    push_int(&el, c->ykes.func->ch.op_codes.count);
+    element el = OBJ(c->func->ch.cases);
+    push_int(&el, c->func->ch.op_codes.count);
     patch_jump(c, exit);
 }
 
 static void elif_statement(compiler *c)
 {
-    while (match(TOKEN_ELIF, &c->ykes.parser))
+    while (match(TOKEN_ELIF, &c->parser))
     {
         consume_elif(c);
         int tr = emit_jump_long(c, OP_JMPC);
-        int begin = c->ykes.func->ch.op_codes.count;
+        int begin = c->func->ch.op_codes.count;
         emit_byte(c, OP_POP);
         statement(c);
         emit_byte(c, OP_JMPL);
         emit_bytes(
             c,
-            (c->ykes.func->ch.cases.count >> 8) & 0xFF,
-            (c->ykes.func->ch.cases.count & 0xFF));
+            (c->func->ch.cases.count >> 8) & 0xFF,
+            (c->func->ch.cases.count & 0xFF));
         patch_jump_long(c, begin, tr);
     }
 }
@@ -730,7 +730,7 @@ static void ternary_statement(compiler *c)
     int exit = emit_jump(c, OP_JMPF);
     emit_byte(c, OP_POP);
     expression(c);
-    consume(TOKEN_CH_COLON, "Expect `:` between ternary expressions.", &c->ykes.parser);
+    consume(TOKEN_CH_COLON, "Expect `:` between ternary expressions.", &c->parser);
     int tr = emit_jump(c, OP_JMP);
     patch_jump(c, exit);
     emit_byte(c, OP_POP);
@@ -749,16 +749,16 @@ static void null_coalescing_statement(compiler *c)
 static void return_statement(compiler *c)
 {
     if (c->meta.type == SCRIPT)
-        error("ERROR: Unable to return from top of script.", &c->ykes.parser);
+        error("ERROR: Unable to return from top of script.", &c->parser);
 
-    else if (match(TOKEN_CH_SEMI, &c->ykes.parser))
+    else if (match(TOKEN_CH_SEMI, &c->parser))
         emit_return(c);
     else
     {
         if (c->meta.type == INIT)
-            error("ERROR: Unable to return value from initializer.", &c->ykes.parser);
+            error("ERROR: Unable to return value from initializer.", &c->parser);
         expression(c);
-        consume(TOKEN_CH_SEMI, "ERROR: Expect semi colon after return statement.", &c->ykes.parser);
+        consume(TOKEN_CH_SEMI, "ERROR: Expect semi colon after return statement.", &c->parser);
         emit_byte(c, OP_RETURN);
     }
 }
@@ -767,38 +767,38 @@ static void patch_jump_long(compiler *c, int count, int offset)
 {
 
     int j1 = count - offset - 4;
-    int j2 = (c->ykes.func->ch.op_codes.count) - offset - 4;
+    int j2 = (c->func->ch.op_codes.count) - offset - 4;
 
     if (j1 >= INT16_MAX)
-        error("ERROR: To great a distance ", &c->ykes.parser);
+        error("ERROR: To great a distance ", &c->parser);
 
-    c->ykes.func->ch.op_codes.listof.Bytes[offset] = (uint8_t)((j2 >> 8) & 0xFF);
-    c->ykes.func->ch.op_codes.listof.Bytes[offset + 1] = (uint8_t)(j2 & 0xFF);
+    c->func->ch.op_codes.listof.Bytes[offset] = (uint8_t)((j2 >> 8) & 0xFF);
+    c->func->ch.op_codes.listof.Bytes[offset + 1] = (uint8_t)(j2 & 0xFF);
 
-    c->ykes.func->ch.op_codes.listof.Bytes[offset + 2] = (uint8_t)((j1 >> 8) & 0xFF);
-    c->ykes.func->ch.op_codes.listof.Bytes[offset + 3] = (uint8_t)(j1 & 0xFF);
+    c->func->ch.op_codes.listof.Bytes[offset + 2] = (uint8_t)((j1 >> 8) & 0xFF);
+    c->func->ch.op_codes.listof.Bytes[offset + 3] = (uint8_t)(j1 & 0xFF);
 }
 
 static void patch_jump(compiler *c, int offset)
 {
 
-    int jump = c->ykes.func->ch.op_codes.count - offset - 2;
+    int jump = c->func->ch.op_codes.count - offset - 2;
 
     if (jump >= INT16_MAX)
-        error("ERROR: To great a distance ", &c->ykes.parser);
+        error("ERROR: To great a distance ", &c->parser);
 
-    c->ykes.func->ch.op_codes.listof.Bytes[offset] = (uint8_t)((jump >> 8) & 0xFF);
-    c->ykes.func->ch.op_codes.listof.Bytes[offset + 1] = (uint8_t)(jump & 0xFF);
+    c->func->ch.op_codes.listof.Bytes[offset] = (uint8_t)((jump >> 8) & 0xFF);
+    c->func->ch.op_codes.listof.Bytes[offset + 1] = (uint8_t)(jump & 0xFF);
 }
 
 static void emit_loop(compiler *c, int byte)
 {
     emit_byte(c, OP_LOOP);
 
-    int offset = c->ykes.func->ch.op_codes.count - byte + 2;
+    int offset = c->func->ch.op_codes.count - byte + 2;
 
     if (offset > UINT16_MAX)
-        error("ERROR: big boi loop", &c->ykes.parser);
+        error("ERROR: big boi loop", &c->parser);
 
     emit_bytes(c, (offset >> 8) & 0xFF, offset & 0xFF);
 }
@@ -808,41 +808,41 @@ static int emit_jump_long(compiler *c, int byte)
     emit_bytes(c, 0xFF, 0xFF);
     emit_bytes(c, 0xFF, 0xFF);
 
-    return c->ykes.func->ch.op_codes.count - 4;
+    return c->func->ch.op_codes.count - 4;
 }
 static int emit_jump(compiler *c, int byte)
 {
     emit_byte(c, byte);
     emit_bytes(c, 0xFF, 0xFF);
 
-    return c->ykes.func->ch.op_codes.count - 2;
+    return c->func->ch.op_codes.count - 2;
 }
 
 static void default_expression(compiler *c)
 {
     expression(c);
-    consume(TOKEN_CH_SEMI, "Expect `;` after expression.", &c->ykes.parser);
+    consume(TOKEN_CH_SEMI, "Expect `;` after expression.", &c->parser);
     emit_byte(c, OP_POP);
 }
 
 static void print_statement(compiler *c)
 {
-    consume(TOKEN_CH_LPAREN, "Expect `(` prior to print expression", &c->ykes.parser);
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to print expression", &c->parser);
     do
     {
         expression(c);
-        if (match(TOKEN_CH_TERNARY, &c->ykes.parser))
+        if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
-        else if (match(TOKEN_CH_NULL_COALESCING, &c->ykes.parser))
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
-        if (check(TOKEN_CH_COMMA, &c->ykes.parser))
+        if (check(TOKEN_CH_COMMA, &c->parser))
             emit_byte(c, OP_PRINT);
-    } while (match(TOKEN_CH_COMMA, &c->ykes.parser));
+    } while (match(TOKEN_CH_COMMA, &c->parser));
 
     emit_byte(c, OP_PRINT);
 
-    consume(TOKEN_CH_RPAREN, "Expect `)` after print expression", &c->ykes.parser);
-    consume(TOKEN_CH_SEMI, "Expect ';' after value.", &c->ykes.parser);
+    consume(TOKEN_CH_RPAREN, "Expect `)` after print expression", &c->parser);
+    consume(TOKEN_CH_SEMI, "Expect ';' after value.", &c->parser);
 }
 
 static void begin_scope(compiler *c)
@@ -854,7 +854,7 @@ static void end_scope(compiler *c)
 
     c->count.scope--;
     if (c->count.local > 0 && (c->stack.local[c->count.local - 1].depth > c->count.scope))
-        emit_bytes(c, OP_POPN, add_constant(&c->ykes.func->ch, OBJ(Int(c->count.local - 1))));
+        emit_bytes(c, OP_POPN, add_constant(&c->func->ch, OBJ(Int(c->count.local - 1))));
 
     while (c->count.local > 0 && (c->stack.local[c->count.local - 1].depth > c->count.scope))
     {
@@ -868,9 +868,9 @@ static void end_scope(compiler *c)
 
 static void parse_block(compiler *c)
 {
-    while (!check(TOKEN_CH_RCURL, &c->ykes.parser) && !check(TOKEN_EOF, &c->ykes.parser))
+    while (!check(TOKEN_CH_RCURL, &c->parser) && !check(TOKEN_EOF, &c->parser))
         declaration(c);
-    consume(TOKEN_CH_RCURL, "Expect `}` after block statement", &c->ykes.parser);
+    consume(TOKEN_CH_RCURL, "Expect `}` after block statement", &c->parser);
 }
 static void block(compiler *c)
 {
@@ -898,7 +898,7 @@ static void expression(compiler *c)
 static void grouping(compiler *c)
 {
     expression(c);
-    consume(TOKEN_CH_RPAREN, "Expect `)` after expression", &c->ykes.parser);
+    consume(TOKEN_CH_RPAREN, "Expect `)` after expression", &c->parser);
 }
 static PRule *get_rule(int t)
 {
@@ -907,21 +907,21 @@ static PRule *get_rule(int t)
 
 static void parse_precedence(Precedence prec, compiler *c)
 {
-    advance_compiler(&c->ykes.parser);
-    parse_fn prefix_rule = get_rule(c->ykes.parser.pre.type)->prefix;
+    advance_compiler(&c->parser);
+    parse_fn prefix_rule = get_rule(c->parser.pre.type)->prefix;
 
     if (!prefix_rule)
     {
-        error("ERROR: Expect expression.", &c->ykes.parser);
+        error("ERROR: Expect expression.", &c->parser);
         return;
     }
 
     prefix_rule(c);
 
-    while (prec <= get_rule(c->ykes.parser.cur.type)->prec)
+    while (prec <= get_rule(c->parser.cur.type)->prec)
     {
-        advance_compiler(&c->ykes.parser);
-        parse_fn infix = get_rule(c->ykes.parser.pre.type)->infix;
+        advance_compiler(&c->parser);
+        parse_fn infix = get_rule(c->parser.pre.type)->infix;
         infix(c);
     }
 }
@@ -947,7 +947,7 @@ static void _or(compiler *c)
 
 static void binary(compiler *c)
 {
-    int t = c->ykes.parser.pre.type;
+    int t = c->parser.pre.type;
 
     PRule *rule = get_rule(t);
     parse_precedence((Precedence)rule->prec + 1, c);
@@ -1005,7 +1005,7 @@ static void binary(compiler *c)
 }
 static void unary(compiler *c)
 {
-    int op = c->ykes.parser.pre.type;
+    int op = c->parser.pre.type;
 
     parse_precedence(PREC_UNARY, c);
 
@@ -1056,18 +1056,18 @@ static void emit_return(compiler *c)
 }
 static void emit_byte(compiler *c, uint8_t byte)
 {
-    write_chunk(&c->ykes.func->ch, byte, c->ykes.parser.pre.line);
+    write_chunk(&c->func->ch, byte, c->parser.pre.line);
 }
 static void emit_bytes(compiler *c, uint8_t b1, uint8_t b2)
 {
-    write_chunk(&c->ykes.func->ch, b1, c->ykes.parser.pre.line);
-    write_chunk(&c->ykes.func->ch, b2, c->ykes.parser.pre.line);
+    write_chunk(&c->func->ch, b1, c->parser.pre.line);
+    write_chunk(&c->func->ch, b2, c->parser.pre.line);
 }
 static void emit_constant(compiler *c, arena ar)
 {
     emit_bytes(
         c, OP_CONSTANT,
-        add_constant(&c->ykes.func->ch, OBJ(ar)));
+        add_constant(&c->func->ch, OBJ(ar)));
 }
 
 static void pi(compiler *c)
@@ -1082,33 +1082,33 @@ static void euler(compiler *c)
 
 static void dval(compiler *c)
 {
-    double val = strtod(c->ykes.parser.pre.start, NULL);
+    double val = strtod(c->parser.pre.start, NULL);
     emit_constant(c, Double(val));
 }
 static void ival(compiler *c)
 {
-    emit_constant(c, Int(atoi(c->ykes.parser.pre.start)));
+    emit_constant(c, Int(atoi(c->parser.pre.start)));
 }
 static void llint(compiler *c)
 {
-    emit_constant(c, Long(atoll(c->ykes.parser.pre.start)));
+    emit_constant(c, Long(atoll(c->parser.pre.start)));
 }
 static void ch(compiler *c)
 {
-    emit_constant(c, Char(*++c->ykes.parser.pre.start));
+    emit_constant(c, Char(*++c->parser.pre.start));
 }
 
 static void boolean(compiler *c)
 {
-    if (*c->ykes.parser.pre.start == 'n')
-        emit_bytes(c, OP_CONSTANT, add_constant(&c->ykes.func->ch, CLASS(NULL)));
+    if (*c->parser.pre.start == 'n')
+        emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, CLASS(NULL)));
     else
-        emit_constant(c, Bool(*c->ykes.parser.pre.start == 't' ? true : false));
+        emit_constant(c, Bool(*c->parser.pre.start == 't' ? true : false));
 }
 static const char *parse_string(compiler *c)
 {
-    char *ch = (char *)++c->ykes.parser.pre.start;
-    ch[c->ykes.parser.pre.size - 2] = '\0';
+    char *ch = (char *)++c->parser.pre.start;
+    ch[c->parser.pre.size - 2] = '\0';
     return ch;
 }
 static void cstr(compiler *c)
@@ -1117,102 +1117,102 @@ static void cstr(compiler *c)
 }
 static void string(compiler *c)
 {
-    consume(TOKEN_CH_LPAREN, "Expect `(` prior to string declaration.", &c->ykes.parser);
-    consume(TOKEN_STR, "Expect string declaration", &c->ykes.parser);
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to string declaration.", &c->parser);
+    consume(TOKEN_STR, "Expect string declaration", &c->parser);
     emit_constant(c, String(parse_string(c)));
-    consume(TOKEN_CH_RPAREN, "Expect `)` after string declaration.", &c->ykes.parser);
+    consume(TOKEN_CH_RPAREN, "Expect `)` after string declaration.", &c->parser);
 }
 
 static void array_alloc(compiler *c)
 {
-    consume(TOKEN_CH_LPAREN, "Expect `(` prior to allocation.", &c->ykes.parser);
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to allocation.", &c->parser);
 
-    if (match(TOKEN_INT, &c->ykes.parser))
-        emit_constant(c, GROW_ARENA(NULL, atoi(c->ykes.parser.pre.start), ARENA_INTS));
-    else if (match(TOKEN_ID, &c->ykes.parser))
+    if (match(TOKEN_INT, &c->parser))
+        emit_constant(c, GROW_ARENA(NULL, atoi(c->parser.pre.start), ARENA_INTS));
+    else if (match(TOKEN_ID, &c->parser))
     {
         id(c);
         emit_byte(c, OP_CPY_ARRAY);
     }
-    else if (match(TOKEN_CH_LSQUARE, &c->ykes.parser))
+    else if (match(TOKEN_CH_LSQUARE, &c->parser))
         array(c);
     else
-        error("ERROR: Invalid expression inside of array allocation", &c->ykes.parser);
+        error("ERROR: Invalid expression inside of array allocation", &c->parser);
 
-    consume(TOKEN_CH_RPAREN, "Expect `)` after allocation.", &c->ykes.parser);
+    consume(TOKEN_CH_RPAREN, "Expect `)` after allocation.", &c->parser);
 }
 static void vector_alloc(compiler *c)
 {
     arena *ar = NULL;
-    consume(TOKEN_CH_LPAREN, "Expect `(` prior to vector allocation", &c->ykes.parser);
-    if (match(TOKEN_CH_RPAREN, &c->ykes.parser))
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to vector allocation", &c->parser);
+    if (match(TOKEN_CH_RPAREN, &c->parser))
     {
         ar = GROW_VECTOR(NULL, STACK_SIZE);
-        emit_bytes(c, OP_CONSTANT, add_constant(&c->ykes.func->ch, VECT(ar)));
+        emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, VECT(ar)));
         return;
     }
 
-    if (match(TOKEN_INT, &c->ykes.parser))
+    if (match(TOKEN_INT, &c->parser))
     {
-        ar = GROW_VECTOR(NULL, atoi(c->ykes.parser.pre.start));
+        ar = GROW_VECTOR(NULL, atoi(c->parser.pre.start));
         emit_bytes(
             c, OP_CONSTANT,
-            add_constant(&c->ykes.func->ch, VECT(ar)));
+            add_constant(&c->func->ch, VECT(ar)));
     }
     else
-        error("ERROR: Invalid expression inside of vector allocation", &c->ykes.parser);
+        error("ERROR: Invalid expression inside of vector allocation", &c->parser);
 
-    consume(TOKEN_CH_RPAREN, "Expect `)` after vector allocation.", &c->ykes.parser);
+    consume(TOKEN_CH_RPAREN, "Expect `)` after vector allocation.", &c->parser);
 }
 
 static void stack_alloc(compiler *c)
 {
     stack *s = NULL;
-    consume(TOKEN_CH_LPAREN, "Expect `(` prior to stack allocation", &c->ykes.parser);
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to stack allocation", &c->parser);
 
-    if (match(TOKEN_CH_RPAREN, &c->ykes.parser))
+    if (match(TOKEN_CH_RPAREN, &c->parser))
     {
         s = GROW_STACK(NULL, STACK_SIZE);
-        emit_bytes(c, OP_CONSTANT, add_constant(&c->ykes.func->ch, STK(s)));
+        emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, STK(s)));
         return;
     }
 
-    if (match(TOKEN_INT, &c->ykes.parser))
+    if (match(TOKEN_INT, &c->parser))
     {
-        s = _stack(atoi(c->ykes.parser.pre.start));
+        s = _stack(atoi(c->parser.pre.start));
         emit_bytes(
             c, OP_CONSTANT,
-            add_constant(&c->ykes.func->ch, STK(s)));
+            add_constant(&c->func->ch, STK(s)));
     }
     else
-        error("ERROR: Invalid expression inside of stack allocation", &c->ykes.parser);
+        error("ERROR: Invalid expression inside of stack allocation", &c->parser);
 
-    consume(TOKEN_CH_RPAREN, "Expect `)` after stack allocation", &c->ykes.parser);
+    consume(TOKEN_CH_RPAREN, "Expect `)` after stack allocation", &c->parser);
 }
 
 static void _table(compiler *c)
 {
     table *t = NULL;
-    consume(TOKEN_CH_LPAREN, "Expect `(` prior to table allocation", &c->ykes.parser);
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to table allocation", &c->parser);
 
-    if (match(TOKEN_CH_RPAREN, &c->ykes.parser))
+    if (match(TOKEN_CH_RPAREN, &c->parser))
     {
         t = GROW_TABLE(NULL, STACK_SIZE);
-        emit_bytes(c, OP_CONSTANT, add_constant(&c->ykes.func->ch, TABLE(t)));
+        emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, TABLE(t)));
         return;
     }
     else
     {
         expression(c);
         emit_byte(c, OP_ALLOC_TABLE);
-        consume(TOKEN_CH_RPAREN, "Expect `)` after table declaration", &c->ykes.parser);
+        consume(TOKEN_CH_RPAREN, "Expect `)` after table declaration", &c->parser);
     }
 }
 
 static int resolve_native(compiler *c, arena *ar)
 {
 
-    element el = find_entry(&c->ykes.base->lookup.native, ar);
+    element el = find_entry(&c->base->lookup.native, ar);
 
     if (el.type == ARENA && el._arena.type == ARENA_INT)
         return el._arena.as.Int;
@@ -1222,36 +1222,36 @@ static int resolve_native(compiler *c, arena *ar)
 static void parse_native_var_arg(compiler *c)
 {
 
-    char *ch = (char *)c->ykes.parser.pre.start;
-    ch[c->ykes.parser.pre.size] = '\0';
+    char *ch = (char *)c->parser.pre.start;
+    ch[c->parser.pre.size] = '\0';
 
     arena ar = Var(ch);
     int arg = resolve_native(c, &ar);
     emit_bytes(c, OP_GET_NATIVE, (uint8_t)arg);
-    consume(TOKEN_CH_LPAREN, "Expect `(` prior to function call", &c->ykes.parser);
+    consume(TOKEN_CH_LPAREN, "Expect `(` prior to function call", &c->parser);
     call(c);
 }
 
 static arena parse_func_id(compiler *c)
 {
-    char *ch = (char *)c->ykes.parser.pre.start;
-    ch[c->ykes.parser.pre.size] = '\0';
+    char *ch = (char *)c->parser.pre.start;
+    ch[c->parser.pre.size] = '\0';
     return Var(ch);
 }
 
 static arena parse_id(compiler *c)
 {
-    char *ch = (char *)c->ykes.parser.pre.start;
-    ch[c->ykes.parser.pre.size] = '\0';
+    char *ch = (char *)c->parser.pre.start;
+    ch[c->parser.pre.size] = '\0';
     return Var(ch);
 }
 
 static arena get_id(compiler *c)
 {
-    bool pre_inc = (c->ykes.parser.pre.type == TOKEN_OP_INC);
-    bool pre_dec = (c->ykes.parser.pre.type == TOKEN_OP_DEC);
+    bool pre_inc = (c->parser.pre.type == TOKEN_OP_INC);
+    bool pre_dec = (c->parser.pre.type == TOKEN_OP_DEC);
 
-    if (match(TOKEN_ID, &c->ykes.parser))
+    if (match(TOKEN_ID, &c->parser))
         ;
 
     arena ar = parse_id(c);
@@ -1273,7 +1273,7 @@ static arena get_id(compiler *c)
     }
     else
     {
-        arg = add_constant(&c->ykes.func->ch, OBJ(ar));
+        arg = add_constant(&c->func->ch, OBJ(ar));
         get = OP_GET_GLOBAL;
         set = OP_SET_GLOBAL;
     }
@@ -1284,16 +1284,16 @@ static arena get_id(compiler *c)
         emit_bytes(c, get == OP_GET_LOCAL ? OP_INC_LOC : OP_INC_GLO, (uint8_t)arg);
     else if (pre_dec)
         emit_bytes(c, get == OP_GET_LOCAL ? OP_DEC_LOC : OP_DEC_GLO, (uint8_t)arg);
-    else if (match(TOKEN_OP_DEC, &c->ykes.parser))
+    else if (match(TOKEN_OP_DEC, &c->parser))
         emit_bytes(c, get == OP_GET_LOCAL ? OP_DEC_LOC : OP_DEC_GLO, (uint8_t)arg);
-    else if (match(TOKEN_OP_INC, &c->ykes.parser))
+    else if (match(TOKEN_OP_INC, &c->parser))
         emit_bytes(c, get == OP_GET_LOCAL ? OP_INC_LOC : OP_INC_GLO, (uint8_t)arg);
-    else if (match(TOKEN_OP_ASSIGN, &c->ykes.parser))
+    else if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
         expression(c);
-        if (match(TOKEN_CH_TERNARY, &c->ykes.parser))
+        if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
-        else if (match(TOKEN_CH_NULL_COALESCING, &c->ykes.parser))
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
         emit_bytes(c, set, (uint8_t)arg);
     }
@@ -1305,7 +1305,7 @@ static arena get_id(compiler *c)
 static int resolve_call(compiler *c, arena *ar)
 {
 
-    element el = find_entry(&c->ykes.base->lookup.call, ar);
+    element el = find_entry(&c->base->lookup.call, ar);
 
     if (el.type == ARENA && el._arena.type == ARENA_INT)
         return el._arena.as.Int;
@@ -1315,7 +1315,7 @@ static int resolve_call(compiler *c, arena *ar)
 
 static int resolve_instance(compiler *c, arena ar)
 {
-    element el = find_entry(&c->ykes.base->lookup.class, &ar);
+    element el = find_entry(&c->base->lookup.class, &ar);
 
     if (el.type == ARENA && el._arena.type == ARENA_INT)
         return el._arena.as.Int;
@@ -1325,30 +1325,30 @@ static int resolve_instance(compiler *c, arena ar)
 
 static void push_array_val(compiler *c)
 {
-    consume(TOKEN_CH_LPAREN, "Expect `(` after push.", &c->ykes.parser);
+    consume(TOKEN_CH_LPAREN, "Expect `(` after push.", &c->parser);
     expression(c);
     emit_byte(c, OP_PUSH_ARRAY_VAL);
-    consume(TOKEN_CH_RPAREN, "Expect `)` after push expression.", &c->ykes.parser);
+    consume(TOKEN_CH_RPAREN, "Expect `)` after push expression.", &c->parser);
 }
 static void pop_array_val(compiler *c)
 {
-    consume(TOKEN_CH_LPAREN, "Expect `(` after push.", &c->ykes.parser);
+    consume(TOKEN_CH_LPAREN, "Expect `(` after push.", &c->parser);
     emit_byte(c, OP_POP__ARRAY_VAL);
-    consume(TOKEN_CH_RPAREN, "Expect `)` after push expression.", &c->ykes.parser);
+    consume(TOKEN_CH_RPAREN, "Expect `)` after push expression.", &c->parser);
 }
 
 static void dot(compiler *c)
 {
-    match(TOKEN_ID, &c->ykes.parser);
+    match(TOKEN_ID, &c->parser);
 
     arena ar = parse_id(c);
 
-    if (ar.as.hash == c->ykes.base->_hash_ref.len.as.hash)
+    if (ar.as.hash == c->base->_hash_ref.len.as.hash)
     {
         emit_byte(c, OP_LEN);
         return;
     }
-    if (ar.as.hash == c->ykes.base->_hash_ref.push.as.hash)
+    if (ar.as.hash == c->base->_hash_ref.push.as.hash)
     {
         push_array_val(c);
         int exit = emit_jump(c, OP_JMPT);
@@ -1362,7 +1362,7 @@ static void dot(compiler *c)
         return;
     }
 
-    if (ar.as.hash == c->ykes.base->_hash_ref.pop.as.hash)
+    if (ar.as.hash == c->base->_hash_ref.pop.as.hash)
     {
         pop_array_val(c);
         emit_bytes(c, c->array.set, c->array.index);
@@ -1370,107 +1370,107 @@ static void dot(compiler *c)
         return;
     }
 
-    if (match(TOKEN_OP_ASSIGN, &c->ykes.parser))
+    if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
         expression(c);
-        if (match(TOKEN_CH_TERNARY, &c->ykes.parser))
+        if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
-        else if (match(TOKEN_CH_NULL_COALESCING, &c->ykes.parser))
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
-        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->ykes.func->ch, OBJ(ar)));
+        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
     }
-    else if (match(TOKEN_ADD_ASSIGN, &c->ykes.parser))
+    else if (match(TOKEN_ADD_ASSIGN, &c->parser))
     {
 
         emit_byte(c, OP_PUSH_TOP);
-        emit_bytes(c, OP_GET_PROP, (uint8_t)add_constant(&c->ykes.func->ch, OBJ(ar)));
+        emit_bytes(c, OP_GET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
         expression(c);
-        if (match(TOKEN_CH_TERNARY, &c->ykes.parser))
+        if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
-        else if (match(TOKEN_CH_NULL_COALESCING, &c->ykes.parser))
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
         emit_byte(c, OP_ADD);
-        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->ykes.func->ch, OBJ(ar)));
+        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
     }
-    else if (match(TOKEN_SUB_ASSIGN, &c->ykes.parser))
+    else if (match(TOKEN_SUB_ASSIGN, &c->parser))
     {
 
         emit_byte(c, OP_PUSH_TOP);
-        emit_bytes(c, OP_GET_PROP, (uint8_t)add_constant(&c->ykes.func->ch, OBJ(ar)));
+        emit_bytes(c, OP_GET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
         expression(c);
-        if (match(TOKEN_CH_TERNARY, &c->ykes.parser))
+        if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
-        else if (match(TOKEN_CH_NULL_COALESCING, &c->ykes.parser))
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
-        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->ykes.func->ch, OBJ(ar)));
+        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
     }
-    else if (match(TOKEN_MUL_ASSIGN, &c->ykes.parser))
+    else if (match(TOKEN_MUL_ASSIGN, &c->parser))
     {
 
         emit_byte(c, OP_PUSH_TOP);
-        emit_bytes(c, OP_GET_PROP, (uint8_t)add_constant(&c->ykes.func->ch, OBJ(ar)));
+        emit_bytes(c, OP_GET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
         expression(c);
-        if (match(TOKEN_CH_TERNARY, &c->ykes.parser))
+        if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
-        else if (match(TOKEN_CH_NULL_COALESCING, &c->ykes.parser))
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
         emit_byte(c, OP_MUL);
-        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->ykes.func->ch, OBJ(ar)));
+        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
     }
-    else if (match(TOKEN_DIV_ASSIGN, &c->ykes.parser))
+    else if (match(TOKEN_DIV_ASSIGN, &c->parser))
     {
 
         emit_byte(c, OP_PUSH_TOP);
-        emit_bytes(c, OP_GET_PROP, (uint8_t)add_constant(&c->ykes.func->ch, OBJ(ar)));
+        emit_bytes(c, OP_GET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
         expression(c);
-        if (match(TOKEN_CH_TERNARY, &c->ykes.parser))
+        if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
-        else if (match(TOKEN_CH_NULL_COALESCING, &c->ykes.parser))
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
         emit_byte(c, OP_DIV);
-        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->ykes.func->ch, OBJ(ar)));
+        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
     }
-    else if (match(TOKEN_MOD_ASSIGN, &c->ykes.parser))
+    else if (match(TOKEN_MOD_ASSIGN, &c->parser))
     {
         emit_byte(c, OP_PUSH_TOP);
-        emit_bytes(c, OP_GET_PROP, (uint8_t)add_constant(&c->ykes.func->ch, OBJ(ar)));
+        emit_bytes(c, OP_GET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
 
         expression(c);
-        if (match(TOKEN_CH_TERNARY, &c->ykes.parser))
+        if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
-        else if (match(TOKEN_CH_NULL_COALESCING, &c->ykes.parser))
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
         emit_byte(c, OP_MOD);
-        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->ykes.func->ch, OBJ(ar)));
+        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
     }
-    else if (match(TOKEN_AND_ASSIGN, &c->ykes.parser))
+    else if (match(TOKEN_AND_ASSIGN, &c->parser))
     {
 
         emit_byte(c, OP_PUSH_TOP);
-        emit_bytes(c, OP_GET_PROP, (uint8_t)add_constant(&c->ykes.func->ch, OBJ(ar)));
+        emit_bytes(c, OP_GET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
         expression(c);
-        if (match(TOKEN_CH_TERNARY, &c->ykes.parser))
+        if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
-        else if (match(TOKEN_CH_NULL_COALESCING, &c->ykes.parser))
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
-        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->ykes.func->ch, OBJ(ar)));
+        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
     }
-    else if (match(TOKEN_OR__ASSIGN, &c->ykes.parser))
+    else if (match(TOKEN_OR__ASSIGN, &c->parser))
     {
         emit_byte(c, OP_PUSH_TOP);
-        emit_bytes(c, OP_GET_PROP, (uint8_t)add_constant(&c->ykes.func->ch, OBJ(ar)));
+        emit_bytes(c, OP_GET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
 
         expression(c);
-        if (match(TOKEN_CH_TERNARY, &c->ykes.parser))
+        if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
-        else if (match(TOKEN_CH_NULL_COALESCING, &c->ykes.parser))
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
 
-        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->ykes.func->ch, OBJ(ar)));
+        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
     }
     else
     {
-        emit_bytes(c, OP_GET_PROP, add_constant(&c->ykes.func->ch, OBJ(ar)));
+        emit_bytes(c, OP_GET_PROP, add_constant(&c->func->ch, OBJ(ar)));
     }
 }
 
@@ -1480,16 +1480,16 @@ static void int_array(compiler *c)
 
     do
     {
-        if (match(TOKEN_INT, &c->ykes.parser))
-            push_int(&el, atoi(c->ykes.parser.pre.start));
+        if (match(TOKEN_INT, &c->parser))
+            push_int(&el, atoi(c->parser.pre.start));
         else
         {
-            error("Unexpected type in array declaration", &c->ykes.parser);
+            error("Unexpected type in array declaration", &c->parser);
             return;
         }
-    } while (match(TOKEN_CH_COMMA, &c->ykes.parser));
+    } while (match(TOKEN_CH_COMMA, &c->parser));
 
-    emit_bytes(c, OP_CONSTANT, add_constant(&c->ykes.func->ch, el));
+    emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, el));
 }
 static void double_array(compiler *c)
 {
@@ -1497,16 +1497,16 @@ static void double_array(compiler *c)
 
     do
     {
-        if (match(TOKEN_DOUBLE, &c->ykes.parser))
-            push_double(&el, strtod(c->ykes.parser.pre.start, NULL));
+        if (match(TOKEN_DOUBLE, &c->parser))
+            push_double(&el, strtod(c->parser.pre.start, NULL));
         else
         {
-            error("Unexpected type in array declaration", &c->ykes.parser);
+            error("Unexpected type in array declaration", &c->parser);
             return;
         }
-    } while (match(TOKEN_CH_COMMA, &c->ykes.parser));
+    } while (match(TOKEN_CH_COMMA, &c->parser));
 
-    emit_bytes(c, OP_CONSTANT, add_constant(&c->ykes.func->ch, el));
+    emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, el));
 }
 static void string_array(compiler *c)
 {
@@ -1514,38 +1514,38 @@ static void string_array(compiler *c)
 
     do
     {
-        if (match(TOKEN_STR, &c->ykes.parser))
+        if (match(TOKEN_STR, &c->parser))
             push_string(&el, parse_string(c));
         else
         {
-            error("Unexpected type in array declaration", &c->ykes.parser);
+            error("Unexpected type in array declaration", &c->parser);
             return;
         }
-    } while (match(TOKEN_CH_COMMA, &c->ykes.parser));
+    } while (match(TOKEN_CH_COMMA, &c->parser));
 
-    emit_bytes(c, OP_CONSTANT, add_constant(&c->ykes.func->ch, el));
+    emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, el));
 }
 static void long_array(compiler *c)
 {
     element el = OBJ(Longs(NULL, 0));
     do
     {
-        if (match(TOKEN_LLINT, &c->ykes.parser))
-            push_long(&el, atoll(c->ykes.parser.pre.start));
+        if (match(TOKEN_LLINT, &c->parser))
+            push_long(&el, atoll(c->parser.pre.start));
         else
         {
-            error("Unexpected type in array declaration", &c->ykes.parser);
+            error("Unexpected type in array declaration", &c->parser);
             return;
         }
-    } while (match(TOKEN_CH_COMMA, &c->ykes.parser));
+    } while (match(TOKEN_CH_COMMA, &c->parser));
 
-    emit_bytes(c, OP_CONSTANT, add_constant(&c->ykes.func->ch, el));
+    emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, el));
 }
 
 static void array(compiler *c)
 {
 
-    switch (c->ykes.parser.cur.type)
+    switch (c->parser.cur.type)
     {
     case TOKEN_INT:
         int_array(c);
@@ -1560,24 +1560,24 @@ static void array(compiler *c)
         long_array(c);
         break;
     default:
-        error("Unexpected type in array declaration", &c->ykes.parser);
+        error("Unexpected type in array declaration", &c->parser);
     }
 
-    consume(TOKEN_CH_RSQUARE, "Expect closing brace after array declaration.", &c->ykes.parser);
+    consume(TOKEN_CH_RSQUARE, "Expect closing brace after array declaration.", &c->parser);
 }
 
 static void _access(compiler *c)
 {
 
     expression(c);
-    consume(TOKEN_CH_RSQUARE, "Expect closing brace after array access.", &c->ykes.parser);
+    consume(TOKEN_CH_RSQUARE, "Expect closing brace after array access.", &c->parser);
 
-    if (match(TOKEN_OP_ASSIGN, &c->ykes.parser))
+    if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
         expression(c);
-        if (match(TOKEN_CH_TERNARY, &c->ykes.parser))
+        if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
-        else if (match(TOKEN_CH_NULL_COALESCING, &c->ykes.parser))
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
         emit_byte(c, OP_SET_ACCESS);
     }
@@ -1587,13 +1587,13 @@ static void _access(compiler *c)
 
 static void _this(compiler *c)
 {
-    if (!c->ykes.class_compiler)
+    if (!c->class_compiler)
     {
-        error("ERROR: can't use `this` keyword outside of a class body.", &c->ykes.parser);
+        error("ERROR: can't use `this` keyword outside of a class body.", &c->parser);
         return;
     }
 
-    int arg = resolve_instance(c, c->ykes.class_compiler->instance_name);
+    int arg = resolve_instance(c, c->class_compiler->instance_name);
 
     emit_bytes(
         c, OP_GET_CLASS,
@@ -1602,10 +1602,10 @@ static void _this(compiler *c)
 
 static void id(compiler *c)
 {
-    bool pre_inc = (c->ykes.parser.pre.type == TOKEN_OP_INC);
-    bool pre_dec = (c->ykes.parser.pre.type == TOKEN_OP_DEC);
+    bool pre_inc = (c->parser.pre.type == TOKEN_OP_INC);
+    bool pre_dec = (c->parser.pre.type == TOKEN_OP_DEC);
 
-    match(TOKEN_ID, &c->ykes.parser);
+    match(TOKEN_ID, &c->parser);
 
     arena ar = parse_func_id(c);
     uint8_t get, set;
@@ -1620,10 +1620,10 @@ static void id(compiler *c)
     if ((arg = resolve_instance(c, ar)) != -1)
     {
 
-        if (c->ykes.base->stack.instance[arg]->init)
+        if (c->base->stack.instance[arg]->init)
         {
-            emit_bytes(c, OP_CONSTANT, (uint8_t)add_constant(&c->ykes.func->ch, CLOSURE(c->ykes.base->stack.instance[arg]->init)));
-            match(TOKEN_CH_LPAREN, &c->ykes.parser);
+            emit_bytes(c, OP_CONSTANT, (uint8_t)add_constant(&c->func->ch, CLOSURE(c->base->stack.instance[arg]->init)));
+            match(TOKEN_CH_LPAREN, &c->parser);
             call(c);
         }
         emit_bytes(c, OP_GET_CLASS, (uint8_t)arg);
@@ -1646,7 +1646,7 @@ static void id(compiler *c)
 
     else
     {
-        arg = add_constant(&c->ykes.func->ch, OBJ(ar));
+        arg = add_constant(&c->func->ch, OBJ(ar));
         get = OP_GET_GLOBAL;
         set = OP_SET_GLOBAL;
     }
@@ -1655,93 +1655,93 @@ static void id(compiler *c)
         emit_bytes(c, get == OP_GET_LOCAL ? OP_INC_LOC : OP_INC_GLO, (uint8_t)arg);
     else if (pre_dec)
         emit_bytes(c, get == OP_GET_LOCAL ? OP_DEC_LOC : OP_DEC_GLO, (uint8_t)arg);
-    else if (match(TOKEN_OP_DEC, &c->ykes.parser))
+    else if (match(TOKEN_OP_DEC, &c->parser))
         emit_bytes(c, get == OP_GET_LOCAL ? OP_DEC_LOC : OP_DEC_GLO, (uint8_t)arg);
-    else if (match(TOKEN_OP_INC, &c->ykes.parser))
+    else if (match(TOKEN_OP_INC, &c->parser))
         emit_bytes(c, get == OP_GET_LOCAL ? OP_INC_LOC : OP_INC_GLO, (uint8_t)arg);
-    else if (match(TOKEN_OP_ASSIGN, &c->ykes.parser))
+    else if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
         expression(c);
-        if (match(TOKEN_CH_TERNARY, &c->ykes.parser))
+        if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
-        else if (match(TOKEN_CH_NULL_COALESCING, &c->ykes.parser))
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
         emit_bytes(c, set, (uint8_t)arg);
     }
-    else if (match(TOKEN_ADD_ASSIGN, &c->ykes.parser))
+    else if (match(TOKEN_ADD_ASSIGN, &c->parser))
     {
         emit_bytes(c, get, (uint8_t)arg);
         expression(c);
-        if (match(TOKEN_CH_TERNARY, &c->ykes.parser))
+        if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
-        else if (match(TOKEN_CH_NULL_COALESCING, &c->ykes.parser))
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
         emit_byte(c, OP_ADD);
         emit_bytes(c, set, (uint8_t)arg);
     }
-    else if (match(TOKEN_SUB_ASSIGN, &c->ykes.parser))
+    else if (match(TOKEN_SUB_ASSIGN, &c->parser))
     {
         emit_bytes(c, get, (uint8_t)arg);
         expression(c);
-        if (match(TOKEN_CH_TERNARY, &c->ykes.parser))
+        if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
-        else if (match(TOKEN_CH_NULL_COALESCING, &c->ykes.parser))
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
         emit_byte(c, OP_SUB);
         emit_bytes(c, set, (uint8_t)arg);
     }
-    else if (match(TOKEN_MUL_ASSIGN, &c->ykes.parser))
+    else if (match(TOKEN_MUL_ASSIGN, &c->parser))
     {
 
         emit_bytes(c, get, (uint8_t)arg);
         expression(c);
-        if (match(TOKEN_CH_TERNARY, &c->ykes.parser))
+        if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
-        else if (match(TOKEN_CH_NULL_COALESCING, &c->ykes.parser))
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
         emit_byte(c, OP_MUL);
         emit_bytes(c, set, (uint8_t)arg);
     }
-    else if (match(TOKEN_DIV_ASSIGN, &c->ykes.parser))
+    else if (match(TOKEN_DIV_ASSIGN, &c->parser))
     {
         emit_bytes(c, get, (uint8_t)arg);
         expression(c);
-        if (match(TOKEN_CH_TERNARY, &c->ykes.parser))
+        if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
-        else if (match(TOKEN_CH_NULL_COALESCING, &c->ykes.parser))
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
         emit_byte(c, OP_DIV);
         emit_bytes(c, set, (uint8_t)arg);
     }
-    else if (match(TOKEN_MOD_ASSIGN, &c->ykes.parser))
+    else if (match(TOKEN_MOD_ASSIGN, &c->parser))
     {
         emit_bytes(c, get, (uint8_t)arg);
         expression(c);
-        if (match(TOKEN_CH_TERNARY, &c->ykes.parser))
+        if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
-        else if (match(TOKEN_CH_NULL_COALESCING, &c->ykes.parser))
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
         emit_byte(c, OP_MOD);
         emit_bytes(c, set, (uint8_t)arg);
     }
-    else if (match(TOKEN_AND_ASSIGN, &c->ykes.parser))
+    else if (match(TOKEN_AND_ASSIGN, &c->parser))
     {
         emit_bytes(c, get, (uint8_t)arg);
         expression(c);
-        if (match(TOKEN_CH_TERNARY, &c->ykes.parser))
+        if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
-        else if (match(TOKEN_CH_NULL_COALESCING, &c->ykes.parser))
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
         emit_byte(c, OP_AND);
         emit_bytes(c, set, (uint8_t)arg);
     }
-    else if (match(TOKEN_OR__ASSIGN, &c->ykes.parser))
+    else if (match(TOKEN_OR__ASSIGN, &c->parser))
     {
         emit_bytes(c, get, (uint8_t)arg);
         expression(c);
-        if (match(TOKEN_CH_TERNARY, &c->ykes.parser))
+        if (match(TOKEN_CH_TERNARY, &c->parser))
             ternary_statement(c);
-        else if (match(TOKEN_CH_NULL_COALESCING, &c->ykes.parser))
+        else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
         emit_byte(c, OP_OR);
         emit_bytes(c, set, (uint8_t)arg);
@@ -1750,7 +1750,7 @@ static void id(compiler *c)
     {
         emit_bytes(c, get, (uint8_t)arg);
 
-        if (check(TOKEN_CH_DOT, &c->ykes.parser))
+        if (check(TOKEN_CH_DOT, &c->parser))
             c->array.set = set,
             c->array.index = arg;
     }
@@ -1761,7 +1761,7 @@ static int parse_var(compiler *c, arena ar)
     declare_var(c, ar);
     if (c->count.scope > 0)
         return -1;
-    return add_constant(&c->ykes.func->ch, OBJ(ar));
+    return add_constant(&c->func->ch, OBJ(ar));
 }
 
 static bool idcmp(arena a, arena b)
@@ -1782,18 +1782,18 @@ static int resolve_local(compiler *c, arena *name)
 static int resolve_upvalue(compiler *c, arena *name)
 {
 
-    if (!c->ykes.enclosing)
+    if (!c->enclosing)
         return -1;
 
-    int local = resolve_local(c->ykes.enclosing, name);
+    int local = resolve_local(c->enclosing, name);
 
     if (local != -1)
     {
-        c->ykes.enclosing->stack.local[local].captured = true;
+        c->enclosing->stack.local[local].captured = true;
         return add_upvalue(c, (uint8_t)local, true);
     }
 
-    int upvalue = resolve_upvalue(c->ykes.enclosing, name);
+    int upvalue = resolve_upvalue(c->enclosing, name);
     if (upvalue != -1)
         return add_upvalue(c, (uint8_t)upvalue, false);
 
@@ -1814,7 +1814,7 @@ static int add_upvalue(compiler *c, int index, bool islocal)
 
     if (count > LOCAL_COUNT)
     {
-        error("ERROR: To many closure variables in function.", &c->ykes.parser);
+        error("ERROR: To many closure variables in function.", &c->parser);
         return 0;
     }
 
@@ -1837,7 +1837,7 @@ static void declare_var(compiler *c, arena ar)
             break;
 
         else if (idcmp(ar, _local->name))
-            error("ERROR: Duplicate variable identifiers in scope", &c->ykes.parser);
+            error("ERROR: Duplicate variable identifiers in scope", &c->parser);
     }
 
     add_local(c, &ar);
@@ -1847,7 +1847,7 @@ static void add_local(compiler *c, arena *ar)
 {
     if (c->count.local == LOCAL_COUNT)
     {
-        error("ERROR: Too many local variables in function.", &c->ykes.parser);
+        error("ERROR: Too many local variables in function.", &c->parser);
         return;
     }
     c->stack.local[c->count.local].name = *ar;
@@ -1857,21 +1857,21 @@ static void add_local(compiler *c, arena *ar)
 }
 static function *end_compile(compiler *a)
 {
-    function *f = a->ykes.func;
+    function *f = a->func;
 
     emit_return(a);
 #ifdef DEBUG_PRINT_CODE
-    if (!a->ykes.parser.err)
+    if (!a->parser.err)
         disassemble_chunk(
-            &a->ykes.func->ch,
-            a->ykes.func->name.as.String);
+            &a->func->ch,
+            a->func->name.as.String);
 #endif
-    if (a->ykes.enclosing)
+    if (a->enclosing)
     {
 
-        parser tmp = a->ykes.parser;
-        a = a->ykes.enclosing;
-        a->ykes.parser = tmp;
+        parser tmp = a->parser;
+        a = a->enclosing;
+        a->parser = tmp;
     }
 
     return f;
@@ -1886,31 +1886,31 @@ function *compile(const char *src)
     init_compiler(&c, NULL, SCRIPT, Var("SCRIPT"));
 
     c._hash_ref.init = String("init");
-    c.ykes.base = &c;
-    c.ykes.base->meta.cwd = NULL;
-    c.ykes.base->lookup.call = GROW_TABLE(NULL, STACK_SIZE);
-    c.ykes.base->lookup.class = GROW_TABLE(NULL, STACK_SIZE);
-    c.ykes.base->lookup.include = GROW_TABLE(NULL, STACK_SIZE);
-    c.ykes.base->_hash_ref.len = CString("len");
-    c.ykes.base->_hash_ref.push = CString("push");
-    c.ykes.base->_hash_ref.pop = CString("pop");
+    c.base = &c;
+    c.base->meta.cwd = NULL;
+    c.base->lookup.call = GROW_TABLE(NULL, STACK_SIZE);
+    c.base->lookup.class = GROW_TABLE(NULL, STACK_SIZE);
+    c.base->lookup.include = GROW_TABLE(NULL, STACK_SIZE);
+    c.base->_hash_ref.len = CString("len");
+    c.base->_hash_ref.push = CString("push");
+    c.base->_hash_ref.pop = CString("pop");
 
-    c.ykes.parser.panic = false;
-    c.ykes.parser.err = false;
+    c.parser.panic = false;
+    c.parser.err = false;
 
-    advance_compiler(&c.ykes.parser);
+    advance_compiler(&c.parser);
 
-    while (!match(TOKEN_EOF, &c.ykes.parser))
+    while (!match(TOKEN_EOF, &c.parser))
         declaration(&c);
-    consume(TOKEN_EOF, "Expect end of expression", &c.ykes.parser);
+    consume(TOKEN_EOF, "Expect end of expression", &c.parser);
 
     function *f = end_compile(&c);
 
-    FREE((c.ykes.base->lookup.call - 1));
-    FREE((c.ykes.base->lookup.class - 1));
-    FREE((c.ykes.base->_hash_ref.init.as.String));
+    FREE((c.base->lookup.call - 1));
+    FREE((c.base->lookup.class - 1));
+    FREE((c.base->_hash_ref.init.as.String));
 
-    return c.ykes.parser.err ? NULL : f;
+    return c.parser.err ? NULL : f;
 }
 function *compile_path(const char *src, const char *path, const char *name)
 {
@@ -1920,41 +1920,41 @@ function *compile_path(const char *src, const char *path, const char *name)
 
     init_compiler(&c, NULL, SCRIPT, Var("SCRIPT"));
 
-    c.ykes.base = &c;
-    c.ykes.base->meta.cwd = path;
+    c.base = &c;
+    c.base->meta.cwd = path;
 
-    c.ykes.base->lookup.call = GROW_TABLE(NULL, STACK_SIZE);
-    c.ykes.base->lookup.class = GROW_TABLE(NULL, STACK_SIZE);
-    c.ykes.base->lookup.include = GROW_TABLE(NULL, STACK_SIZE);
-    c.ykes.base->lookup.native = GROW_TABLE(NULL, STACK_SIZE);
+    c.base->lookup.call = GROW_TABLE(NULL, STACK_SIZE);
+    c.base->lookup.class = GROW_TABLE(NULL, STACK_SIZE);
+    c.base->lookup.include = GROW_TABLE(NULL, STACK_SIZE);
+    c.base->lookup.native = GROW_TABLE(NULL, STACK_SIZE);
 
-    c.ykes.base->_hash_ref.init = String("init");
-    c.ykes.base->_hash_ref.len = CString("len");
-    c.ykes.base->_hash_ref.push = CString("push");
-    c.ykes.base->_hash_ref.pop = CString("pop");
+    c.base->_hash_ref.init = String("init");
+    c.base->_hash_ref.len = CString("len");
+    c.base->_hash_ref.push = CString("push");
+    c.base->_hash_ref.pop = CString("pop");
 
-    c.ykes.parser.panic = false;
-    c.ykes.parser.err = false;
-    c.ykes.parser.current_file = name;
+    c.parser.panic = false;
+    c.parser.err = false;
+    c.parser.current_file = name;
 
-    write_table(c.ykes.base->lookup.native, CString("clock"), OBJ(Int(c.ykes.base->count.native++)));
-    write_table(c.ykes.base->lookup.native, CString("square"), OBJ(Int(c.ykes.base->count.native++)));
-    write_table(c.ykes.base->lookup.native, CString("prime"), OBJ(Int(c.ykes.base->count.native++)));
-    write_table(c.ykes.base->lookup.native, CString("file"), OBJ(Int(c.ykes.base->count.native++)));
+    write_table(c.base->lookup.native, CString("clock"), OBJ(Int(c.base->count.native++)));
+    write_table(c.base->lookup.native, CString("square"), OBJ(Int(c.base->count.native++)));
+    write_table(c.base->lookup.native, CString("prime"), OBJ(Int(c.base->count.native++)));
+    write_table(c.base->lookup.native, CString("file"), OBJ(Int(c.base->count.native++)));
 
-    advance_compiler(&c.ykes.parser);
+    advance_compiler(&c.parser);
 
-    while (!match(TOKEN_EOF, &c.ykes.parser))
+    while (!match(TOKEN_EOF, &c.parser))
         declaration(&c);
-    consume(TOKEN_EOF, "Expect end of expression", &c.ykes.parser);
+    consume(TOKEN_EOF, "Expect end of expression", &c.parser);
 
     function *f = end_compile(&c);
 
-    FREE((char *)(c.ykes.parser.current_file));
-    FREE(((c.ykes.base->lookup.call - 1)));
-    FREE(((c.ykes.base->lookup.native - 1)));
-    FREE(((c.ykes.base->lookup.class - 1)));
-    FREE(((c.ykes.base->_hash_ref.init.as.String)));
+    FREE((char *)(c.parser.current_file));
+    FREE(((c.base->lookup.call - 1)));
+    FREE(((c.base->lookup.native - 1)));
+    FREE(((c.base->lookup.class - 1)));
+    FREE(((c.base->_hash_ref.init.as.String)));
 
-    return c.ykes.parser.err ? NULL : f;
+    return c.parser.err ? NULL : f;
 }

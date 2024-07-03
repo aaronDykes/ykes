@@ -47,7 +47,6 @@ typedef struct current current;
 typedef struct hash_ref hash_ref;
 typedef struct meta meta;
 typedef struct lookup lookup;
-typedef struct compiler_foundation compiler_foundation;
 typedef struct compiler_stack compiler_stack;
 
 struct local
@@ -109,16 +108,6 @@ struct lookup
     table *native;
 };
 
-struct compiler_foundation
-{
-    parser parser;
-    function *func;
-
-    compiler *base;
-    compiler *enclosing;
-    class_compiler *class_compiler;
-};
-
 struct compiler_stack
 {
     class *instance[CALL_COUNT];
@@ -135,7 +124,11 @@ struct compiler
     meta meta;
     lookup lookup;
     compiler_stack stack;
-    compiler_foundation ykes;
+    parser parser;
+    function *func;
+    compiler *base;
+    compiler *enclosing;
+    class_compiler *class_compiler;
 };
 
 struct parse_rule
