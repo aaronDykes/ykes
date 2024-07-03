@@ -1,11 +1,11 @@
 #include "arena_table.h"
 
-void insert_entry(Table **t, Table entry)
+void insert_entry(table **t, table entry)
 {
-    Table *tmp = *t;
+    table *tmp = *t;
     size_t index = entry.key.as.hash & ((tmp - 1)->len - 1);
-    Table e = tmp[index];
-    Table *ptr = e.next;
+    table e = tmp[index];
+    table *ptr = e.next;
 
     if (e.key.type == ARENA_NULL)
     {
@@ -15,12 +15,12 @@ void insert_entry(Table **t, Table entry)
 
     if (e.key.as.hash == entry.key.as.hash)
     {
-
+        FREE_ENTRY(&tmp[index]);
         tmp[index] = new_entry(entry);
         return;
     }
 
-    Element el = find_entry(t, &entry.key);
+    element el = find_entry(t, &entry.key);
 
     if (el.type == NULL_OBJ)
     {
@@ -34,57 +34,23 @@ void insert_entry(Table **t, Table entry)
 
     return;
 END:
-    FREE_ENTRY(ptr->val);
+    FREE_ENTRY(ptr);
     ptr->val = entry.val;
 }
 
-void free_entry(Element el)
+void delete_entry(table **t, arena key)
 {
-
-    switch (el.type)
-    {
-    case ARENA:
-        ARENA_FREE(&el.arena);
-        break;
-    case NATIVE:
-        FREE_NATIVE(el.native);
-        break;
-    case CLOSURE:
-        FREE_CLOSURE(&el.closure);
-        break;
-    case CLASS:
-        FREE_CLASS(el.classc);
-        break;
-    case INSTANCE:
-        FREE_INSTANCE(el.instance);
-        break;
-    case VECTOR:
-        FREE_ARENA(el.arena_vector);
-        break;
-    case TABLE:
-        FREE_TABLE(el.table);
-        break;
-    case STACK:
-        FREE_STACK(&el.stack);
-        break;
-    default:
-        break;
-    }
-}
-
-void delete_entry(Table **t, Arena key)
-{
-    Table *a = NULL;
+    table *a = NULL;
     a = *t;
     size_t index = key.as.hash & ((a - 1)->len - 1);
-    Table e = a[index];
+    table e = a[index];
 
     if (e.key.type == ARENA_NULL || key.type == ARENA_NULL)
         return;
 
     if (e.next && (e.key.as.hash == key.as.hash))
     {
-        Table *t = a[index].next;
+        table *t = a[index].next;
         FREE_TABLE_ENTRY(&a[index]);
         a[index] = arena_entry(Null(), Null());
         t->prev = NULL;
@@ -99,8 +65,8 @@ void delete_entry(Table **t, Arena key)
         return;
     }
 
-    Table *tmp = e.next;
-    Table *del = NULL;
+    table *tmp = e.next;
+    table *del = NULL;
 
     if (!tmp->next)
     {
@@ -129,13 +95,13 @@ DEL_LAST:
     FREE_TABLE_ENTRY(tmp);
 }
 
-Element find_entry(Table **t, Arena *hash)
+element find_entry(table **t, arena *hash)
 {
-    Table *a = *t;
+    table *a = *t;
     size_t index = hash->as.hash & ((a - 1)->len - 1);
-    Table entry = a[index];
+    table entry = a[index];
 
-    Element null_ = null_obj();
+    element null_ = null_obj();
     if (entry.key.type == ARENA_NULL)
         return null_;
 
@@ -143,7 +109,7 @@ Element find_entry(Table **t, Arena *hash)
         switch (entry.type)
         {
         case ARENA:
-            return OBJ(entry.val.arena);
+            return OBJ(entry.val._arena);
         case NATIVE:
             return NATIVE(entry.val.native);
         case CLOSURE:
@@ -155,21 +121,21 @@ Element find_entry(Table **t, Arena *hash)
         case TABLE:
             return TABLE(entry.val.table);
         case VECTOR:
-            return VECT(entry.val.arena_vector);
+            return VECT(entry.val._vector);
         case STACK:
             return STK(entry.val.stack);
         default:
             return null_;
         }
 
-    Table *tmp = entry.next;
+    table *tmp = entry.next;
 
     for (; tmp; tmp = tmp->next)
         if (tmp->key.as.hash == hash->as.hash)
             switch (entry.type)
             {
             case ARENA:
-                return OBJ(entry.val.arena);
+                return OBJ(entry.val._arena);
             case NATIVE:
                 return NATIVE(entry.val.native);
             case CLOSURE:
@@ -181,7 +147,7 @@ Element find_entry(Table **t, Arena *hash)
             case TABLE:
                 return TABLE(entry.val.table);
             case VECTOR:
-                return VECT(entry.val.arena_vector);
+                return VECT(entry.val._vector);
             case STACK:
                 return STK(entry.val.stack);
             default:
@@ -191,34 +157,34 @@ Element find_entry(Table **t, Arena *hash)
     return null_;
 }
 
-void alloc_entry(Table **e, Table el)
+void alloc_entry(table **e, table el)
 {
-    Table *tmp = NULL;
+    table *tmp = NULL;
     tmp = *e;
 
     if (!tmp)
     {
         *e = NULL;
-        *e = ALLOC(sizeof(Table));
+        *e = ALLOC(sizeof(table));
         **e = el;
         return;
     }
     for (; tmp->next; tmp = tmp->next)
         ;
     tmp->next = NULL;
-    tmp->next = ALLOC(sizeof(Table));
+    tmp->next = ALLOC(sizeof(table));
     *tmp->next = el;
     tmp->next->prev = tmp;
 }
 
-Table new_entry(Table t)
+table new_entry(table t)
 {
-    Table el;
+    table el;
     el.key = t.key;
     switch (t.type)
     {
     case ARENA:
-        el.val.arena = t.val.arena;
+        el.val._arena = t.val._arena;
         break;
     case NATIVE:
         el.val.native = t.val.native;
@@ -230,7 +196,7 @@ Table new_entry(Table t)
         el.val.table = t.val.table;
         break;
     case VECTOR:
-        el.val.arena_vector = t.val.arena_vector;
+        el.val._vector = t.val._vector;
         break;
     default:
         break;
@@ -241,12 +207,12 @@ Table new_entry(Table t)
     return el;
 }
 
-Table Entry(Arena key, Element val)
+table Entry(arena key, element val)
 {
     switch (val.type)
     {
     case ARENA:
-        return arena_entry(key, val.arena);
+        return arena_entry(key, val._arena);
     case NATIVE:
         return native_entry(val.native);
     case CLOSURE:
@@ -258,7 +224,7 @@ Table Entry(Arena key, Element val)
     case TABLE:
         return table_entry(key, val.table);
     case VECTOR:
-        return vector_entry(key, val.arena_vector);
+        return vector_entry(key, val._vector);
     case STACK:
         return stack_entry(key, val.stack);
     default:
@@ -266,20 +232,20 @@ Table Entry(Arena key, Element val)
     }
 }
 
-Table arena_entry(Arena key, Arena val)
+table arena_entry(arena key, arena val)
 {
-    Table el;
+    table el;
     el.key = key;
-    el.val.arena = val;
+    el.val._arena = val;
     el.next = NULL;
     el.prev = NULL;
     el.size = key.size + val.size;
     el.type = ARENA;
     return el;
 }
-Table func_entry(Closure *clos)
+table func_entry(closure *clos)
 {
-    Table el;
+    table el;
     el.key = clos->func->name;
     el.val.closure = clos;
     el.next = NULL;
@@ -288,9 +254,9 @@ Table func_entry(Closure *clos)
     el.type = CLOSURE;
     return el;
 }
-Table native_entry(Native *func)
+table native_entry(native *func)
 {
-    Table el;
+    table el;
     el.key = func->obj;
     el.val.native = func;
     el.next = NULL;
@@ -299,9 +265,9 @@ Table native_entry(Native *func)
     el.type = NATIVE;
     return el;
 }
-Table class_entry(Class *c)
+table class_entry(class *c)
 {
-    Table el;
+    table el;
     el.key = c->name;
     el.val.classc = c;
     el.next = NULL;
@@ -310,9 +276,9 @@ Table class_entry(Class *c)
     el.type = CLASS;
     return el;
 }
-Table instance_entry(Arena ar, Instance *c)
+table instance_entry(arena ar, instance *c)
 {
-    Table el;
+    table el;
     el.key = ar;
     el.val.instance = c;
     el.next = NULL;
@@ -322,9 +288,9 @@ Table instance_entry(Arena ar, Instance *c)
     return el;
 }
 
-Table table_entry(Arena ar, Table *t)
+table table_entry(arena ar, table *t)
 {
-    Table el;
+    table el;
     el.key = ar;
     el.val.table = t;
     el.next = NULL;
@@ -333,20 +299,20 @@ Table table_entry(Arena ar, Table *t)
     el.type = TABLE;
     return el;
 }
-Table vector_entry(Arena ar, Arena *arena_vector)
+table vector_entry(arena ar, arena *arena_vector)
 {
-    Table el;
+    table el;
     el.key = ar;
-    el.val.arena_vector = arena_vector;
+    el.val._vector = arena_vector;
     el.next = NULL;
     el.prev = NULL;
     el.size = el.key.size;
     el.type = VECTOR;
     return el;
 }
-Table stack_entry(Arena ar, Stack *s)
+table stack_entry(arena ar, stack *s)
 {
-    Table el;
+    table el;
     el.key = ar;
     el.val.stack = s;
     el.next = NULL;
@@ -356,19 +322,19 @@ Table stack_entry(Arena ar, Stack *s)
     return el;
 }
 
-Table *arena_realloc_table(Table *t, size_t size)
+table *realloc_table(table *t, size_t size)
 {
 
-    Table *ptr = NULL;
+    table *ptr = NULL;
 
     if (!t && size != 0)
     {
-        ptr = arena_alloc_table(size);
+        ptr = alloc_table(size);
         return ptr;
     }
     if (size == 0)
     {
-        arena_free_table(t);
+        free_table(t);
         --t;
         t = NULL;
         return NULL;
@@ -380,23 +346,23 @@ Table *arena_realloc_table(Table *t, size_t size)
     else
         new_size = size;
 
-    ptr = arena_alloc_table(size);
+    ptr = alloc_table(size);
 
     for (size_t i = 0; i < new_size; i++)
     {
         ptr[i] = new_entry(t[i]);
 
-        for (Table *tab = t[i].next; tab; tab = tab->next)
+        for (table *tab = t[i].next; tab; tab = tab->next)
             insert_entry(&ptr, new_entry(*tab));
     }
 
-    FREE(((t - 1)));
+    FREE(t - 1);
     --t;
     t = NULL;
     return ptr;
 }
 
-void write_table(Table *t, Arena a, Element b)
+void write_table(table *t, arena a, element b)
 {
 
     if (b.type == CLOSURE)
@@ -433,10 +399,10 @@ OVERWRITE:
     insert_entry(&t, Entry(a, b));
 }
 
-Table *arena_alloc_table(size_t size)
+table *alloc_table(size_t size)
 {
-    Table *t = NULL;
-    t = ALLOC((size * sizeof(Table)) + sizeof(Table));
+    table *t = NULL;
+    t = ALLOC((size * sizeof(table)) + sizeof(table));
 
     size_t n = (size_t)size + 1;
 

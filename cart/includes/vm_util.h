@@ -2,11 +2,11 @@
 #define _VM_UTIL_H
 #include "arena_math.h"
 
-static Element find(Table *t, Arena tmp);
-static void close_upvalues(Stack *local);
-static void define_native(Arena ar, NativeFn native);
-static inline Element clock_native(int argc, Stack *args);
-static inline Element file_native(int argc, Stack *argv);
-static inline Element square_native(int argc, Stack *args);
-static inline Element prime_native(int argc, Stack *args);
+static element find(table *t, arena tmp);
+static void close_upvalues(stack *local);
+static void define_native(arena ar, NativeFn native);
+static inline element clock_native(int argc, stack *args);
+static inline element file_native(int argc, stack *argv);
+static inline element square_native(int argc, stack *args);
+static inline element prime_native(int argc, stack *args);
 #endif

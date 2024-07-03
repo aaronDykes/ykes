@@ -21,15 +21,15 @@ void initVM(void)
     machine.call_stack = GROW_STACK(NULL, STACK_SIZE);
     machine.class_stack = GROW_STACK(NULL, STACK_SIZE);
     machine.native_calls = GROW_STACK(NULL, STACK_SIZE);
-    machine.glob = GROW_TABLE(NULL, TABLE_SIZE);
+    machine.glob = GROW_TABLE(NULL, STACK_SIZE);
 
     machine.argc = 0;
     machine.cargc = 0;
 
-    define_native(native_name("clock"), clock_native);
-    define_native(native_name("square"), square_native);
-    define_native(native_name("prime"), prime_native);
-    define_native(native_name("file"), file_native);
+    define_native(Var("clock"), clock_native);
+    define_native(Var("square"), square_native);
+    define_native(Var("prime"), prime_native);
+    define_native(Var("file"), file_native);
 }
 void freeVM(void)
 {
@@ -66,7 +66,7 @@ static void runtime_error(const char *format, ...)
     {
 
         CallFrame *frame = &machine.frames[i];
-        Function *func = frame->closure->func;
+        function *func = frame->closure->func;
         int line = frame->closure->func->ch.lines.listof.Ints[i];
 
         if (!func->name.as.String)
@@ -79,18 +79,18 @@ static void runtime_error(const char *format, ...)
     reset_vm_stack();
 }
 
-static void define_native(Arena ar, NativeFn n)
+static void define_native(arena ar, NativeFn n)
 {
-    Element el = native_fn(native(n, ar));
+    element el = native_fn(_native(n, ar));
     push(&machine.native_calls, el);
 }
 
-static inline Element prime_native(int argc, Stack *args)
+static inline element prime_native(int argc, stack *args)
 {
-    return OBJ(_prime(args->as.arena));
+    return OBJ(_prime(args->as._arena));
 }
 
-static inline Element clock_native(int argc, Stack *args)
+static inline element clock_native(int argc, stack *args)
 {
     return OBJ(Double((double)clock() / CLOCKS_PER_SEC));
 }
@@ -181,29 +181,29 @@ static void write_file(const char *path, const char *data)
     f = NULL;
 }
 
-static inline Element file_native(int argc, Stack *argv)
+static inline element file_native(int argc, stack *argv)
 {
-    switch (*argv->as.arena.as.String)
+    switch (*argv->as._arena.as.String)
     {
     case 'r':
-        return OBJ(CString(get_file(argv[1].as.arena.as.String)));
+        return OBJ(CString(get_file(argv[1].as._arena.as.String)));
     case 'w':
-        write_file(argv[1].as.arena.as.String, argv[2].as.arena.as.String);
+        write_file(argv[1].as._arena.as.String, argv[2].as._arena.as.String);
         return null_obj();
     case 'a':
-        append_file(argv[1].as.arena.as.String, argv[2].as.arena.as.String);
+        append_file(argv[1].as._arena.as.String, argv[2].as._arena.as.String);
         return null_obj();
     default:
         return null_obj();
     }
 }
 
-static inline Element square_native(int argc, Stack *args)
+static inline element square_native(int argc, stack *args)
 {
-    return OBJ(_sqr(args->as.arena));
+    return OBJ(_sqr(args->as._arena));
 }
 
-static bool call(Closure *c, uint8_t argc)
+static bool call(closure *c, uint8_t argc)
 {
 
     if (c->func->arity != argc)
@@ -214,7 +214,7 @@ static bool call(Closure *c, uint8_t argc)
 
     if (machine.frame_count == FRAMES_MAX)
     {
-        runtime_error("ERROR: Stack overflow.");
+        runtime_error("ERROR: stack overflow.");
         return false;
     }
 
@@ -230,15 +230,15 @@ static bool call(Closure *c, uint8_t argc)
 Interpretation interpret(const char *src)
 {
 
-    Function *func = NULL;
+    function *func = NULL;
 
     if (!(func = compile(src)))
         return INTERPRET_RUNTIME_ERR;
 
-    Closure *clos = new_closure(func);
+    closure *clos = _closure(func);
     call(clos, 0);
 
-    push(&machine.stack, closure(clos));
+    push(&machine.stack, CLOSURE(clos));
 
     close_upvalues(machine.stack->top - 1);
     Interpretation res = run();
@@ -247,26 +247,26 @@ Interpretation interpret(const char *src)
 Interpretation interpret_path(const char *src, const char *path, const char *name)
 {
 
-    Function *func = NULL;
+    function *func = NULL;
 
     if (!(func = compile_path(src, path, name)))
         return INTERPRET_RUNTIME_ERR;
 
-    Closure *clos = new_closure(func);
+    closure *clos = _closure(func);
     call(clos, 0);
 
-    push(&machine.stack, closure(clos));
+    push(&machine.stack, CLOSURE(clos));
 
     close_upvalues(machine.stack->top - 1);
     Interpretation res = run();
     return res;
 }
 
-static Element find(Table *t, Arena ar)
+static element find(table *t, arena ar)
 {
     return find_entry(&t, &ar);
 }
-static bool call_value(Element el, uint8_t argc)
+static bool call_value(element el, uint8_t argc)
 {
     switch (el.type)
     {
@@ -275,7 +275,7 @@ static bool call_value(Element el, uint8_t argc)
         return call(el.closure, argc);
     case NATIVE:
     {
-        Element res = el.native->fn(argc, machine.stack->top - argc);
+        element res = el.native->fn(argc, machine.stack->top - argc);
         machine.stack->count -= (argc + 1);
         machine.stack->top -= (argc + 1);
         push(&machine.stack, res);
@@ -292,10 +292,10 @@ static bool call_value(Element el, uint8_t argc)
     return false;
 }
 
-static Upval *capture_upvalue(Stack *s)
+static upval *capture_upvalue(stack *s)
 {
-    Upval *prev = NULL;
-    Upval *curr = machine.open_upvals;
+    upval *prev = NULL;
+    upval *curr = machine.open_upvals;
 
     for (; curr && curr->index && curr->index < s; curr = curr->next)
         prev = curr;
@@ -303,7 +303,7 @@ static Upval *capture_upvalue(Stack *s)
     if (curr && curr->index == s)
         return curr;
 
-    Upval *new = upval(s);
+    upval *new = _upval(s);
     new->next = curr;
 
     if (prev)
@@ -313,41 +313,41 @@ static Upval *capture_upvalue(Stack *s)
     return new;
 }
 
-static void close_upvalues(Stack *local)
+static void close_upvalues(stack *local)
 {
     while (machine.open_upvals && machine.open_upvals->index >= local)
     {
-        Upval *up = machine.open_upvals;
+        upval *up = machine.open_upvals;
         up->closed = *machine.open_upvals->index;
         up->index = &up->closed;
         machine.open_upvals = up->next;
     }
 }
-Closure *traverse_stack_closure(Arena *ar)
+closure *traverse_stack_closure(arena *ar)
 {
-    for (Stack *s = machine.call_stack->top - 1; s >= machine.call_stack; s--)
+    for (stack *s = machine.call_stack->top - 1; s >= machine.call_stack; s--)
         if (s->as.closure->func->name.as.hash == ar->as.hash)
             return s->as.closure;
     return NULL;
 }
 
-Native *traverse_stack_native(Arena *ar)
+native *traverse_stack_native(arena *ar)
 {
-    for (Stack *s = machine.native_calls->top - 1; s >= machine.native_calls; s--)
+    for (stack *s = machine.native_calls->top - 1; s >= machine.native_calls; s--)
         if (s->as.native->obj.as.hash == ar->as.hash)
             return s->as.native;
     return NULL;
 }
 
-static void free_asterisk(Element el)
+static void free_asterisk(element el)
 {
     switch (el.type)
     {
     case ARENA:
-        if (el.arena.type == ARENA_VAR)
-            delete_entry(&machine.glob, el.arena);
+        if (el._arena.type == ARENA_VAR)
+            delete_entry(&machine.glob, el._arena);
         else
-            ARENA_FREE(&el.arena);
+            ARENA_FREE(&el._arena);
         break;
     case SCRIPT:
     case CLOSURE:
@@ -367,13 +367,13 @@ static void free_asterisk(Element el)
     }
 }
 
-static bool not_null(Element el)
+static bool not_null(element el)
 {
     switch (el.type)
     {
     case ARENA:
     {
-        Arena ar = el.arena;
+        arena ar = el._arena;
         switch (ar.type)
         {
         case ARENA_BYTE:
@@ -389,8 +389,6 @@ static bool not_null(Element el)
         case ARENA_STR:
         case ARENA_CSTR:
         case ARENA_VAR:
-        case ARENA_NATIVE:
-        case ARENA_FUNC:
             return ar.as.String ? true : false;
         case ARENA_BYTES:
             return ar.listof.Bytes ? true : false;
@@ -413,7 +411,7 @@ static bool not_null(Element el)
     case TABLE:
         return el.table ? true : false;
     case VECTOR:
-        return el.arena_vector ? true : false;
+        return el._vector ? true : false;
     case CLOSURE:
         return el.closure ? true : false;
     case CLASS:
@@ -442,7 +440,7 @@ Interpretation run(void)
 #define PEEK() ((machine.stack->top - 1)->as)
 #define NPEEK(N) ((machine.stack->top + (-1 - N))->as)
 #define CPEEK(N) ((machine.call_stack->top + (-1 + -N))->as)
-#define FALSEY() (!PEEK().arena.as.Bool)
+#define FALSEY() (!PEEK()._arena.as.Bool)
 #define POPN(n) (popn(&machine.stack, n))
 #define LOCAL() ((frame->slots + READ_BYTE())->as)
 #define JUMP() (*(frame->closure->func->ch.cases.listof.Ints + READ_SHORT()))
@@ -463,8 +461,8 @@ Interpretation run(void)
     for (;;)
     {
 #ifdef DEBUG_TRACE_EXECUTION
-        for (Stack *v = machine.stack; v < machine.stack->top; v++)
-            print_line(v->as);
+        for (stack *v = machine.stack; v < machine.stack->top; v++)
+            print(v->as);
         disassemble_instruction(&frame->closure->func->ch,
                                 (int)(frame->ip - frame->closure->func->ch.op_codes.listof.Bytes));
 #endif
@@ -474,11 +472,21 @@ Interpretation run(void)
         case OP_CONSTANT:
             PUSH(READ_CONSTANT());
             break;
-
         case OP_CLOSURE:
         {
-            Element e = READ_CONSTANT();
+            element e = READ_CONSTANT();
             CPUSH(e);
+
+            for (int i = 0; i < e.closure->upval_count; i++)
+                e.closure->upvals[i] =
+                    (READ_BYTE())
+                        ? capture_upvalue(frame->slots + READ_BYTE())
+                        : frame->closure->upvals[READ_BYTE()];
+        }
+        break;
+        case OP_METHOD:
+        {
+            element e = READ_CONSTANT();
 
             for (int i = 0; i < e.closure->upval_count; i++)
                 e.closure->upvals[i] =
@@ -496,29 +504,29 @@ Interpretation run(void)
             break;
 
         case OP_NEG:
-            (--machine.stack->top)->as = OBJ(_neg((machine.stack->top++)->as.arena));
+            (--machine.stack->top)->as = OBJ(_neg((machine.stack->top++)->as._arena));
             break;
 
         case OP_INC_GLO:
         {
-            Element key = READ_CONSTANT();
-            Element ar = OBJ(_inc(FIND_GLOB(key.arena).arena));
-            WRITE_GLOB(key.arena, ar);
+            element key = READ_CONSTANT();
+            element ar = OBJ(_inc(FIND_GLOB(key._arena)._arena));
+            WRITE_GLOB(key._arena, ar);
             PUSH(ar);
             break;
         }
         case OP_DEC_GLO:
         {
-            Element key = READ_CONSTANT();
-            Element ar = OBJ(_dec(FIND_GLOB(key.arena).arena));
-            WRITE_GLOB(key.arena, ar);
+            element key = READ_CONSTANT();
+            element ar = OBJ(_dec(FIND_GLOB(key._arena)._arena));
+            WRITE_GLOB(key._arena, ar);
             PUSH(ar);
             break;
         }
         case OP_INC_LOC:
         {
             uint8_t index = READ_BYTE();
-            Element el = OBJ(_inc((frame->slots + index)->as.arena));
+            element el = OBJ(_inc((frame->slots + index)->as._arena));
             (frame->slots + index)->as = el;
             PUSH(el);
             break;
@@ -526,72 +534,72 @@ Interpretation run(void)
         case OP_DEC_LOC:
         {
             uint8_t index = READ_BYTE();
-            Element el = OBJ(_dec((frame->slots + index)->as.arena));
+            element el = OBJ(_dec((frame->slots + index)->as._arena));
             (frame->slots + index)->as = el;
             PUSH(el);
             break;
         }
         case OP_INC:
-            (--machine.stack->top)->as = OBJ(_inc((machine.stack->top++)->as.arena));
+            (--machine.stack->top)->as = OBJ(_inc((machine.stack->top++)->as._arena));
             break;
         case OP_DEC:
-            (--machine.stack->top)->as = OBJ(_dec((machine.stack->top++)->as.arena));
+            (--machine.stack->top)->as = OBJ(_dec((machine.stack->top++)->as._arena));
             break;
         case OP_ADD:
-            PUSH(OBJ(_add(POP().arena, POP().arena)));
+            PUSH(OBJ(_add(POP()._arena, POP()._arena)));
             break;
         case OP_POPN:
-            POPN(READ_CONSTANT().arena.as.Int);
+            POPN(READ_CONSTANT()._arena.as.Int);
             break;
         case OP_POP:
             POP();
             break;
         case OP_SUB:
-            PUSH(OBJ(_sub(POP().arena, POP().arena)));
+            PUSH(OBJ(_sub(POP()._arena, POP()._arena)));
             break;
         case OP_MUL:
-            PUSH(OBJ(_mul(POP().arena, POP().arena)));
+            PUSH(OBJ(_mul(POP()._arena, POP()._arena)));
             break;
         case OP_MOD:
-            PUSH(OBJ(_mod(POP().arena, POP().arena)));
+            PUSH(OBJ(_mod(POP()._arena, POP()._arena)));
             break;
         case OP_DIV:
-            PUSH(OBJ(_div(POP().arena, POP().arena)));
+            PUSH(OBJ(_div(POP()._arena, POP()._arena)));
             break;
         case OP_EQ:
-            PUSH(OBJ(_eq(POP().arena, POP().arena)));
+            PUSH(OBJ(_eq(POP()._arena, POP()._arena)));
             break;
         case OP_NE:
-            PUSH(OBJ(_ne(POP().arena, POP().arena)));
+            PUSH(OBJ(_ne(POP()._arena, POP()._arena)));
             break;
         case OP_SEQ:
-            PUSH(OBJ(_seq(POP().arena, POP().arena)));
+            PUSH(OBJ(_seq(POP()._arena, POP()._arena)));
             break;
         case OP_SNE:
-            PUSH(OBJ(_sne(POP().arena, POP().arena)));
+            PUSH(OBJ(_sne(POP()._arena, POP()._arena)));
             break;
         case OP_LT:
-            PUSH(OBJ(_lt(POP().arena, POP().arena)));
+            PUSH(OBJ(_lt(POP()._arena, POP()._arena)));
             break;
         case OP_LE:
-            PUSH(OBJ(_le(POP().arena, POP().arena)));
+            PUSH(OBJ(_le(POP()._arena, POP()._arena)));
             break;
         case OP_GT:
-            PUSH(OBJ(_gt(POP().arena, POP().arena)));
+            PUSH(OBJ(_gt(POP()._arena, POP()._arena)));
             break;
         case OP_GE:
-            PUSH(OBJ(_ge(POP().arena, POP().arena)));
+            PUSH(OBJ(_ge(POP()._arena, POP()._arena)));
             break;
         case OP_OR:
-            PUSH(OBJ(_or(POP().arena, POP().arena)));
+            PUSH(OBJ(_or(POP()._arena, POP()._arena)));
             break;
         case OP_AND:
-            PUSH(OBJ(_and(POP().arena, POP().arena)));
+            PUSH(OBJ(_and(POP()._arena, POP()._arena)));
             break;
         case OP_GET_ACCESS:
         {
 
-            Element el = _get_access(POP(), POP());
+            element el = _get_access(POP(), POP());
             if (el.type != NULL_OBJ)
             {
                 PUSH(el);
@@ -605,19 +613,19 @@ Interpretation run(void)
             break;
         case OP_EACH_ACCESS:
         {
-            Element el = _get_each_access(POP(), machine.cargc++);
+            element el = _get_each_access(POP(), machine.cargc++);
             PEEK() = el;
         }
         break;
         case OP_SET_ACCESS:
-            _set_access(POP(), POP().arena, PEEK());
+            _set_access(POP(), POP()._arena, PEEK());
             break;
         case OP_PUSH_ARRAY_VAL:
         {
 
-            Element e1 = POP();
-            Element e2 = POP();
-            Element res = _push_array_val(e1, e2);
+            element e1 = POP();
+            element e2 = POP();
+            element res = _push_array_val(e1, e2);
             if (res.type != NULL_OBJ)
             {
                 PUSH(res);
@@ -628,11 +636,11 @@ Interpretation run(void)
         }
         case OP_POP__ARRAY_VAL:
         {
-            Element p = PEEK();
+            element p = PEEK();
             if (p.type == ARENA)
-                --p.arena.count;
+                --p._arena.count;
             else
-                --p.arena_vector->count;
+                --p._vector->count;
             machine.pop_val = _pop_array_val(PEEK());
             PEEK() = p;
             break;
@@ -670,14 +678,14 @@ Interpretation run(void)
             break;
         case OP_SET_PROP:
         {
-            Element el = PEEK();
-            Element inst = NPEEK(1);
+            element el = PEEK();
+            element inst = NPEEK(1);
             if (inst.type != INSTANCE)
             {
                 runtime_error("ERROR: Can only set properties of an instance.");
                 return INTERPRET_RUNTIME_ERR;
             }
-            write_table(inst.instance->classc->fields, READ_CONSTANT().arena, el);
+            write_table(inst.instance->fields, READ_CONSTANT()._arena, el);
             POP();
             break;
         }
@@ -691,10 +699,10 @@ Interpretation run(void)
                 runtime_error("ERROR: Only instances contain properties.");
                 return INTERPRET_RUNTIME_ERR;
             }
-            Instance *inst = POP().instance;
-            Arena name = READ_CONSTANT().arena;
+            instance *inst = POP().instance;
+            arena name = READ_CONSTANT()._arena;
 
-            Element n = find_entry(&inst->classc->fields, &name);
+            element n = find_entry(&inst->fields, &name);
 
             if (n.type != NULL_OBJ)
             {
@@ -764,27 +772,32 @@ Interpretation run(void)
             PUSH((machine.native_calls + READ_BYTE())->as);
             break;
         case OP_CLASS:
-            PPUSH(INSTANCE(READ_CONSTANT().instance));
+            PPUSH(CLASS(READ_CONSTANT().classc));
             break;
         case OP_GET_CLASS:
-            PUSH((machine.class_stack + READ_BYTE())->as);
+        {
+            instance *ic = NULL;
+            ic = _instance((machine.class_stack + READ_BYTE())->as.classc);
+            ic->fields = GROW_TABLE(NULL, STACK_SIZE);
+            PUSH(INSTANCE(ic));
             break;
+        }
         case OP_RM:
             RM();
             break;
         case OP_ALLOC_TABLE:
-            if (PEEK().type != ARENA && PEEK().arena.type != ARENA_INT)
+            if (PEEK().type != ARENA && PEEK()._arena.type != ARENA_INT)
             {
-                runtime_error("ERROR: Table argument must be a numeric value.");
+                runtime_error("ERROR: table argument must be a numeric value.");
                 return INTERPRET_RUNTIME_ERR;
             }
-            PUSH(TABLE(GROW_TABLE(NULL, POP().arena.as.Int)));
+            PUSH(TABLE(GROW_TABLE(NULL, POP()._arena.as.Int)));
             break;
         case OP_GET_GLOBAL:
         {
 
-            Arena var = READ_CONSTANT().arena;
-            Element el = FIND_GLOB(var);
+            arena var = READ_CONSTANT()._arena;
+            element el = FIND_GLOB(var);
 
             if (el.type != NULL_OBJ)
             {
@@ -798,33 +811,33 @@ Interpretation run(void)
         case OP_SET_GLOBAL:
         case OP_GLOBAL_DEF:
         {
-            Element el = READ_CONSTANT();
-            Element res = POP();
+            element el = READ_CONSTANT();
+            element res = POP();
 
             if (res.type == CLOSURE)
-                res.closure->func->name = el.arena;
-            WRITE_GLOB(el.arena, res);
+                res.closure->func->name = el._arena;
+            WRITE_GLOB(el._arena, res);
         }
         break;
         case OP_SET_FUNC_VAR:
         {
-            Element el = READ_CONSTANT();
-            Element res = (machine.cargc < machine.argc)
+            element el = READ_CONSTANT();
+            element res = (machine.cargc < machine.argc)
                               ? (frame->slots + machine.cargc++)->as
                               : POP();
 
             if (res.type == CLOSURE)
-                res.closure->func->name = el.arena;
-            WRITE_GLOB(el.arena, res);
+                res.closure->func->name = el._arena;
+            WRITE_GLOB(el._arena, res);
         }
         break;
 
         case OP_PRINT:
-            print_line(POP());
+            print(POP());
             break;
         case OP_RETURN:
         {
-            Element el = POP();
+            element el = POP();
             --machine.frame_count;
 
             if (machine.frame_count == 0)
@@ -832,7 +845,7 @@ Interpretation run(void)
                 POP();
                 return INTERPRET_SUCCESS;
             }
-            for (Stack *s = machine.stack; s < machine.stack->top; s++)
+            for (stack *s = machine.stack; s < machine.stack->top; s++)
                 POP();
 
             machine.stack->top = frame->slots;

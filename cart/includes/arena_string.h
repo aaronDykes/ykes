@@ -2,10 +2,10 @@
 #define _ARENA_STRING_H
 #include "arena_memory.h"
 
-Arena ltoa_eqcmp(long long int llint, Arena ar);
-Arena ltoa_neqcmp(long long int llint, Arena ar);
-Arena itoa_eqcmp(int ival, Arena ar);
-Arena itoa_neqcmp(int ival, Arena ar);
+arena ltoa_eqcmp(long long int llint, arena ar);
+arena ltoa_neqcmp(long long int llint, arena ar);
+arena itoa_eqcmp(int ival, arena ar);
+arena itoa_neqcmp(int ival, arena ar);
 
 void log_err(const char *format, ...);
 void str_swap(char *from, char *to);
@@ -15,18 +15,18 @@ int longlen(long long int n);
 char *itoa(char *c, int n);
 char *lltoa(char *c, long long int n);
 
-Arena prepend_int_to_str(Arena s, Arena a);
-Arena prepend_char_to_str(Arena s, Arena a);
-Arena prepend_long_to_str(Arena s, Arena a);
+arena prepend_int_to_str(arena s, arena a);
+arena prepend_char_to_str(arena s, arena a);
+arena prepend_long_to_str(arena s, arena a);
 
-Arena append(Arena s, Arena ar);
-Arena append_to_cstr(Arena s, Arena ar);
+arena append(arena s, arena ar);
+arena append_to_cstr(arena s, arena ar);
 
-Arena string_eq(Arena s, Arena c);
-Arena string_ne(Arena s, Arena c);
-Arena string_gt(Arena s, Arena c);
-Arena string_ge(Arena s, Arena c);
-Arena string_lt(Arena s, Arena c);
-Arena string_le(Arena s, Arena c);
+arena string_eq(arena s, arena c);
+arena string_ne(arena s, arena c);
+arena string_gt(arena s, arena c);
+arena string_ge(arena s, arena c);
+arena string_lt(arena s, arena c);
+arena string_le(arena s, arena c);
 
 #endif

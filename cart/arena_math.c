@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-static Arena Num(long long int range)
+static arena Num(long long int range)
 {
     if (range < INT32_MAX && range > INT32_MIN)
         return Int((int)range);
@@ -16,7 +16,7 @@ static Arena Num(long long int range)
     return Null();
 }
 
-static Arena add_arena_size(size_t size, Arena ar)
+static arena add_arena_size(size_t size, arena ar)
 {
     switch (ar.type)
     {
@@ -39,7 +39,7 @@ static Arena add_arena_size(size_t size, Arena ar)
         exit(1);
     }
 }
-static Arena sub_arena_size(size_t size, Arena ar)
+static arena sub_arena_size(size_t size, arena ar)
 {
     switch (ar.type)
     {
@@ -59,7 +59,7 @@ static Arena sub_arena_size(size_t size, Arena ar)
         exit(1);
     }
 }
-static Arena mul_arena_size(size_t size, Arena ar)
+static arena mul_arena_size(size_t size, arena ar)
 {
     switch (ar.type)
     {
@@ -79,7 +79,7 @@ static Arena mul_arena_size(size_t size, Arena ar)
         exit(1);
     }
 }
-static Arena div_arena_size(size_t size, Arena ar)
+static arena div_arena_size(size_t size, arena ar)
 {
     switch (ar.type)
     {
@@ -112,7 +112,7 @@ ERR:
 
     return ar;
 }
-static Arena mod_arena_size(size_t size, Arena ar)
+static arena mod_arena_size(size_t size, arena ar)
 {
     switch (ar.type)
     {
@@ -133,7 +133,7 @@ static Arena mod_arena_size(size_t size, Arena ar)
     return Null();
 }
 
-static Arena add_arena_char(char ch, Arena ar)
+static arena add_arena_char(char ch, arena ar)
 {
     long long int test = 0;
     switch (ar.type)
@@ -159,7 +159,7 @@ static Arena add_arena_char(char ch, Arena ar)
     }
     return Null();
 }
-static Arena sub_arena_char(char ch, Arena ar)
+static arena sub_arena_char(char ch, arena ar)
 {
     long long int test = 0;
     switch (ar.type)
@@ -184,7 +184,7 @@ static Arena sub_arena_char(char ch, Arena ar)
     }
     return ar;
 }
-static Arena mul_arena_char(char ch, Arena ar)
+static arena mul_arena_char(char ch, arena ar)
 {
     long long int test = 0;
     switch (ar.type)
@@ -207,7 +207,7 @@ static Arena mul_arena_char(char ch, Arena ar)
     }
     return ar;
 }
-static Arena div_arena_char(char ch, Arena ar)
+static arena div_arena_char(char ch, arena ar)
 {
     switch (ar.type)
     {
@@ -240,7 +240,7 @@ ERR:
 
     return ar;
 }
-static Arena mod_arena_char(char ch, Arena ar)
+static arena mod_arena_char(char ch, arena ar)
 {
     switch (ar.type)
     {
@@ -259,7 +259,7 @@ static Arena mod_arena_char(char ch, Arena ar)
     return ar;
 }
 
-static Arena add_arena_int(int ival, Arena ar)
+static arena add_arena_int(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -282,7 +282,7 @@ static Arena add_arena_int(int ival, Arena ar)
     }
     return ar;
 }
-static Arena sub_arena_int(int ival, Arena ar)
+static arena sub_arena_int(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -302,7 +302,7 @@ static Arena sub_arena_int(int ival, Arena ar)
     }
     return ar;
 }
-static Arena mul_arena_int(int ival, Arena ar)
+static arena mul_arena_int(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -322,7 +322,7 @@ static Arena mul_arena_int(int ival, Arena ar)
     }
     return ar;
 }
-static Arena div_arena_int(int ival, Arena ar)
+static arena div_arena_int(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -355,7 +355,7 @@ ERR:
 
     return ar;
 }
-static Arena mod_arena_int(int ival, Arena ar)
+static arena mod_arena_int(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -374,7 +374,7 @@ static Arena mod_arena_int(int ival, Arena ar)
     return ar;
 }
 
-static Arena add_arena_long(long long int llint, Arena ar)
+static arena add_arena_long(long long int llint, arena ar)
 {
     switch (ar.type)
     {
@@ -397,7 +397,7 @@ static Arena add_arena_long(long long int llint, Arena ar)
     }
     return ar;
 }
-static Arena sub_arena_long(long long int llint, Arena ar)
+static arena sub_arena_long(long long int llint, arena ar)
 {
 
     switch (ar.type)
@@ -418,7 +418,7 @@ static Arena sub_arena_long(long long int llint, Arena ar)
     }
     return ar;
 }
-static Arena mul_arena_long(long long int llint, Arena ar)
+static arena mul_arena_long(long long int llint, arena ar)
 {
     switch (ar.type)
     {
@@ -438,7 +438,7 @@ static Arena mul_arena_long(long long int llint, Arena ar)
     }
     return ar;
 }
-static Arena div_arena_long(long long int llint, Arena ar)
+static arena div_arena_long(long long int llint, arena ar)
 {
     switch (ar.type)
     {
@@ -468,7 +468,7 @@ ERR:
     log_err("ERROR: divide by zero\n");
     return Null();
 }
-static Arena mod_arena_long(long long int llint, Arena ar)
+static arena mod_arena_long(long long int llint, arena ar)
 {
     switch (ar.type)
     {
@@ -486,7 +486,7 @@ static Arena mod_arena_long(long long int llint, Arena ar)
     }
 }
 
-static Arena add_arena_double(double dval, Arena ar)
+static arena add_arena_double(double dval, arena ar)
 {
     switch (ar.type)
     {
@@ -505,7 +505,7 @@ static Arena add_arena_double(double dval, Arena ar)
         exit(1);
     }
 }
-static Arena sub_arena_double(double dval, Arena ar)
+static arena sub_arena_double(double dval, arena ar)
 {
     switch (ar.type)
     {
@@ -524,7 +524,7 @@ static Arena sub_arena_double(double dval, Arena ar)
         exit(1);
     }
 }
-static Arena mul_arena_double(double dval, Arena ar)
+static arena mul_arena_double(double dval, arena ar)
 {
     switch (ar.type)
     {
@@ -545,7 +545,7 @@ static Arena mul_arena_double(double dval, Arena ar)
     }
     return ar;
 }
-static Arena div_arena_double(double dval, Arena ar)
+static arena div_arena_double(double dval, arena ar)
 {
     switch (ar.type)
     {
@@ -579,7 +579,7 @@ ERR:
     return ar;
 }
 
-static Arena char_eq(char ch, Arena ar)
+static arena char_eq(char ch, arena ar)
 {
     switch (ar.type)
     {
@@ -601,7 +601,7 @@ static Arena char_eq(char ch, Arena ar)
     }
     return Bool(false);
 }
-static Arena char_ne(char ch, Arena ar)
+static arena char_ne(char ch, arena ar)
 {
     switch (ar.type)
     {
@@ -623,7 +623,7 @@ static Arena char_ne(char ch, Arena ar)
     }
     return Bool(false);
 }
-static Arena char_lt(char ch, Arena ar)
+static arena char_lt(char ch, arena ar)
 {
     switch (ar.type)
     {
@@ -642,7 +642,7 @@ static Arena char_lt(char ch, Arena ar)
         exit(1);
     }
 }
-static Arena char_le(char ch, Arena ar)
+static arena char_le(char ch, arena ar)
 {
     switch (ar.type)
     {
@@ -662,7 +662,7 @@ static Arena char_le(char ch, Arena ar)
         exit(1);
     }
 }
-static Arena char_gt(char ch, Arena ar)
+static arena char_gt(char ch, arena ar)
 {
     switch (ar.type)
     {
@@ -681,7 +681,7 @@ static Arena char_gt(char ch, Arena ar)
         exit(1);
     }
 }
-static Arena char_ge(char ch, Arena ar)
+static arena char_ge(char ch, arena ar)
 {
     switch (ar.type)
     {
@@ -701,7 +701,7 @@ static Arena char_ge(char ch, Arena ar)
     }
 }
 
-static Arena int_eq(int ival, Arena ar)
+static arena int_eq(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -723,7 +723,7 @@ static Arena int_eq(int ival, Arena ar)
         exit(1);
     }
 }
-static Arena int_ne(int ival, Arena ar)
+static arena int_ne(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -745,7 +745,7 @@ static Arena int_ne(int ival, Arena ar)
         exit(1);
     }
 }
-static Arena int_lt(int ival, Arena ar)
+static arena int_lt(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -764,7 +764,7 @@ static Arena int_lt(int ival, Arena ar)
         exit(1);
     }
 }
-static Arena int_le(int ival, Arena ar)
+static arena int_le(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -784,7 +784,7 @@ static Arena int_le(int ival, Arena ar)
         exit(1);
     }
 }
-static Arena int_gt(int ival, Arena ar)
+static arena int_gt(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -803,7 +803,7 @@ static Arena int_gt(int ival, Arena ar)
         exit(1);
     }
 }
-static Arena int_ge(int ival, Arena ar)
+static arena int_ge(int ival, arena ar)
 {
     switch (ar.type)
     {
@@ -823,7 +823,7 @@ static Arena int_ge(int ival, Arena ar)
     }
 }
 
-static Arena long_eq(long long int llint, Arena ar)
+static arena long_eq(long long int llint, arena ar)
 {
     switch (ar.type)
     {
@@ -845,7 +845,7 @@ static Arena long_eq(long long int llint, Arena ar)
         exit(1);
     }
 }
-static Arena long_ne(long long int llint, Arena ar)
+static arena long_ne(long long int llint, arena ar)
 {
     switch (ar.type)
     {
@@ -867,7 +867,7 @@ static Arena long_ne(long long int llint, Arena ar)
         exit(1);
     }
 }
-static Arena long_lt(long long int llint, Arena ar)
+static arena long_lt(long long int llint, arena ar)
 {
     switch (ar.type)
     {
@@ -886,7 +886,7 @@ static Arena long_lt(long long int llint, Arena ar)
         exit(1);
     }
 }
-static Arena long_le(long long int llint, Arena ar)
+static arena long_le(long long int llint, arena ar)
 {
     switch (ar.type)
     {
@@ -906,7 +906,7 @@ static Arena long_le(long long int llint, Arena ar)
         exit(1);
     }
 }
-static Arena long_gt(long long int llint, Arena ar)
+static arena long_gt(long long int llint, arena ar)
 {
     switch (ar.type)
     {
@@ -925,7 +925,7 @@ static Arena long_gt(long long int llint, Arena ar)
         exit(1);
     }
 }
-static Arena long_ge(long long int llint, Arena ar)
+static arena long_ge(long long int llint, arena ar)
 {
     switch (ar.type)
     {
@@ -946,7 +946,7 @@ static Arena long_ge(long long int llint, Arena ar)
     }
 }
 
-static Arena double_eq(double dval, Arena ar)
+static arena double_eq(double dval, arena ar)
 {
     switch (ar.type)
     {
@@ -965,7 +965,7 @@ static Arena double_eq(double dval, Arena ar)
         exit(1);
     }
 }
-static Arena double_ne(double dval, Arena ar)
+static arena double_ne(double dval, arena ar)
 {
     switch (ar.type)
     {
@@ -984,7 +984,7 @@ static Arena double_ne(double dval, Arena ar)
         exit(1);
     }
 }
-static Arena double_lt(double dval, Arena ar)
+static arena double_lt(double dval, arena ar)
 {
     switch (ar.type)
     {
@@ -1004,7 +1004,7 @@ static Arena double_lt(double dval, Arena ar)
         exit(1);
     }
 }
-static Arena double_le(double dval, Arena ar)
+static arena double_le(double dval, arena ar)
 {
     switch (ar.type)
     {
@@ -1024,7 +1024,7 @@ static Arena double_le(double dval, Arena ar)
         return Bool(false);
     }
 }
-static Arena double_gt(double dval, Arena ar)
+static arena double_gt(double dval, arena ar)
 {
     switch (ar.type)
     {
@@ -1044,7 +1044,7 @@ static Arena double_gt(double dval, Arena ar)
         return Bool(false);
     }
 }
-static Arena double_ge(double dval, Arena ar)
+static arena double_ge(double dval, arena ar)
 {
     switch (ar.type)
     {
@@ -1065,7 +1065,7 @@ static Arena double_ge(double dval, Arena ar)
     }
 }
 
-static Arena size_eq(size_t size, Arena ar)
+static arena size_eq(size_t size, arena ar)
 {
     switch (ar.type)
     {
@@ -1085,7 +1085,7 @@ static Arena size_eq(size_t size, Arena ar)
         return Bool(false);
     }
 }
-static Arena size_ne(size_t size, Arena ar)
+static arena size_ne(size_t size, arena ar)
 {
     switch (ar.type)
     {
@@ -1105,7 +1105,7 @@ static Arena size_ne(size_t size, Arena ar)
         return Bool(false);
     }
 }
-static Arena size_lt(size_t size, Arena ar)
+static arena size_lt(size_t size, arena ar)
 {
     switch (ar.type)
     {
@@ -1125,7 +1125,7 @@ static Arena size_lt(size_t size, Arena ar)
         return Bool(false);
     }
 }
-static Arena size_le(size_t size, Arena ar)
+static arena size_le(size_t size, arena ar)
 {
     switch (ar.type)
     {
@@ -1146,7 +1146,7 @@ static Arena size_le(size_t size, Arena ar)
     }
 }
 
-static Arena size_gt(size_t size, Arena ar)
+static arena size_gt(size_t size, arena ar)
 {
     switch (ar.type)
     {
@@ -1166,7 +1166,7 @@ static Arena size_gt(size_t size, Arena ar)
         return Bool(false);
     }
 }
-static Arena size_ge(size_t size, Arena ar)
+static arena size_ge(size_t size, arena ar)
 {
     switch (ar.type)
     {
@@ -1187,7 +1187,7 @@ static Arena size_ge(size_t size, Arena ar)
     }
 }
 
-static Arena _access_ints(int *Ints, Arena a, int len)
+static arena _access_ints(int *Ints, arena a, int len)
 {
     switch (a.type)
     {
@@ -1221,7 +1221,7 @@ ERR:
     log_err("ERROR: Array index out of bounds.");
     exit(1);
 }
-static Arena _access_longs(long long int *Longs, Arena a, int len)
+static arena _access_longs(long long int *Longs, arena a, int len)
 {
     switch (a.type)
     {
@@ -1255,7 +1255,7 @@ ERR:
     log_err("ERROR: Array index out of bounds.");
     exit(1);
 }
-static Arena _access_doubles(double *Doubles, Arena a, int len)
+static arena _access_doubles(double *Doubles, arena a, int len)
 {
     switch (a.type)
     {
@@ -1289,7 +1289,7 @@ ERR:
     log_err("ERROR: Array index out of bounds.");
     exit(1);
 }
-static Arena _access_string(char *String, Arena a, int len)
+static arena _access_string(char *String, arena a, int len)
 {
     switch (a.type)
     {
@@ -1322,7 +1322,7 @@ ERR:
     log_err("ERROR: Array index out of bounds.");
     exit(1);
 }
-static Arena _access_strings(char **Strings, Arena a, int len)
+static arena _access_strings(char **Strings, arena a, int len)
 {
     switch (a.type)
     {
@@ -1356,7 +1356,7 @@ ERR:
     exit(1);
 }
 
-static Arena _access_arena(Arena *vect, Arena index, int len)
+static arena _access_arena(arena *vect, arena index, int len)
 {
     switch (index.type)
     {
@@ -1389,7 +1389,7 @@ ERR:
     log_err("ERROR: Array index out of bounds.");
     exit(1);
 }
-static Element _access_stack(Stack *vect, Arena index, int len)
+static element _access_stack(stack *vect, arena index, int len)
 {
     switch (index.type)
     {
@@ -1422,7 +1422,7 @@ ERR:
     exit(1);
 }
 
-static void _set_int_index(Arena *Ints, Arena index, int Int)
+static void _set_int_index(arena *Ints, arena index, int Int)
 {
     int count = Ints->count,
         len = Ints->len;
@@ -1472,7 +1472,7 @@ ERR:
     log_err("ERROR: Array index out of bounds.");
     exit(1);
 }
-static void _set_long_index(Arena *Longs, Arena index, long long int Long)
+static void _set_long_index(arena *Longs, arena index, long long int Long)
 {
     int count = Longs->count,
         len = Longs->len;
@@ -1522,7 +1522,7 @@ ERR:
     log_err("ERROR: Array index out of bounds.");
     exit(1);
 }
-static void _set_double_index(Arena *Doubles, Arena index, double Double)
+static void _set_double_index(arena *Doubles, arena index, double Double)
 {
     int count = Doubles->count,
         len = Doubles->len;
@@ -1572,7 +1572,7 @@ ERR:
     log_err("ERROR: Array index out of bounds.");
     exit(1);
 }
-static void _set_string_index(Arena *String, Arena index, char Char)
+static void _set_string_index(arena *String, arena index, char Char)
 {
     int count = String->as.count,
         len = String->as.len;
@@ -1622,7 +1622,7 @@ ERR:
     log_err("ERROR: Array index out of bounds.");
     exit(1);
 }
-static void _set_strings_index(Arena *Strings, Arena index, char *String)
+static void _set_strings_index(arena *Strings, arena index, char *String)
 {
     int count = Strings->count,
         len = Strings->len;
@@ -1672,7 +1672,7 @@ ERR:
     log_err("ERROR: Array index out of bounds.");
     exit(1);
 }
-static void _set_stack_index(Stack **vect, Arena index, Element val)
+static void _set_stack_index(stack **vect, arena index, element val)
 {
     int len = (*vect)->len,
         count = (*vect)->count;
@@ -1723,7 +1723,7 @@ ERR:
     exit(1);
 }
 
-static void _set_arena_index(Arena **vect, Arena index, Arena val)
+static void _set_arena_index(arena **vect, arena index, arena val)
 {
     int len = ((*vect) - 1)->len,
         count = ((*vect) - 1)->count;
@@ -1774,9 +1774,9 @@ ERR:
     exit(1);
 }
 
-Arena _neg(Arena n)
+arena _neg(arena n)
 {
-    Arena ar = n;
+    arena ar = n;
 
     switch (ar.type)
     {
@@ -1802,7 +1802,7 @@ Arena _neg(Arena n)
     }
     return ar;
 }
-Arena _add(Arena a, Arena b)
+arena _add(arena a, arena b)
 {
 
     switch (b.type)
@@ -1825,7 +1825,7 @@ Arena _add(Arena a, Arena b)
         return a;
     }
 }
-Arena _inc(Arena b)
+arena _inc(arena b)
 {
     switch (b.type)
     {
@@ -1843,7 +1843,7 @@ Arena _inc(Arena b)
         return b;
     }
 }
-Arena _dec(Arena b)
+arena _dec(arena b)
 {
 
     switch (b.type)
@@ -1863,7 +1863,7 @@ Arena _dec(Arena b)
     }
 }
 
-Arena _sub(Arena a, Arena b)
+arena _sub(arena a, arena b)
 {
 
     switch (b.type)
@@ -1882,7 +1882,7 @@ Arena _sub(Arena a, Arena b)
         return b;
     }
 }
-Arena _mul(Arena a, Arena b)
+arena _mul(arena a, arena b)
 {
 
     switch (a.type)
@@ -1901,7 +1901,7 @@ Arena _mul(Arena a, Arena b)
         return a;
     }
 }
-Arena _div(Arena a, Arena b)
+arena _div(arena a, arena b)
 {
 
     switch (b.type)
@@ -1920,7 +1920,7 @@ Arena _div(Arena a, Arena b)
         return b;
     }
 }
-Arena _mod(Arena a, Arena b)
+arena _mod(arena a, arena b)
 {
 
     switch (b.type)
@@ -1938,7 +1938,7 @@ Arena _mod(Arena a, Arena b)
     }
 }
 
-Arena _eq(Arena a, Arena b)
+arena _eq(arena a, arena b)
 {
 
     switch (b.type)
@@ -1980,7 +1980,7 @@ Arena _eq(Arena a, Arena b)
         return b;
     }
 }
-Arena _ne(Arena a, Arena b)
+arena _ne(arena a, arena b)
 {
 
     switch (b.type)
@@ -2023,7 +2023,7 @@ Arena _ne(Arena a, Arena b)
     }
 }
 
-Arena _seq(Arena a, Arena b)
+arena _seq(arena a, arena b)
 {
     if (a.type != b.type)
         return Bool(false);
@@ -2051,7 +2051,7 @@ Arena _seq(Arena a, Arena b)
         return b;
     }
 }
-Arena _sne(Arena a, Arena b)
+arena _sne(arena a, arena b)
 {
     if (a.type != b.type)
         return Bool(true);
@@ -2080,7 +2080,7 @@ Arena _sne(Arena a, Arena b)
     }
 }
 
-Arena _lt(Arena a, Arena b)
+arena _lt(arena a, arena b)
 {
 
     switch (b.type)
@@ -2102,7 +2102,7 @@ Arena _lt(Arena a, Arena b)
         return b;
     }
 }
-Arena _le(Arena a, Arena b)
+arena _le(arena a, arena b)
 {
 
     switch (b.type)
@@ -2124,7 +2124,7 @@ Arena _le(Arena a, Arena b)
         return b;
     }
 }
-Arena _gt(Arena a, Arena b)
+arena _gt(arena a, arena b)
 {
 
     switch (b.type)
@@ -2146,7 +2146,7 @@ Arena _gt(Arena a, Arena b)
         return b;
     }
 }
-Arena _ge(Arena a, Arena b)
+arena _ge(arena a, arena b)
 {
 
     switch (b.type)
@@ -2169,51 +2169,51 @@ Arena _ge(Arena a, Arena b)
     }
 }
 
-Arena _or(Arena a, Arena b)
+arena _or(arena a, arena b)
 {
     return Bool(a.as.Bool || b.as.Bool);
 }
-Arena _and(Arena a, Arena b)
+arena _and(arena a, arena b)
 {
     return Bool(b.as.Bool && a.as.Bool);
 }
 
-Element _get_each_access(Element b, int index)
+element _get_each_access(element b, int index)
 {
-    Element nil = null_obj();
+    element nil = null_obj();
     switch (b.type)
     {
     case ARENA:
-        switch (b.arena.type)
+        switch (b._arena.type)
         {
         case ARENA_INTS:
-            if (index > b.arena.count - 1)
+            if (index > b._arena.count - 1)
                 return nil;
-            return OBJ(Int(*(b.arena.listof.Ints + index)));
+            return OBJ(Int(*(b._arena.listof.Ints + index)));
         case ARENA_LONGS:
-            if (index > b.arena.count - 1)
+            if (index > b._arena.count - 1)
                 return nil;
-            return OBJ(Long(*(b.arena.listof.Longs + index)));
+            return OBJ(Long(*(b._arena.listof.Longs + index)));
         case ARENA_DOUBLES:
-            if (index > b.arena.count - 1)
+            if (index > b._arena.count - 1)
                 return nil;
-            return OBJ(Double(*(b.arena.listof.Doubles + index)));
+            return OBJ(Double(*(b._arena.listof.Doubles + index)));
         case ARENA_STR:
         case ARENA_CSTR:
-            if (index > b.arena.count - 1)
+            if (index > b._arena.count - 1)
                 return nil;
-            return OBJ(Char(*(b.arena.as.String + index)));
+            return OBJ(Char(*(b._arena.as.String + index)));
         case ARENA_STRS:
-            if (index > b.arena.count - 1)
+            if (index > b._arena.count - 1)
                 return nil;
-            return OBJ(CString(*(b.arena.listof.Strings + index)));
+            return OBJ(CString(*(b._arena.listof.Strings + index)));
         default:
             goto ERR;
         }
     case VECTOR:
-        if (index > (b.arena_vector - 1)->count - 1)
+        if (index > (b._vector - 1)->count - 1)
             return nil;
-        return OBJ(*(b.arena_vector + index));
+        return OBJ(*(b._vector + index));
     case STACK:
         if (index > b.stack->count - 1)
             return nil;
@@ -2225,76 +2225,76 @@ Element _get_each_access(Element b, int index)
     }
 }
 
-Element _get_access(Element a, Element b)
+element _get_access(element a, element b)
 {
     switch (b.type)
     {
     case ARENA:
-        switch (b.arena.type)
+        switch (b._arena.type)
         {
         case ARENA_INTS:
-            return OBJ(_access_ints(b.arena.listof.Ints, a.arena, b.arena.count));
+            return OBJ(_access_ints(b._arena.listof.Ints, a._arena, b._arena.count));
         case ARENA_LONGS:
-            return OBJ(_access_longs(b.arena.listof.Longs, a.arena, b.arena.count));
+            return OBJ(_access_longs(b._arena.listof.Longs, a._arena, b._arena.count));
         case ARENA_DOUBLES:
-            return OBJ(_access_doubles(b.arena.listof.Doubles, a.arena, b.arena.count));
+            return OBJ(_access_doubles(b._arena.listof.Doubles, a._arena, b._arena.count));
         case ARENA_STR:
         case ARENA_CSTR:
-            return OBJ(_access_string(b.arena.as.String, a.arena, b.arena.count));
+            return OBJ(_access_string(b._arena.as.String, a._arena, b._arena.count));
         case ARENA_STRS:
-            return OBJ(_access_strings(b.arena.listof.Strings, a.arena, b.arena.count));
+            return OBJ(_access_strings(b._arena.listof.Strings, a._arena, b._arena.count));
         default:
             goto ERR;
         }
     case TABLE:
         if (a.type != ARENA)
             goto ERR;
-        return find_entry(&b.table, &a.arena);
+        return find_entry(&b.table, &a._arena);
 
     case VECTOR:
-        return OBJ(_access_arena(b.arena_vector, a.arena, (b.arena_vector - 1)->count));
+        return OBJ(_access_arena(b._vector, a._arena, (b._vector - 1)->count));
     case STACK:
-        return _access_stack(b.stack, a.arena, b.stack->count);
+        return _access_stack(b.stack, a._arena, b.stack->count);
     default:
     ERR:
         log_err("ERROR: access type mismatch.");
         return null_obj();
     }
 }
-void _set_access(Element val, Arena index, Element b)
+void _set_access(element val, arena index, element b)
 {
     switch (b.type)
     {
     case ARENA:
     {
-        Arena ar = b.arena;
+        arena ar = b._arena;
         switch (ar.type)
         {
         case ARENA_INTS:
-            if (val.arena.type != ARENA_INT)
+            if (val._arena.type != ARENA_INT)
                 goto ERR;
-            _set_int_index(&ar, index, val.arena.as.Int);
+            _set_int_index(&ar, index, val._arena.as.Int);
             return;
         case ARENA_LONGS:
-            if (val.arena.type != ARENA_LONG)
+            if (val._arena.type != ARENA_LONG)
                 goto ERR;
-            _set_long_index(&ar, index, val.arena.as.Long);
+            _set_long_index(&ar, index, val._arena.as.Long);
             return;
         case ARENA_DOUBLES:
-            if (val.arena.type != ARENA_DOUBLE)
+            if (val._arena.type != ARENA_DOUBLE)
                 goto ERR;
-            _set_double_index(&ar, index, val.arena.as.Double);
+            _set_double_index(&ar, index, val._arena.as.Double);
             return;
         case ARENA_STR:
         case ARENA_CSTR:
-            if (val.arena.type != ARENA_CHAR)
+            if (val._arena.type != ARENA_CHAR)
                 goto ERR;
-            _set_string_index(&ar, index, val.arena.as.Char);
+            _set_string_index(&ar, index, val._arena.as.Char);
             return;
         case ARENA_STRS:
-            if (val.arena.type != ARENA_STR && val.arena.type != ARENA_CSTR)
+            if (val._arena.type != ARENA_STR && val._arena.type != ARENA_CSTR)
                 goto ERR;
-            _set_strings_index(&ar, index, val.arena.as.String);
+            _set_strings_index(&ar, index, val._arena.as.String);
             return;
         default:
             break;
@@ -2310,7 +2310,7 @@ void _set_access(Element val, Arena index, Element b)
     case VECTOR:
         if (val.type != ARENA)
             goto ERR;
-        _set_arena_index(&b.arena_vector, index, val.arena);
+        _set_arena_index(&b._vector, index, val._arena);
         break;
     case STACK:
         _set_stack_index(&b.stack, index, val);
@@ -2322,16 +2322,16 @@ void _set_access(Element val, Arena index, Element b)
     }
 }
 
-Element _push_array_val(Element val, Element el)
+element _push_array_val(element val, element el)
 {
     switch (el.type)
     {
     case ARENA:
     {
-        Arena ar = val.arena;
+        arena ar = val._arena;
         if (val.type != ARENA)
             goto ERR;
-        switch (el.arena.type)
+        switch (el._arena.type)
         {
         case ARENA_INTS:
             if (ar.type != ARENA_INT)
@@ -2358,7 +2358,7 @@ Element _push_array_val(Element val, Element el)
         }
     }
     case VECTOR:
-        push_arena(&el, val.arena);
+        push_arena(&el, val._arena);
         return el;
     case STACK:
 
@@ -2370,13 +2370,13 @@ Element _push_array_val(Element val, Element el)
         return null_obj();
     }
 }
-Element _pop_array_val(Element val)
+element _pop_array_val(element val)
 {
     switch (val.type)
     {
     case ARENA:
     {
-        Arena ar = val.arena;
+        arena ar = val._arena;
         if (val.type != ARENA)
             goto ERR;
         switch (ar.type)
@@ -2405,13 +2405,13 @@ Element _pop_array_val(Element val)
     }
 }
 
-Arena _len(Element el)
+arena _len(element el)
 {
     switch (el.type)
     {
     case ARENA:
     {
-        Arena a = el.arena;
+        arena a = el._arena;
         switch (a.type)
         {
         case ARENA_INTS:
@@ -2427,7 +2427,7 @@ Arena _len(Element el)
         }
     }
     case VECTOR:
-        return Int((el.arena_vector - 1)->count);
+        return Int((el._vector - 1)->count);
     case STACK:
         return Int(el.stack->count);
     default:
@@ -2435,7 +2435,7 @@ Arena _len(Element el)
     }
 }
 
-Arena _sqr(Arena a)
+arena _sqr(arena a)
 {
     switch (a.type)
     {
@@ -2456,7 +2456,7 @@ Arena _sqr(Arena a)
     }
 }
 
-Arena _prime(Arena a)
+arena _prime(arena a)
 {
     double max = 0;
     switch (a.type)

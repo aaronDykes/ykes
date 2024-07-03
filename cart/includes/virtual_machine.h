@@ -13,12 +13,15 @@ typedef enum
 
 } Interpretation;
 
+typedef struct CallFrame CallFrame;
+typedef struct vm vm;
+
 struct CallFrame
 {
-    Closure *closure;
+    closure *closure;
     uint8_t *ip;
     uint8_t *ip_start;
-    Stack *slots;
+    stack *slots;
 };
 
 struct vm
@@ -28,14 +31,14 @@ struct vm
     int cargc;
 
     CallFrame frames[FRAMES_MAX];
-    Stack *stack;
-    Stack *call_stack;
-    Stack *method_call_stack;
-    Stack *class_stack;
-    Stack *native_calls;
-    Element pop_val;
-    Upval *open_upvals;
-    Table *glob;
+    stack *stack;
+    stack *call_stack;
+    stack *method_call_stack;
+    stack *class_stack;
+    stack *native_calls;
+    element pop_val;
+    upval *open_upvals;
+    table *glob;
 };
 
 vm machine;

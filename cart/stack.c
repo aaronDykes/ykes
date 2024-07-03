@@ -1,36 +1,37 @@
 #include "stack.h"
 #include <stdio.h>
 
-void write_chunk(Chunk *c, uint8_t byte, int line)
+void write_chunk(chunk *c, uint8_t byte, int line)
 {
 
     if (c->op_codes.len < c->op_codes.count + 1)
     {
+
         c->op_codes.len = GROW_CAPACITY(c->op_codes.len);
-        c->op_codes = GROW_ARRAY(&c->op_codes, c->op_codes.len * sizeof(uint8_t), ARENA_BYTES);
+        c->op_codes = GROW_ARENA(&c->op_codes, c->op_codes.len * sizeof(uint8_t), ARENA_BYTES);
     }
 
     if (c->lines.len < c->lines.count + 1)
     {
         c->lines.len = GROW_CAPACITY(c->lines.len);
-        c->lines = GROW_ARRAY(&c->lines, c->lines.len * sizeof(int), ARENA_INTS);
+        c->lines = GROW_ARENA(&c->lines, c->lines.len * sizeof(int), ARENA_INTS);
     }
 
     c->lines.listof.Ints[c->lines.count++] = line;
     c->op_codes.listof.Bytes[c->op_codes.count++] = byte;
 }
 
-int add_constant(Chunk *c, Element ar)
+int add_constant(chunk *c, element ar)
 {
     push(&c->constants, ar);
     return c->constants->count - 1;
 }
 
-void reset_stack(Stack *s)
+void reset_stack(stack *s)
 {
     s->top = s;
 }
-void check_stack_size(Stack *s)
+void check_stack_size(stack *s)
 {
 
     if (!s)
@@ -43,15 +44,15 @@ void check_stack_size(Stack *s)
     }
 }
 
-void popn(Stack **s, int ival)
+void popn(stack **s, int ival)
 {
     for (int i = 0; i < ival; i++)
         --(*s)->count, --(*s)->top;
 }
 
-void push(Stack **s, Element e)
+void push(stack **s, element e)
 {
-    Stack *st = *s;
+    stack *st = *s;
     check_stack_size(st);
 
     if (!st)

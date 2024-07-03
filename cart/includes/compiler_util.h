@@ -1,15 +1,16 @@
 #ifndef _COMPILER_UTIL_H
 #define _COMPILER_UTIL_H
 #include "scanner.h"
+#include "arena_memory.h"
 
 #define MAX_ELIF 10
-#define LOCAL_COUNT 500
+#define LOCAL_COUNT 255
 #define CALL_COUNT 255
 #define CLASS_COUNT 50
 #define CWD_MAX 1024
 #define _SIZE(X) sizeof(X) / sizeof(X[0])
 
-struct Parser
+struct parser
 {
     token cur;
     token pre;
@@ -34,74 +35,107 @@ typedef enum
 
 } Precedence;
 
-typedef struct Parser Parser;
-typedef struct Local Local;
-typedef struct Upvalue Upvalue;
-typedef struct Compiler Compiler;
-typedef struct ClassCompiler ClassCompiler;
-typedef void (*parse_fn)(Compiler *);
+typedef struct parser parser;
+typedef struct local local;
+typedef struct upvalue upvalue;
+typedef struct compiler compiler;
+typedef struct class_compiler class_compiler;
+typedef void (*parse_fn)(compiler *);
 typedef struct parse_rule PRule;
+typedef struct counter counter;
+typedef struct current current;
+typedef struct hash_ref hash_ref;
+typedef struct meta meta;
+typedef struct lookup lookup;
+typedef struct compiler_foundation compiler_foundation;
+typedef struct compiler_stack compiler_stack;
 
-struct Local
+struct local
 {
-    Arena name;
+    arena name;
     int depth;
     bool captured;
 };
 
-struct Upvalue
+struct upvalue
 {
     uint8_t index;
     bool islocal;
 };
 
-struct ClassCompiler
+struct class_compiler
 {
-    ClassCompiler *enclosing;
-    Arena instance_name;
+    class_compiler *enclosing;
+    arena instance_name;
 };
 
-struct Compiler
+struct counter
 {
-    int local_count;
-    int scope_depth;
-    int upvalue_count;
-    int call_count;
-    int param_count;
-    int class_count;
-    int native_count;
+    uint8_t local;
+    uint8_t scope;
+    uint8_t upvalue;
+    uint8_t call;
+    uint8_t param;
+    uint8_t class;
+    uint8_t native;
+};
 
-    // const char *src;
-    uint8_t array_index;
-    uint8_t array_set;
-    uint8_t array_get;
+struct current
+{
+    uint8_t index;
+    uint8_t set;
+    uint8_t get;
+};
 
+struct hash_ref
+{
+    arena init;
+    arena len;
+    arena push;
+    arena pop;
+};
+
+struct meta
+{
     ObjType type;
-    Function *func;
-
-    Parser parser;
-
-    Arena init_func;
-    Arena len;
-    Arena ar_push;
-    Arena ar_pop;
-    int current_instance;
-
     const char *cwd;
-    const char *current_file;
+};
 
-    Compiler *base;
-    Compiler *enclosing;
-    ClassCompiler *class_compiler;
+struct lookup
+{
+    table *call;
+    table *class;
+    table *include;
+    table *native;
+};
 
-    Table *calls;
-    Table *classes;
-    Table *includes;
-    Table *natives;
+struct compiler_foundation
+{
+    parser parser;
+    function *func;
 
-    Class *instances[CALL_COUNT];
-    Local locals[LOCAL_COUNT];
-    Upvalue upvalues[LOCAL_COUNT];
+    compiler *base;
+    compiler *enclosing;
+    class_compiler *class_compiler;
+};
+
+struct compiler_stack
+{
+    class *instance[CALL_COUNT];
+    local local[LOCAL_COUNT];
+    upvalue upvalue[LOCAL_COUNT];
+};
+
+struct compiler
+{
+
+    counter count;
+    current array;
+    hash_ref _hash_ref;
+    meta meta;
+    lookup lookup;
+    compiler_stack stack;
+    compiler_foundation ykes;
 };
 
 struct parse_rule
@@ -111,134 +145,131 @@ struct parse_rule
     Precedence prec;
 };
 
-static void consume(int t, const char *str, Parser *parser);
-static void advance_compiler(Parser *parser);
+static void consume(int t, const char *str, parser *parser);
+static void advance_compiler(parser *parser);
 
-static void declaration(Compiler *c);
-static void call(Compiler *c);
-static void call_expect_arity(Compiler *c, int arity);
+static void declaration(compiler *c);
+static void call(compiler *c);
 
-static int argument_list(Compiler *c);
+static int argument_list(compiler *c);
 
-static void class_declaration(Compiler *c);
-static void method(Compiler *c, Class *class);
-static void method_body(Compiler *c, ObjType type, Arena ar, Class **class);
+static void class_declaration(compiler *c);
+static void method(compiler *c, class *class);
+static void method_body(compiler *c, ObjType type, arena ar, class **class);
 
-static void func_declaration(Compiler *c);
-static void func_body(Compiler *c, ObjType type, Arena ar);
-static void func_var(Compiler *c);
+static void func_declaration(compiler *c);
+static void func_body(compiler *c, ObjType type, arena ar);
+static void func_var(compiler *c);
 
-static void var_dec(Compiler *c);
-static void synchronize(Parser *parser);
+static void var_dec(compiler *c);
+static void synchronize(parser *parser);
 
-static void statement(Compiler *c);
-static void print_statement(Compiler *c);
+static void statement(compiler *c);
+static void print_statement(compiler *c);
 
-static void begin_scope(Compiler *c);
-static void end_scope(Compiler *c);
+static void begin_scope(compiler *c);
+static void end_scope(compiler *c);
 
-static void parse_block(Compiler *c);
-static void block(Compiler *c);
+static void parse_block(compiler *c);
+static void block(compiler *c);
 
-// static void comment(Compiler *c);
+// static void comment(compiler *c);
 
-static void emit_loop(Compiler *c, int byte);
-static int emit_jump_long(Compiler *c, int byte);
-static int emit_jump(Compiler *c, int byte);
+static void emit_loop(compiler *c, int byte);
+static int emit_jump_long(compiler *c, int byte);
+static int emit_jump(compiler *c, int byte);
 
-static void patch_jump_long(Compiler *c, int begin, int byte);
-static void patch_jump(Compiler *c, int byte);
+static void patch_jump_long(compiler *c, int begin, int byte);
+static void patch_jump(compiler *c, int byte);
 
-static void for_statement(Compiler *c);
-static void while_statement(Compiler *c);
-static void each_statement(Compiler *c);
+static void for_statement(compiler *c);
+static void while_statement(compiler *c);
+static void each_statement(compiler *c);
 
-static void rm_statement(Compiler *c);
+static void rm_statement(compiler *c);
 
-static void consume_if(Compiler *c);
-static void consume_elif(Compiler *c);
-static Arena consume_switch(Compiler *c);
+static void consume_if(compiler *c);
+static void consume_elif(compiler *c);
+static arena consume_switch(compiler *c);
 
-static void switch_statement(Compiler *c);
-static void case_statement(Compiler *c, Arena ar);
+static void switch_statement(compiler *c);
+static void case_statement(compiler *c, arena ar);
 
-static void if_statement(Compiler *c);
-static void elif_statement(Compiler *c);
-static void ternary_statement(Compiler *c);
-static void null_coalescing_statement(Compiler *c);
+static void if_statement(compiler *c);
+static void elif_statement(compiler *c);
+static void ternary_statement(compiler *c);
+static void null_coalescing_statement(compiler *c);
 
-static void return_statement(Compiler *c);
+static void return_statement(compiler *c);
 
-static void default_expression(Compiler *c);
-static void expression(Compiler *c);
+static void default_expression(compiler *c);
+static void expression(compiler *c);
 
-static bool match(int t, Parser *parser);
-static bool check(int t, Parser *parser);
-static bool is_comment(Parser *parser);
+static bool match(int t, parser *parser);
+static bool check(int t, parser *parser);
+static bool is_comment(parser *parser);
 
-static void grouping(Compiler *c);
+static void grouping(compiler *c);
 static PRule *get_rule(int t);
-static void parse_precedence(Precedence precedence, Compiler *c);
+static void parse_precedence(Precedence precedence, compiler *c);
 
-static void _and(Compiler *c);
-static void _or(Compiler *c);
+static void _and(compiler *c);
+static void _or(compiler *c);
 
-static void binary(Compiler *c);
-static void unary(Compiler *c);
+static void binary(compiler *c);
+static void unary(compiler *c);
 
-static void current_err(const char *err, Parser *parser);
-static void error(const char *err, Parser *parser);
-static void error_at(Token t, Parser *parser, const char *err);
+static void current_err(const char *err, parser *parser);
+static void error(const char *err, parser *parser);
+static void error_at(Token t, parser *parser, const char *err);
 
-static void emit_byte(Compiler *c, uint8_t byte);
-static void emit_bytes(Compiler *c, uint8_t b1, uint8_t b2);
-static void emit_constant(Compiler *c, Arena ar);
-static void emit_return(Compiler *c);
+static void emit_byte(compiler *c, uint8_t byte);
+static void emit_bytes(compiler *c, uint8_t b1, uint8_t b2);
+static void emit_constant(compiler *c, arena ar);
+static void emit_return(compiler *c);
 
-static void array(Compiler *c);
-static void _access(Compiler *c);
-static void dval(Compiler *c);
-static void pi(Compiler *c);
+static void array(compiler *c);
+static void _access(compiler *c);
+static void dval(compiler *c);
+static void pi(compiler *c);
 
-static void euler(Compiler *c);
+static void euler(compiler *c);
 
-static void ival(Compiler *c);
-static void llint(Compiler *c);
-static void ch(Compiler *c);
-static void boolean(Compiler *c);
-static void cstr(Compiler *c);
+static void ival(compiler *c);
+static void llint(compiler *c);
+static void ch(compiler *c);
+static void boolean(compiler *c);
+static void cstr(compiler *c);
 
-static const char *parse_string(Compiler *c);
-static void string(Compiler *c);
-static void array_alloc(Compiler *c);
-static void vector_alloc(Compiler *c);
-static void stack_alloc(Compiler *c);
+static const char *parse_string(compiler *c);
+static void string(compiler *c);
+static void array_alloc(compiler *c);
+static void vector_alloc(compiler *c);
+static void stack_alloc(compiler *c);
 
-static void table(Compiler *c);
+static void _table(compiler *c);
 
-static int resolve_local(Compiler *c, Arena *name);
-static int resolve_upvalue(Compiler *c, Arena *name);
-static int add_upvalue(Compiler *c, int upvalue, bool t);
+static int resolve_local(compiler *c, arena *name);
+static int resolve_upvalue(compiler *c, arena *name);
+static int add_upvalue(compiler *c, int upvalue, bool t);
 
-static Arena parse_func_id(Compiler *c);
-static void push_array_val(Compiler *c);
+static arena parse_func_id(compiler *c);
+static void push_array_val(compiler *c);
 
-static void parse_native_argc0(Compiler *c);
-static void parse_native_argc1(Compiler *c);
-static void parse_native_var_arg(Compiler *c);
+static void parse_native_var_arg(compiler *c);
 
-static void dot(Compiler *c);
-static void _this(Compiler *c);
+static void dot(compiler *c);
+static void _this(compiler *c);
 
-static Arena parse_id(Compiler *c);
+static arena parse_id(compiler *c);
 
-static int parse_var(Compiler *c, Arena ar);
-static void id(Compiler *c);
-static Arena get_id(Compiler *c);
+static int parse_var(compiler *c, arena ar);
+static void id(compiler *c);
+static arena get_id(compiler *c);
 
-static bool idcmp(Arena a, Arena b);
-static void declare_var(Compiler *c, Arena ar);
-static void add_local(Compiler *c, Arena *ar);
+static bool idcmp(arena a, arena b);
+static void declare_var(compiler *c, arena ar);
+static void add_local(compiler *c, arena *ar);
 
 static PRule rules[] = {
     [TOKEN_CH_LPAREN] = {grouping, call, PREC_CALL},
@@ -299,7 +330,7 @@ static PRule rules[] = {
     [TOKEN_ALLOC_ARRAY] = {array_alloc, NULL, PREC_NONE},
     [TOKEN_ALLOC_VECTOR] = {vector_alloc, NULL, PREC_NONE},
     [TOKEN_ALLOC_STACK] = {stack_alloc, NULL, PREC_NONE},
-    [TOKEN_TABLE] = {table, NULL, PREC_NONE},
+    [TOKEN_TABLE] = {_table, NULL, PREC_NONE},
     [TOKEN_CH_TERNARY] = {NULL, NULL, PREC_NONE},
     [TOKEN_CH_NULL_COALESCING] = {NULL, NULL, PREC_NONE},
 
@@ -344,7 +375,7 @@ static PRule rules[] = {
     [TOKEN_EOF] = {NULL, NULL, PREC_NONE},
 };
 
-static Function *end_compile(Compiler *a);
-static void init_compiler(Compiler *a, Compiler *b, ObjType type, Arena ar);
+static function *end_compile(compiler *a);
+static void init_compiler(compiler *a, compiler *b, ObjType type, arena ar);
 
 #endif

@@ -1,103 +1,7 @@
 #include "arena_memory.h"
-#include <stdio.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <stdlib.h>
 
-static void *request_system_memory(size_t size)
+void arena_free(arena *ar)
 {
-
-    return mmap(
-        NULL,
-        size,
-        PROT_READ | PROT_WRITE,
-
-        POSIX_MADV_RANDOM |
-            POSIX_MADV_NORMAL |
-            POSIX_MADV_WILLNEED |
-            MAP_PRIVATE |
-            MAP_ANONYMOUS,
-        -1, 0);
-}
-void initialize_global_memory(void)
-{
-
-    mem = request_system_memory(ARM64_PAGE);
-    mem->size = OFFSET;
-    mem->next = NULL;
-}
-
-void destroy_global_memory(void)
-{
-
-    Free *tmp = NULL;
-    while (mem)
-    {
-
-        tmp = mem->next;
-        munmap(mem, mem->size);
-        mem = tmp;
-    }
-    tmp = NULL;
-    mem = NULL;
-}
-
-Arena arena_init(void *data, size_t size, T type)
-{
-    Arena ar;
-
-    switch (type)
-    {
-    case ARENA_BYTES:
-        ar.listof.Bytes = data;
-        ar.len = (int)size;
-        ar.count = 0;
-        break;
-    case ARENA_STR:
-    case ARENA_FUNC:
-    case ARENA_VAR:
-    case ARENA_NATIVE:
-        ar.as.String = data;
-        ar.as.len = (int)size;
-        ar.as.count = 0;
-        break;
-    case ARENA_INTS:
-        ar.listof.Ints = data;
-        ar.len = (int)(size / sizeof(int));
-        ar.count = 0;
-        break;
-    case ARENA_DOUBLES:
-        ar.listof.Doubles = data;
-        ar.len = ((int)(size / sizeof(double)));
-        ar.count = 0;
-        break;
-    case ARENA_LONGS:
-        ar.listof.Longs = data;
-        ar.len = ((int)(size / sizeof(long long int)));
-        ar.count = 0;
-        break;
-    case ARENA_STRS:
-        ar.listof.Strings = data;
-        ar.len = ((int)(size / sizeof(char *)));
-        ar.count = 0;
-        break;
-    default:
-        return Null();
-    }
-    ar.size = size;
-    ar.type = type;
-    return ar;
-}
-
-/**
-    TODO:
-        free off each String in String arena
-*/
-
-void arena_free(Arena *ar)
-{
-
     if (!ar)
         return;
 
@@ -113,8 +17,6 @@ void arena_free(Arena *ar)
         ar->listof.Bytes = NULL;
         break;
     case ARENA_STR:
-    case ARENA_FUNC:
-    case ARENA_NATIVE:
     case ARENA_VAR:
         if (!ar->as.String)
             return;
@@ -153,109 +55,10 @@ void arena_free(Arena *ar)
     ar = NULL;
 }
 
-static void merge_list(void)
+arena *alloc_vector(size_t size)
 {
-
-    Free *prev = NULL;
-    for (Free *free = mem; free; free = free->next)
-    {
-
-        prev = free;
-        if (free->next && ((char *)free + OFFSET + free->size) == (char *)free->next)
-        {
-            prev->size += free->next->size;
-            prev->next = free->next->next;
-        }
-    }
-}
-
-void _free_(void *new)
-{
-
-    Free *ptr = NULL;
-    ptr = PTR(new);
-
-    if (!ptr)
-        return;
-    if (ptr->size == 0)
-        return;
-
-    Free *free = NULL, *prev = NULL;
-
-    for (free = mem; free->next && free < ptr; free = free->next)
-        prev = free->next;
-
-    if (free && free < ptr)
-    {
-        ptr->next = free->next;
-        free->next = ptr;
-    }
-    else if (prev && prev < ptr)
-    {
-        ptr->next = prev->next;
-        prev->next = ptr;
-    }
-
-    merge_list();
-    ptr = NULL;
-    new = NULL;
-    prev = NULL;
-    free = NULL;
-}
-
-void *init_alloced_ptr(void *ptr, size_t size)
-{
-    Free *alloced = NULL;
-    alloced = ptr;
-    alloced->size = size - OFFSET;
-    alloced->next = NULL;
-    return 1 + alloced;
-}
-void init_free_ptr(Free **ptr, size_t alloc_size, size_t size)
-{
-    (*ptr)->next = request_system_memory(alloc_size);
-    (*ptr)->next->size = alloc_size - size - OFFSET;
-    (*ptr)->next->next = NULL;
-}
-
-void *_malloc_(size_t size)
-{
-
-    Free *prev = NULL;
-    Free *free = NULL;
-    Free *alloced = NULL;
-
-    for (free = mem; free && free->size < size; free = free->next)
-        prev = free;
-
-    if (free && free->size >= size)
-    {
-
-        free->size -= size;
-
-        if (prev && free->size == 0)
-            prev->next = free->next;
-        else if (!prev && free->size == 0)
-            mem->next = free->next;
-
-        return init_alloced_ptr((char *)(free + 1) + free->size, size);
-    }
-
-    if (prev)
-    {
-        size_t tmp = ARM64_PAGE;
-        while (size > tmp)
-            tmp *= INC;
-        init_free_ptr(&prev, tmp, size);
-        return init_alloced_ptr((char *)(prev->next + 1) + prev->next->size, size);
-    }
-
-    return NULL;
-}
-Arena *arena_alloc_arena(size_t size)
-{
-    Arena *p = NULL;
-    p = ALLOC((size * sizeof(Arena)) + sizeof(Arena));
+    arena *p = NULL;
+    p = ALLOC((size * sizeof(arena)) + sizeof(arena));
 
     p->size = size;
     p->count = 0;
@@ -264,31 +67,27 @@ Arena *arena_alloc_arena(size_t size)
 
     return p + 1;
 }
-
-Arena *arena_realloc_arena(Arena *ar, size_t size)
+arena *realloc_vector(arena *ar, size_t size)
 {
-    Arena *ptr = NULL;
-    size_t new_size = 0;
 
     if (!ar && size != 0)
     {
-        ptr = arena_alloc_arena(size);
-        return ptr;
+        return alloc_vector(size);
     }
     if (size == 0)
     {
-        arena_free_arena(ar);
+        free_vector(ar);
         --ar;
         ar = NULL;
         return NULL;
     }
 
-    ptr = arena_alloc_arena(size);
+    arena *ptr = NULL;
+    ptr = alloc_vector(size);
 
-    if (size > (ar - 1)->size)
-        new_size = (ar - 1)->size;
-    else
-        new_size = size;
+    size_t new_size = (size > (ar - 1)->size)
+                          ? (ar - 1)->size
+                          : size;
 
     for (size_t i = 0; i < new_size; i++)
         ptr[i] = ar[i];
@@ -300,8 +99,7 @@ Arena *arena_realloc_arena(Arena *ar, size_t size)
     ar = NULL;
     return ptr;
 }
-
-void arena_free_arena(Arena *ar)
+void free_vector(arena *ar)
 {
     if (!(ar - 1))
         return;
@@ -324,8 +122,6 @@ void arena_free_arena(Arena *ar)
         case ARENA_BOOLS:
         case ARENA_STR:
         case ARENA_STRS:
-        case ARENA_FUNC:
-        case ARENA_NATIVE:
         case ARENA_VAR:
             ARENA_FREE(&ar[i]);
             break;
@@ -338,15 +134,19 @@ void arena_free_arena(Arena *ar)
     ar = NULL;
 }
 
-Arena arena_alloc(size_t size, T type)
+static arena realloc_2d_string(arena *ar, size_t size)
 {
+    size_t new_size = ar->size < size ? ar->size : size;
 
-    void *ptr = NULL;
-    ptr = ALLOC(size);
-    return arena_init(ptr, size, type);
+    if (!ar->listof.Strings || ar->type == ARENA_NULL)
+        return arena_init(ALLOC(size), size, ARENA_STRS);
+    arena str = arena_init(ALLOC(size), size, ARENA_STRS);
+    for (size_t i = 0; i < new_size; i++)
+        str.listof.Strings[i] = CString(ar->listof.Strings[i]).as.String;
+    str.count = ((size_t)ar->count > size) ? size : ar->count;
+    return str;
 }
-
-Arena arena_realloc(Arena *ar, size_t size, T type)
+arena arena_realloc(arena *ar, size_t size, T type)
 {
 
     if (size == 0)
@@ -355,77 +155,42 @@ Arena arena_realloc(Arena *ar, size_t size, T type)
         return Null();
     }
 
-    void *ptr = NULL;
-    ptr = ALLOC(size);
-
     if (!ar && size != 0)
-        return arena_init(ptr, size, type);
-
-    size_t new_size = 0;
-
-    if (size > ar->size)
-        new_size = ar->size;
-    else
-        new_size = size;
+        return arena_init(ALLOC(size), size, type);
 
     switch (type)
     {
     case ARENA_BYTES:
-        if (!ar->listof.Bytes)
-            return arena_init(ptr, size, type);
-        memcpy(ptr, ar->listof.Bytes, new_size);
+        ar->listof.Bytes = REALLOC(ar->listof.Bytes, ar->size, size);
         break;
     case ARENA_STR:
     case ARENA_CSTR:
     case ARENA_VAR:
-    case ARENA_FUNC:
-    case ARENA_NATIVE:
-        if (!ar->as.String)
-            return arena_init(ptr, size, type);
-        memcpy(ptr, ar->as.String, new_size);
+        ar->as.String = REALLOC(ar->as.String, ar->size, size);
         break;
     case ARENA_INTS:
-        if (!ar->listof.Ints)
-            return arena_init(ptr, size, type);
-        memcpy(ptr, ar->listof.Ints, new_size);
+        ar->listof.Ints = REALLOC(ar->listof.Ints, ar->size, size);
         break;
     case ARENA_DOUBLES:
-        if (!ar->listof.Doubles)
-            return arena_init(ptr, size, type);
-        memcpy(ptr, ar->listof.Doubles, new_size);
+        ar->listof.Doubles = REALLOC(ar->listof.Doubles, ar->size, size);
         break;
     case ARENA_LONGS:
-        if (!ar->listof.Doubles)
-            return arena_init(ptr, size, type);
-        memcpy(ptr, ar->listof.Longs, new_size);
+        ar->listof.Longs = REALLOC(ar->listof.Longs, ar->size, size);
         break;
 
     case ARENA_STRS:
-    {
-
-        if (!ar->listof.Strings || ar->type == ARENA_NULL)
-            return arena_init(ptr, size, type);
-        Arena str = arena_init(ptr, size, type);
-        for (size_t i = 0; i < new_size; i++)
-            str.listof.Strings[i] = CString(ar->listof.Strings[i]).as.String;
-    }
-    break;
+        return realloc_2d_string(ar, size);
 
     default:
         return Null();
     }
 
-    Arena a = arena_init(ptr, size, type);
-    a.count = (ar->count > a.len)
-                  ? a.len
-                  : ar->count;
-    ARENA_FREE(ar);
-    return a;
+    return *ar;
 }
-Element cpy_array(Element el)
+element cpy_array(element el)
 {
 
-    Arena ar = el.arena;
+    arena ar = el._arena;
     T type = ar.type;
     size_t size = ar.size;
     int len = ar.count;
@@ -443,8 +208,6 @@ Element cpy_array(Element el)
     case ARENA_STR:
     case ARENA_CSTR:
     case ARENA_VAR:
-    case ARENA_FUNC:
-    case ARENA_NATIVE:
         if (!ar.as.String)
             return OBJ(arena_init(ptr, size, type));
         memcpy(ptr, ar.as.String, size);
@@ -470,7 +233,7 @@ Element cpy_array(Element el)
 
         if (!ar.listof.Strings || ar.type == ARENA_NULL)
             return OBJ(arena_init(ptr, size, type));
-        Arena str = arena_init(ptr, size, type);
+        arena str = arena_init(ptr, size, type);
         for (int i = 0; i < len; i++)
             str.listof.Strings[i] = CString(ar.listof.Strings[i]).as.String;
     }
@@ -480,125 +243,26 @@ Element cpy_array(Element el)
         return null_obj();
     }
 
-    Arena a = arena_init(ptr, size, type);
+    arena a = arena_init(ptr, size, type);
     a.count = (ar.count > a.len)
                   ? a.len
                   : ar.count;
     return OBJ(a);
 }
 
-Arena Char(char Char)
-{
-    Arena ar;
-    ar.type = ARENA_CHAR;
-    ar.as.Char = Char;
-    ar.size = sizeof(char);
-    long long int k = hash(ar);
-    ar.as.hash = k;
-    return ar;
-}
-Arena Int(int Int)
-{
-    Arena ar;
-    ar.type = ARENA_INT;
-    ar.as.Int = Int;
-    ar.size = sizeof(int);
-    ar.as.hash = Int;
-    return ar;
-}
-Arena Byte(uint8_t Byte)
-{
-    Arena ar;
-    ar.type = ARENA_BYTE;
-    ar.as.Byte = Byte;
-    ar.size = sizeof(uint8_t);
-    return ar;
-}
-Arena Long(long long int Long)
-{
-    Arena ar;
-    ar.type = ARENA_LONG;
-    ar.as.Long = Long;
-    ar.size = sizeof(long long int);
-    long long int k = hash(ar);
-    ar.as.hash = k;
-    return ar;
-}
-Arena Double(double Double)
-{
-    Arena ar;
-    ar.type = ARENA_DOUBLE;
-    ar.as.Double = Double;
-    ar.size = sizeof(double);
-    long long int h = hash(ar);
-    ar.as.hash = h;
-    return ar;
-}
-Arena String(const char *str)
-{
-    size_t size = strlen(str);
-    Arena ar = arena_alloc(size, ARENA_STR);
-    memcpy(ar.as.String, str, size);
-    ar.as.String[size] = '\0';
-    ar.size = size;
-    long long int k = hash(ar);
-    ar.as.hash = k;
-    return ar;
-}
-Arena CString(const char *str)
-{
-    size_t size = strlen(str);
-    Arena ar;
-    ar.as.String = (char *)str;
-    ar.size = size;
-    ar.type = ARENA_CSTR;
-    ar.as.len = (int)size;
-    long long int k = hash(ar);
-    ar.as.hash = k;
-    return ar;
-}
-
-Arena Bool(bool Bool)
-{
-    Arena ar;
-    ar.type = ARENA_BOOL;
-    ar.as.Bool = Bool;
-    ar.size = sizeof(bool);
-    return ar;
-}
-Arena Size(size_t Size)
-{
-    Arena ar;
-    ar.type = ARENA_SIZE;
-    ar.as.Size = Size;
-    ar.size = 1;
-    long long int k = hash(ar);
-    ar.as.hash = k;
-    return ar;
-}
-Arena Null(void)
-{
-    Arena ar;
-    ar.type = ARENA_NULL;
-    ar.as.Void = NULL;
-    return ar;
-}
-
-Arena Ints(int *Ints, int len)
+arena Ints(int *Ints, int len)
 {
     return arena_init(Ints, sizeof(int) * len, ARENA_INTS);
 }
-Arena Doubles(double *Doubles, int len)
+arena Doubles(double *Doubles, int len)
 {
     return arena_init(Doubles, sizeof(double) * len, ARENA_DOUBLES);
 }
-
-Arena Longs(long long int *Longs, int len)
+arena Longs(long long int *Longs, int len)
 {
     return arena_init(Longs, sizeof(long long int) * len, ARENA_LONGS);
 }
-
-Arena Strings(void)
+arena Strings(void)
 {
     return arena_init(NULL, 0, ARENA_STRS);
 }
@@ -616,132 +280,131 @@ static void long_push(long long int **Longs, int index, long long int Long)
     (*Longs)[index] = Long;
 }
 
-void push_arena(Element *el, Arena ar)
+void push_arena(element *el, arena ar)
 {
-    if ((el->arena_vector - 1)->len < (el->arena_vector - 1)->count + 1)
+    if ((el->_vector - 1)->len < (el->_vector - 1)->count + 1)
     {
-        (el->arena_vector - 1)->len = GROW_CAPACITY((el->arena_vector - 1)->len);
-        el->arena_vector = GROW_ARENA(el->arena_vector, (el->arena_vector - 1)->len);
+        (el->_vector - 1)->len = GROW_CAPACITY((el->_vector - 1)->len);
+        el->_vector = GROW_VECTOR(el->_vector, (el->_vector - 1)->len);
     }
 
-    el->arena_vector[(el->arena_vector - 1)->count++] = ar;
+    el->_vector[(el->_vector - 1)->count++] = ar;
+}
+void push_int(element *el, int Int)
+{
+    if (el->_arena.len < el->_arena.count + 1)
+    {
+        el->_arena.len = GROW_CAPACITY(el->_arena.len);
+
+        el->_arena.size = el->_arena.len * sizeof(int);
+        el->_arena = GROW_ARENA(&el->_arena, el->_arena.size, ARENA_INTS);
+    }
+
+    int_push(&el->_arena.listof.Ints, el->_arena.count++, Int);
+}
+void push_double(element *el, double Double)
+{
+    if (el->_arena.len < el->_arena.count + 1)
+    {
+        el->_arena.len = GROW_CAPACITY(el->_arena.len);
+        el->_arena.size = el->_arena.len * sizeof(double);
+        el->_arena = GROW_ARENA(&el->_arena, el->_arena.size, ARENA_DOUBLES);
+    }
+    double_push(&el->_arena.listof.Doubles, el->_arena.count++, Double);
+}
+void push_long(element *el, long long int Long)
+{
+    if (el->_arena.len < el->_arena.count + 1)
+    {
+        el->_arena.len = GROW_CAPACITY(el->_arena.len);
+        el->_arena.size = el->_arena.len * sizeof(long long int);
+        el->_arena = GROW_ARENA(&el->_arena, el->_arena.size, ARENA_LONGS);
+    }
+    long_push(&el->_arena.listof.Longs, el->_arena.count++, Long);
+}
+void push_string(element *el, const char *String)
+{
+    if (el->_arena.len < el->_arena.count + 1)
+    {
+        el->_arena.len = GROW_CAPACITY(el->_arena.len);
+        el->_arena.size = el->_arena.len * sizeof(char *);
+        el->_arena = GROW_ARENA(&el->_arena, el->_arena.size, ARENA_STRS);
+    }
+    el->_arena.listof.Strings[el->_arena.count++] = (char *)String;
 }
 
-Element pop_arena(Element *el)
+element pop_arena(element *el)
 {
-    Element tmp = OBJ(el->arena_vector[(el->arena_vector - 1)->count - 1]);
-    el->arena_vector[--(el->arena_vector - 1)->count] = Null();
+    element tmp = OBJ(el->_vector[(el->_vector - 1)->count - 1]);
+    el->_vector[--(el->_vector - 1)->count] = Null();
+    return tmp;
+}
+element pop_int(element *el)
+{
+
+    element tmp = OBJ(Int(el->_arena.listof.Ints[el->_arena.count - 1]));
+    el->_arena.listof.Ints[--el->_arena.count] = 0;
+    return tmp;
+}
+element pop_double(element *el)
+{
+
+    element tmp = OBJ(Double(el->_arena.listof.Doubles[el->_arena.count - 1]));
+    el->_arena.listof.Doubles[--el->_arena.count] = 0;
+    return tmp;
+}
+element pop_long(element *el)
+{
+
+    element tmp = OBJ(Long(el->_arena.listof.Longs[el->_arena.count - 1]));
+    el->_arena.listof.Longs[--el->_arena.count] = 0;
+    return tmp;
+}
+element pop_string(element *el)
+{
+
+    element tmp = OBJ(CString(el->_arena.listof.Strings[el->_arena.count - 1]));
+    el->_arena.listof.Strings[--el->_arena.count] = NULL;
     return tmp;
 }
 
-void push_int(Element *el, int Int)
+class *_class(arena name)
 {
-    if (el->arena.len < el->arena.count + 1)
-    {
-        el->arena.len = GROW_CAPACITY(el->arena.len);
-
-        el->arena.size = el->arena.len * sizeof(int);
-        el->arena = GROW_ARRAY(&el->arena, el->arena.size, ARENA_INTS);
-    }
-
-    int_push(&el->arena.listof.Ints, el->arena.count++, Int);
-}
-Element pop_int(Element *el)
-{
-
-    Element tmp = OBJ(Int(el->arena.listof.Ints[el->arena.count - 1]));
-    el->arena.listof.Ints[--el->arena.count] = 0;
-    return tmp;
-}
-void push_double(Element *el, double Double)
-{
-    if (el->arena.len < el->arena.count + 1)
-    {
-        el->arena.len = GROW_CAPACITY(el->arena.len);
-        el->arena.size = el->arena.len * sizeof(double);
-        el->arena = GROW_ARRAY(&el->arena, el->arena.size, ARENA_DOUBLES);
-    }
-    double_push(&el->arena.listof.Doubles, el->arena.count++, Double);
-}
-Element pop_double(Element *el)
-{
-
-    Element tmp = OBJ(Double(el->arena.listof.Doubles[el->arena.count - 1]));
-    el->arena.listof.Doubles[--el->arena.count] = 0;
-    return tmp;
-}
-void push_long(Element *el, long long int Long)
-{
-    if (el->arena.len < el->arena.count + 1)
-    {
-        el->arena.len = GROW_CAPACITY(el->arena.len);
-        el->arena.size = el->arena.len * sizeof(long long int);
-        el->arena = GROW_ARRAY(&el->arena, el->arena.size, ARENA_LONGS);
-    }
-    // el->arena.listof
-    long_push(&el->arena.listof.Longs, el->arena.count++, Long);
-}
-Element pop_long(Element *el)
-{
-
-    Element tmp = OBJ(Long(el->arena.listof.Longs[el->arena.count - 1]));
-    el->arena.listof.Longs[--el->arena.count] = 0;
-    return tmp;
-}
-
-void push_string(Element *el, const char *String)
-{
-    if (el->arena.len < el->arena.count + 1)
-    {
-        el->arena.len = GROW_CAPACITY(el->arena.len);
-        el->arena.size = el->arena.len * sizeof(char *);
-        el->arena = GROW_ARRAY(&el->arena, el->arena.size, ARENA_STRS);
-    }
-    el->arena.listof.Strings[el->arena.count++] = (char *)String;
-}
-Element pop_string(Element *el)
-{
-
-    Element tmp = OBJ(CString(el->arena.listof.Strings[el->arena.count - 1]));
-    el->arena.listof.Strings[--el->arena.count] = NULL;
-    return tmp;
-}
-
-Class *class(Arena name)
-{
-    Class *c = NULL;
-    c = ALLOC(sizeof(Class));
+    class *c = NULL;
+    c = ALLOC(sizeof(class));
     c->name = name;
     c->init = NULL;
-    c->fields = NULL;
+    c->closures = NULL;
     return c;
 }
-
-void free_class(Class *c)
+void free_class(class *c)
 {
 
     ARENA_FREE(&c->name);
-    arena_free_table(c->fields);
+    free_table(c->closures);
     FREE(c);
 }
 
-Instance *instance(Class *classc)
+instance *_instance(class *classc)
 {
-    Instance *ic = NULL;
-    ic = ALLOC(sizeof(Instance));
+    instance *ic = NULL;
+    ic = ALLOC(sizeof(instance));
     ic->classc = classc;
+    ic->fields = NULL;
     return ic;
 }
-void free_instance(Instance *ic)
+void free_instance(instance *ic)
 {
     FREE(ic);
+    free_table(ic->fields);
+
     ic = NULL;
 }
 
-Stack *stack(size_t size)
+stack *_stack(size_t size)
 {
-    Stack *s = NULL;
-    s = ALLOC((size * sizeof(Stack)) + sizeof(Stack));
+    stack *s = NULL;
+    s = ALLOC((size * sizeof(stack)) + sizeof(stack));
     s->size = size;
 
     (s + 1)->len = (int)size;
@@ -749,7 +412,7 @@ Stack *stack(size_t size)
     (s + 1)->top = s + 1;
     return s + 1;
 }
-Stack *realloc_stack(Stack *st, size_t size)
+stack *realloc_stack(stack *st, size_t size)
 {
 
     if (size == 0)
@@ -759,7 +422,7 @@ Stack *realloc_stack(Stack *st, size_t size)
         st = NULL;
         return NULL;
     }
-    Stack *s = NULL;
+    stack *s = NULL;
     s = NEW_STACK(size);
 
     if (!st)
@@ -782,7 +445,7 @@ Stack *realloc_stack(Stack *st, size_t size)
     st = NULL;
     return s;
 }
-void free_stack(Stack **stack)
+void free_stack(stack **stack)
 {
     if (!stack)
         return;
@@ -800,7 +463,7 @@ void free_stack(Stack **stack)
         switch ((*stack)[i].as.type)
         {
         case ARENA:
-            ARENA_FREE(&(*stack)[i].as.arena);
+            ARENA_FREE(&(*stack)[i].as._arena);
             break;
         case NATIVE:
             FREE_NATIVE((*stack)[i].as.native);
@@ -815,13 +478,13 @@ void free_stack(Stack **stack)
             FREE_INSTANCE((*stack)[i].as.instance);
             break;
         case VECTOR:
-            FREE_ARENA((*stack)[i].as.arena_vector);
+            FREE_VECTOR((*stack)[i].as._vector);
             break;
         case STACK:
             FREE_STACK(&(*stack)[i].as.stack);
             break;
         case TABLE:
-            arena_free_table((*stack)[i].as.table);
+            free_table((*stack)[i].as.table);
             break;
         default:
             break;
@@ -830,13 +493,13 @@ void free_stack(Stack **stack)
     stack = NULL;
 }
 
-Upval **upvals(size_t size)
+upval **upvals(size_t size)
 {
-    Upval **up = NULL;
-    ALLOC((sizeof(Upval *) * size) + sizeof(Upval *));
+    upval **up = NULL;
+    ALLOC((sizeof(upval *) * size) + sizeof(upval *));
 
     *up = NULL;
-    *up = ALLOC(sizeof(Upval));
+    *up = ALLOC(sizeof(upval));
 
     (*up)->size = size;
 
@@ -845,8 +508,7 @@ Upval **upvals(size_t size)
 
     return up + 1;
 }
-
-void free_upvals(Upval **up)
+void free_upvals(upval **up)
 {
     if (!up)
         return;
@@ -861,90 +523,9 @@ void free_upvals(Upval **up)
     up = NULL;
 }
 
-Stack value(Element e)
+function *_function(arena name)
 {
-    Stack s;
-    s.as = e;
-    return s;
-}
-
-Element stack_el(Stack *el)
-{
-    Element e;
-    e.stack = el;
-    e.type = STACK;
-    return e;
-}
-
-Element Obj(Arena ar)
-{
-    Element s;
-    s.arena = ar;
-    s.type = ARENA;
-
-    return s;
-}
-
-Element native_fn(Native *native)
-{
-    Element s;
-
-    s.native = native;
-    s.type = NATIVE;
-
-    return s;
-}
-
-Element closure(Closure *closure)
-{
-    Element el;
-    el.closure = closure;
-    el.type = CLOSURE;
-
-    return el;
-}
-
-Element new_class(Class *classc)
-{
-    Element el;
-    el.classc = classc;
-    el.type = CLASS;
-    return el;
-}
-
-Element new_instance(Instance *ci)
-{
-    Element el;
-    el.instance = ci;
-    el.type = INSTANCE;
-    return el;
-}
-Element table_el(Table *t)
-{
-    Element el;
-    el.table = t;
-    el.type = TABLE;
-    return el;
-}
-Element vector(Arena *vect)
-{
-    Element el;
-    el.arena_vector = vect;
-    el.type = VECTOR;
-    return el;
-}
-Element null_obj(void)
-{
-    Element el;
-    el.null = NULL;
-    el.type = NULL_OBJ;
-
-    return el;
-}
-
-Function *function(Arena name)
-{
-    Function *func = ALLOC(sizeof(Function));
+    function *func = ALLOC(sizeof(function));
     func->arity = 0;
     func->upvalue_count = 0;
     func->name = name;
@@ -952,28 +533,27 @@ Function *function(Arena name)
 
     return func;
 }
-void free_function(Function *func)
+void free_function(function *func)
 {
     if (!func)
         return;
     if (func->name.type != ARENA_NULL)
-        FREE_ARRAY(&func->name);
+        FREE_ARENA(&func->name);
     free_chunk(&func->ch);
 
     FREE(func);
     func = NULL;
 }
 
-Native *native(NativeFn func, Arena ar)
+native *_native(NativeFn func, arena ar)
 {
-    Native *native = NULL;
-    native = ALLOC(sizeof(Native));
-    native->fn = func;
-    native->obj = ar;
-    return native;
+    native *nat = NULL;
+    nat = ALLOC(sizeof(native));
+    nat->fn = func;
+    nat->obj = ar;
+    return nat;
 }
-
-void free_native(Native *native)
+void free_native(native *native)
 {
 
     if (!native)
@@ -983,26 +563,26 @@ void free_native(Native *native)
     FREE(native);
     native = NULL;
 }
-Closure *new_closure(Function *func)
+
+closure *_closure(function *func)
 {
-    Closure *closure = NULL;
-    closure = ALLOC(sizeof(Closure));
-    closure->func = func;
+    closure *clos = NULL;
+    clos = ALLOC(sizeof(closure));
+    clos->func = func;
     if (!func)
     {
-        closure->upval_count = 0;
-        return closure;
+        clos->upval_count = 0;
+        return clos;
     }
     if (func->upvalue_count > 0)
-        closure->upvals = upvals(func->upvalue_count);
+        clos->upvals = upvals(func->upvalue_count);
     else
-        closure->upvals = NULL;
-    closure->upval_count = func->upvalue_count;
+        clos->upvals = NULL;
+    clos->upval_count = func->upvalue_count;
 
-    return closure;
+    return clos;
 }
-
-void free_closure(Closure **closure)
+void free_closure(closure **closure)
 {
     if (!(*closure))
         return;
@@ -1013,16 +593,16 @@ void free_closure(Closure **closure)
     closure = NULL;
 }
 
-Upval *upval(Stack *index)
+upval *_upval(stack *index)
 {
-    Upval *up = NULL;
-    up = ALLOC(sizeof(Upval));
+    upval *up = NULL;
+    up = ALLOC(sizeof(upval));
     up->index = index;
     up->closed = *index;
     up->next = NULL;
     return up;
 }
-void free_upval(Upval *up)
+void free_upval(upval *up)
 {
     if (!up)
         return;
@@ -1030,22 +610,19 @@ void free_upval(Upval *up)
     up->next = NULL;
 }
 
-void init_chunk(Chunk *c)
+void init_chunk(chunk *c)
 {
-    c->op_codes.len = 0;
-    c->op_codes.count = 0;
-    c->op_codes.listof.Bytes = NULL;
-    c->lines.len = 0;
-    c->lines.count = 0;
     c->lines.listof.Ints = NULL;
-    c->cases.len = 0;
-    c->cases.count = 0;
-    c->cases = GROW_ARRAY(NULL, MIN_SIZE, ARENA_INTS);
-    c->cases.len = PAGE_COUNT;
+    c->cases.listof.Ints = NULL;
+    c->op_codes.listof.Bytes = NULL;
+    c->constants = NULL;
+
+    c->lines = GROW_ARENA(NULL, STACK_SIZE * sizeof(int), ARENA_INTS);
+    c->cases = GROW_ARENA(NULL, MIN_SIZE * sizeof(int), ARENA_INTS);
+    c->op_codes = GROW_ARENA(NULL, MIN_SIZE * sizeof(uint8_t), ARENA_BYTES);
     c->constants = GROW_STACK(NULL, STACK_SIZE);
 }
-
-void free_chunk(Chunk *c)
+void free_chunk(chunk *c)
 {
     if (!c)
     {
@@ -1053,16 +630,30 @@ void free_chunk(Chunk *c)
         return;
     }
     if (c->op_codes.listof.Bytes)
-        FREE_ARRAY(&c->op_codes);
+        FREE_ARENA(&c->op_codes);
     if (c->cases.listof.Ints)
-        FREE_ARRAY(&c->cases);
+        FREE_ARENA(&c->cases);
     if (c->lines.listof.Ints)
-        FREE_ARRAY(&c->lines);
+        FREE_ARENA(&c->lines);
     c->constants = NULL;
     init_chunk(c);
 }
 
-void arena_free_table(Table *t)
+static void free_entry_list(table *entry)
+{
+    table *tmp = NULL;
+    table *next = NULL;
+    tmp = entry->next;
+    FREE_TABLE_ENTRY(entry);
+
+    while (tmp)
+    {
+        next = tmp->next;
+        FREE_TABLE_ENTRY(tmp);
+        tmp = next;
+    }
+}
+void free_table(table *t)
 {
     if (!(t - 1))
         return;
@@ -1079,17 +670,17 @@ void arena_free_table(Table *t)
         return;
     }
     for (size_t i = 0; i < size; i++)
-        FREE_TABLE_ENTRY(&t[i]);
+        free_entry_list(&t[i]);
 
     FREE(((t - 1)));
     --t;
     t = NULL;
 }
 
-void arena_free_entry(Table *entry)
+void free_entry(table *entry)
 {
     if (entry->type == ARENA)
-        FREE_ARRAY(&entry->val.arena);
+        FREE_ARENA(&entry->val._arena);
     else if (entry->type == NATIVE)
         FREE_NATIVE(entry->val.native);
     else if (entry->type == CLASS)
@@ -1097,362 +688,13 @@ void arena_free_entry(Table *entry)
     else if (entry->type == INSTANCE)
         FREE_INSTANCE(entry->val.instance);
     else if (entry->type == TABLE)
-        arena_free_table(entry->val.table);
+        free_table(entry->val.table);
     else if (entry->type == VECTOR)
-        FREE_ARENA(entry->val.arena_vector);
+        FREE_VECTOR(entry->val._vector);
     else
         FREE_CLOSURE(&entry->val.closure);
 
-    FREE_ARRAY(&entry->key);
+    FREE_ARENA(&entry->key);
 
-    entry->next = NULL;
-    entry->prev = NULL;
     entry = NULL;
-}
-
-Arena Var(const char *str)
-{
-    size_t size = strlen(str);
-    Arena ar = GROW_ARRAY(NULL, size, ARENA_VAR);
-    memcpy(ar.as.String, str, size);
-    ar.as.String[size] = '\0';
-    size_t h = hash(ar);
-    ar.as.hash = h;
-    ar.type = ARENA_VAR;
-    return ar;
-}
-
-Arena func_name(const char *str)
-{
-    size_t size = strlen(str);
-    Arena ar = GROW_ARRAY(NULL, size, ARENA_FUNC);
-    memcpy(ar.as.String, str, size);
-    ar.as.String[size] = '\0';
-    size_t h = hash(ar);
-    ar.as.hash = h;
-    ar.type = ARENA_FUNC;
-    return ar;
-}
-Arena native_name(const char *str)
-{
-    size_t size = strlen(str);
-    Arena ar = GROW_ARRAY(NULL, size, ARENA_NATIVE);
-    memcpy(ar.as.String, str, size);
-    ar.as.String[size] = '\0';
-    size_t h = hash(ar);
-    ar.as.hash = h;
-    ar.type = ARENA_NATIVE;
-    return ar;
-}
-
-long long int hash(Arena key)
-{
-    long long int index = 2166136261u;
-
-    switch (key.type)
-    {
-    case ARENA_VAR:
-    case ARENA_FUNC:
-    case ARENA_STR:
-    case ARENA_CSTR:
-    case ARENA_NATIVE:
-        for (char *s = key.as.String; *s; s++)
-        {
-            index ^= (int)*s;
-            index *= 16777619;
-        }
-        break;
-    case ARENA_INT:
-        index ^= key.as.Int;
-        index = (index * 16777669);
-        break;
-    case ARENA_DOUBLE:
-        index ^= ((long long int)key.as.Double);
-        index = (index * 16777420);
-        break;
-    case ARENA_LONG:
-        index ^= key.as.Long;
-        index = (index * 16776969);
-        break;
-    case ARENA_CHAR:
-        index ^= key.as.Char;
-        index = (index * 16742069);
-        break;
-    default:
-        return 0;
-    }
-    return index;
-}
-
-static void parse_str(const char *str)
-{
-    char *s = (char *)str;
-
-    for (; *s; s++)
-        if (*s == '\\' && s[1] == 'n')
-            printf("\n"), s++;
-        else if (*s == '\\' && s[1] == 't')
-            printf("\t"), s++;
-        else
-            printf("%c", *s);
-}
-
-void print(Element ar)
-{
-    Arena a = ar.arena;
-
-    if (ar.type == NATIVE)
-    {
-        printf("<native: %s>", ar.native->obj.as.String);
-        return;
-    }
-    if (ar.type == CLOSURE)
-    {
-        printf("<fn: %s>", ar.closure->func->name.as.String);
-        return;
-    }
-    if (ar.type == CLASS)
-    {
-        printf("<class: %s>", ar.classc->name.as.String);
-        return;
-    }
-    if (ar.type == INSTANCE)
-    {
-        if (!ar.instance->classc)
-            return;
-        printf("<instance: %s>", ar.instance->classc->name.as.String);
-        return;
-    }
-    if (ar.type == VECTOR)
-    {
-        printf("[\n");
-
-        for (int i = 0; i < (ar.arena_vector - 1)->count; i++)
-        {
-            print(OBJ(ar.arena_vector[i]));
-            if (i != (ar.arena_vector - 1)->count - 1)
-                printf(", ");
-        }
-
-        printf("\n]\n");
-        return;
-    }
-
-    if (ar.type == STACK)
-    {
-        printf("{ ");
-
-        if (ar.stack->count == 0)
-        {
-            printf(" }");
-            return;
-        }
-        for (int i = 0; i < ar.stack->count; i++)
-        {
-            print((ar.stack + i)->as);
-            if (i != ar.stack->count - 1)
-                printf(",\n");
-        }
-
-        printf(" }");
-        return;
-    }
-
-    switch (a.type)
-    {
-    case ARENA_BYTE:
-        printf("%d", a.as.Byte);
-        break;
-    case ARENA_CHAR:
-        printf("%c", a.as.Char);
-        break;
-    case ARENA_DOUBLE:
-        printf("%f", a.as.Double);
-        break;
-    case ARENA_INT:
-        printf("%d", a.as.Int);
-        break;
-    case ARENA_LONG:
-        printf("%lld", a.as.Long);
-        break;
-    case ARENA_BOOL:
-        printf("%s", (a.as.Bool == true) ? "true" : "false");
-        break;
-    case ARENA_STR:
-    case ARENA_VAR:
-    case ARENA_FUNC:
-    case ARENA_CSTR:
-        parse_str(a.as.String);
-        break;
-    case ARENA_INTS:
-        printf("[ ");
-        for (int i = 0; i < a.count; i++)
-            if (i == a.count - 1)
-                printf("%d ]", a.listof.Ints[i]);
-            else
-                printf("%d, ", a.listof.Ints[i]);
-        break;
-    case ARENA_DOUBLES:
-        printf("[ ");
-        for (int i = 0; i < a.count; i++)
-            if (i == a.count - 1)
-                printf("%f ]", a.listof.Doubles[i]);
-            else
-                printf("%f, ", a.listof.Doubles[i]);
-        break;
-    case ARENA_STRS:
-        printf("[ ");
-        for (int i = 0; i < a.count; i++)
-            if (i == a.count - 1)
-                printf("%s ]", a.listof.Strings[i]);
-            else
-                printf("%s, ", a.listof.Strings[i]);
-        break;
-    case ARENA_NULL:
-        printf("[ null ]");
-        break;
-
-    default:
-        return;
-    }
-}
-void print_line(Element ar)
-{
-    Arena a = ar.arena;
-
-    if (ar.type == NATIVE)
-    {
-        printf("<native: %s>\n", ar.native->obj.as.String);
-        return;
-    }
-    if (ar.type == CLOSURE)
-    {
-        printf("<fn: %s>\n", ar.closure->func->name.as.String);
-        return;
-    }
-    if (ar.type == CLASS)
-    {
-        if (!ar.classc)
-            return;
-        printf("<class: %s>\n", ar.classc->name.as.String);
-        return;
-    }
-    if (ar.type == INSTANCE)
-    {
-        if (!ar.instance->classc)
-            return;
-        printf("<instance: %s>\n", ar.instance->classc->name.as.String);
-        return;
-    }
-    if (ar.type == VECTOR)
-    {
-        printf("[");
-
-        int count = (ar.arena_vector - 1)->count;
-        if (count == 0)
-        {
-            printf(" ]\n");
-            return;
-        }
-
-        printf("\n");
-        for (int i = 0; i < (ar.arena_vector - 1)->count; i++)
-        {
-            print(OBJ(ar.arena_vector[i]));
-            if (i != (ar.arena_vector - 1)->count - 1)
-                printf(", ");
-        }
-
-        printf("\n]\n");
-        return;
-    }
-
-    if (ar.type == STACK)
-    {
-        if (!ar.stack)
-            return;
-        printf("{");
-
-        if (ar.stack->count == 0)
-        {
-            printf(" }\n");
-            return;
-        }
-        printf("\n");
-        for (int i = 0; i < ar.stack->count; i++)
-        {
-            print((ar.stack + i)->as);
-            if (i != ar.stack->count - 1)
-                printf(",\n");
-        }
-
-        printf("\n}\n");
-        return;
-    }
-
-    switch (a.type)
-    {
-    case ARENA_BYTE:
-        printf("%d\n", a.as.Byte);
-        break;
-    case ARENA_CHAR:
-        printf("%c\n", a.as.Char);
-        break;
-    case ARENA_DOUBLE:
-        printf("%f\n", a.as.Double);
-        break;
-    case ARENA_INT:
-        printf("%d\n", a.as.Int);
-        break;
-    case ARENA_LONG:
-        printf("%lld\n", a.as.Long);
-        break;
-    case ARENA_BOOL:
-        printf("%s\n", (a.as.Bool == true) ? "true" : "false");
-        break;
-    case ARENA_STR:
-    case ARENA_VAR:
-    case ARENA_FUNC:
-    case ARENA_CSTR:
-        parse_str(a.as.String);
-        printf("\n");
-        break;
-    case ARENA_INTS:
-        printf("[ ");
-        for (int i = 0; i < a.count; i++)
-            if (i == a.count - 1)
-                printf("%d ]\n", a.listof.Ints[i]);
-            else
-                printf("%d, ", a.listof.Ints[i]);
-        break;
-    case ARENA_DOUBLES:
-        printf("[ ");
-        for (int i = 0; i < a.count; i++)
-            if (i == a.count - 1)
-                printf("%f ]\n", a.listof.Doubles[i]);
-            else
-                printf("%f, ", a.listof.Doubles[i]);
-        break;
-    case ARENA_STRS:
-        printf("[ ");
-        for (int i = 0; i < a.count; i++)
-            if (i == a.count - 1)
-            {
-
-                parse_str(a.listof.Strings[i]);
-                printf(" ]\n");
-            }
-            else
-            {
-                parse_str(a.listof.Strings[i]);
-                printf(", ");
-            }
-        break;
-    case ARENA_NULL:
-        printf("[ null ]\n");
-        break;
-
-    default:
-        return;
-    }
 }

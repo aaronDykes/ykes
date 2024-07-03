@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "debug.h"
 
-static int byte_instruction(const char *name, Chunk *chunk,
+static int byte_instruction(const char *name, chunk *chunk,
                             int offset)
 {
     uint8_t slot = chunk->op_codes.listof.Bytes[offset + 1];
@@ -15,18 +15,18 @@ static int simple_instruction(const char *name, int offset)
     return ++offset;
 }
 
-static int constant_instruction(const char *name, Chunk *c, int offset)
+static int constant_instruction(const char *name, chunk *c, int offset)
 {
     uint8_t constant = c->op_codes.listof.Bytes[offset + 1];
 
     printf("%-16s %4d '", name, constant);
-    print_line(c->constants[constant].as);
+    print(c->constants[constant].as);
     printf("\n");
     return offset + 2;
 }
 
 static int jump_instruction(const char *name, int sign,
-                            Chunk *chunk, int offset)
+                            chunk *chunk, int offset)
 {
     uint16_t jump = (uint16_t)((chunk->op_codes.listof.Bytes[offset + 1] << 8) |
                                (chunk->op_codes.listof.Bytes[offset + 2]));
@@ -38,7 +38,7 @@ static int jump_instruction(const char *name, int sign,
     return offset + 3;
 }
 
-void disassemble_chunk(Chunk *c, const char *name)
+void disassemble_chunk(chunk *c, const char *name)
 {
 
     printf("==== chunk: `%s` ====\n", name);
@@ -47,7 +47,7 @@ void disassemble_chunk(Chunk *c, const char *name)
         i = disassemble_instruction(c, i);
 }
 
-int disassemble_instruction(Chunk *c, int offset)
+int disassemble_instruction(chunk *c, int offset)
 {
 
     printf("%d: %04d ", c->lines.listof.Ints[offset], offset);
@@ -61,9 +61,9 @@ int disassemble_instruction(Chunk *c, int offset)
         offset++;
         uint8_t constant = c->op_codes.listof.Bytes[offset++];
         printf("%-16s %4d ", "OP_CLOSURE", constant);
-        print_line(c->constants[constant].as);
+        print(c->constants[constant].as);
 
-        Closure *clos = c->constants[constant].as.closure;
+        closure *clos = c->constants[constant].as.closure;
         if (!clos)
             return offset;
         for (int j = 0; j < clos->upval_count; j++)

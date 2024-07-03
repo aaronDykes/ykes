@@ -3,7 +3,7 @@
 
 #include "stack.h"
 
-void disassemble_chunk(Chunk *c, const char *str);
-int disassemble_instruction(Chunk *c, int offset);
+void disassemble_chunk(chunk *c, const char *str);
+int disassemble_instruction(chunk *c, int offset);
 
 #endif

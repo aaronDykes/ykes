@@ -21,8 +21,6 @@ sr twod_ar()
         pout(i, i.len);
 
 
-
-
     rm(ar); 
 }
 

@@ -3,12 +3,12 @@
 
 #include "arena_memory.h"
 
-void write_chunk(Chunk *c, uint8_t byte, int line);
-int add_constant(Chunk *c, Element ar);
+void write_chunk(chunk *c, uint8_t byte, int line);
+int add_constant(chunk *c, element ar);
 
-void push(Stack **s, Element e);
-void popn(Stack **s, int ival);
-void reset_stack(Stack *s);
-void check_stack_size(Stack *s);
+void push(stack **s, element e);
+void popn(stack **s, int ival);
+void reset_stack(stack *s);
+void check_stack_size(stack *s);
 
 #endif

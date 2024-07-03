@@ -1,34 +1,33 @@
-#ifndef _ARENA_TABLE_H
-#define _ARENA_TABLE_H
+#ifndef _arena_table_H
+#define _arena_table_H
 #include "stack.h"
 
 #define FREE_ENTRY(e) \
     free_entry(e)
+
 #define FREE_TABLE(ar) \
-    arena_realloc_table(ar, 0)
+    realloc_table(ar, 0)
 
 #define GROW_TABLE(ar, size) \
-    arena_realloc_table(ar, size)
+    realloc_table(ar, size)
 
-void insert_entry(Table **t, Table entry);
-void delete_entry(Table **t, Arena key);
+void write_table(table *t, arena a, element b);
+void delete_entry(table **t, arena key);
+element find_entry(table **t, arena *hash);
 
-void free_entry(Element el);
-Element find_entry(Table **t, Arena *hash);
+void insert_entry(table **t, table entry);
+table Entry(arena key, element val);
+table arena_entry(arena key, arena val);
+table class_entry(class *c);
+table instance_entry(arena ar, instance *c);
+table table_entry(arena ar, table *t);
+table func_entry(closure *c);
+table native_entry(native *func);
+table vector_entry(arena ar, arena *_vector);
+table stack_entry(arena ar, stack *s);
+table new_entry(table t);
 
-Table Entry(Arena key, Element val);
-Table arena_entry(Arena key, Arena val);
-Table class_entry(Class *c);
-Table instance_entry(Arena ar, Instance *c);
-Table table_entry(Arena ar, Table *t);
-Table func_entry(Closure *c);
-Table native_entry(Native *func);
-Table vector_entry(Arena ar, Arena *arena_vector);
-Table stack_entry(Arena ar, Stack *s);
-Table new_entry(Table t);
-
-void write_table(Table *t, Arena a, Element b);
-Table *arena_alloc_table(size_t size);
-Table *arena_realloc_table(Table *t, size_t size);
-void alloc_entry(Table **e, Table el);
+table *alloc_table(size_t size);
+table *realloc_table(table *t, size_t size);
+void alloc_entry(table **e, table el);
 #endif

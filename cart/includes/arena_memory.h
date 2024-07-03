@@ -7,48 +7,29 @@
 
 #define LOAD_FACTOR 0.75
 #define FRAMES_MAX 500
-#define CAPACITY 64
-#define INC 2
-#define ARM64_PAGE 16384
-#define PAGE_COUNT 16
-#define INIT_GLOBAL \
-    (ARM64_PAGE * PAGE_COUNT)
 #define STACK_SIZE 64
-#define MIN_SIZE 8
-#define NATIVE_STACK_SIZE 32
-#define TABLE_SIZE 128
-#define MACHINE_STACK 256
-#define IP_SIZE 100
-#define MEM_OFFSET 1
-#define OFFSET sizeof(Free)
-
-#define ALLOC(size) \
-    _malloc_(size + OFFSET)
-
-#define PTR(ptr) \
-    (((Free *)ptr) - 1)
-
-#define FREE(ptr) \
-    _free_(ptr)
+#define MIN_SIZE 16
 
 #define GROW_CAPACITY(capacity) \
-    ((capacity) < CAPACITY ? CAPACITY : capacity * INC)
+    ((capacity) < MIN_SIZE ? MIN_SIZE : capacity * INC)
 
-#define GROW_ARRAY(ar, size, type) \
+#define GROW_ARENA(ar, size, type) \
     arena_realloc(ar, size, type)
-#define GROW_ARENA(ar, size) \
-    arena_realloc_arena(ar, size)
 #define FREE_ARENA(ar) \
-    arena_realloc_arena(ar, 0)
-#define FREE_ARRAY(ar) \
     arena_realloc(ar, 0, ARENA_NULL)
+
+#define GROW_VECTOR(ar, size) \
+    realloc_vector(ar, size)
+#define FREE_VECTOR(ar) \
+    realloc_vector(ar, 0)
+
 #define ARENA_FREE(ar) \
     arena_free(ar)
 
 #define ALLOC_ENTRY(a, b) \
     alloc_entry(a, b)
 #define FREE_TABLE_ENTRY(ar) \
-    arena_free_entry(ar)
+    free_entry(ar)
 
 #define GROW_STACK(st, size) \
     realloc_stack(st, size)
@@ -67,155 +48,75 @@
 #define FREE_UPVAL(up) \
     free_upval(up)
 #define NEW_STACK(size) \
-    stack(size)
-
-#define OBJ(o) \
-    Obj(o)
-#define VECT(o) \
-    vector(o)
-#define FUNC(ar) \
-    Func(ar)
-#define NATIVE(n) \
-    native_fn(n)
-#define CLOSURE(c) \
-    closure(c)
-#define UPVAL(c) \
-    upval_el(c)
-#define CLASS(c) \
-    new_class(c)
-#define BOUND(c) \
-    bound_closure_el(c)
-#define INSTANCE(c) \
-    new_instance(c)
-#define TABLE(t) \
-    table_el(t)
-
-#define STK(stk) \
-    stack_el(stk)
+    _stack(size)
 
 #define FREE_CLASS(c) \
     free_class(c)
 #define FREE_INSTANCE(c) \
     free_instance(c)
 
-typedef union Free Free;
-typedef struct CallFrame CallFrame;
-typedef struct vm vm;
-typedef long long int Align;
-
-union Free
-{
-
-    struct
-    {
-        size_t size;
-        Free *next;
-    };
-    Align align;
-};
-
-static Free *mem;
-
 void initialize_global_memory(void);
 void destroy_global_memory(void);
 
-Arena *arena_alloc_arena(size_t size);
-Arena *arena_realloc_arena(Arena *ar, size_t size);
-void arena_free_arena(Arena *ar);
+arena *alloc_vector(size_t size);
+arena *realloc_vector(arena *ar, size_t size);
+void free_vector(arena *ar);
 
-void *_malloc_(size_t size);
-void _free_(void *new);
-void free_garbage(Free **new);
+arena arena_realloc(arena *ar, size_t size, T type);
+element cpy_array(element el);
 
-Arena arena_init(void *data, size_t size, T type);
-Arena arena_alloc(size_t size, T type);
-Arena arena_realloc(Arena *ar, size_t size, T type);
+void arena_free(arena *ar);
 
-Element cpy_array(Element el);
+arena Ints(int *ints, int len);
+arena Doubles(double *doubles, int len);
+arena Longs(long long int *longs, int len);
+arena Strings(void);
 
-Arena Ints(int *ints, int len);
-Arena Doubles(double *doubles, int len);
-Arena Longs(long long int *longs, int len);
-Arena Strings(void);
+void push_arena(element *el, arena ar);
+element pop_arena(element *el);
 
-void push_arena(Element *el, Arena ar);
-Element pop_arena(Element *el);
+void push_int(element *el, int Int);
+element pop_int(element *el);
 
-void push_int(Element *el, int Int);
-Element pop_int(Element *el);
+void push_double(element *el, double Double);
+element pop_double(element *el);
 
-void push_double(Element *el, double Double);
-Element pop_double(Element *el);
+void push_long(element *el, long long int Long);
+element pop_long(element *el);
 
-void push_long(Element *el, long long int Long);
-Element pop_long(Element *el);
+void push_string(element *el, const char *String);
+element pop_string(element *el);
 
-void push_string(Element *el, const char *String);
-Element pop_string(Element *el);
+void init_chunk(chunk *c);
+void free_chunk(chunk *c);
 
-Arena Char(char ch);
-Arena Int(int ival);
-Arena Byte(uint8_t byte);
-Arena Long(long long int llint);
-Arena Double(double dval);
-Arena String(const char *str);
-Arena CString(const char *str);
-Arena Bool(bool boolean);
-Arena Size(size_t Size);
-Arena Null(void);
+stack *_stack(size_t size);
+stack *realloc_stack(stack *stack, size_t size);
+void free_stack(stack **stack);
 
-void arena_free(Arena *ar);
+upval **upvals(size_t size);
+void free_upvals(upval **up);
 
-void init_chunk(Chunk *c);
-void free_chunk(Chunk *c);
+function *_function(arena name);
+void free_function(function *func);
 
-Stack *stack(size_t size);
-Stack *realloc_stack(Stack *stack, size_t size);
-void free_stack(Stack **stack);
+closure *_closure(function *func);
+void free_closure(closure **closure);
 
-Upval **upvals(size_t size);
-void free_upvals(Upval **up);
+upval *_upval(stack *index);
+void free_upval(upval *up);
 
-Stack value(Element el);
-Element stack_el(Stack *el);
-Element Obj(Arena ar);
-Element native_fn(Native *native);
-Element closure(Closure *clos);
-Element new_class(Class *classc);
-Element new_instance(Instance *ci);
-Element table_el(Table *t);
-Element vector(Arena *vect);
-Element null_obj(void);
+native *_native(NativeFn native, arena ar);
+void free_native(native *nat);
 
-Function *function(Arena name);
-void free_function(Function *func);
+void free_table(table *t);
+void alloc_entry(table **e, table el);
+void free_entry(table *entry);
 
-Closure *new_closure(Function *func);
-void free_closure(Closure **closure);
+class *_class(arena name);
+void free_class(class *c);
 
-Upval *upval(Stack *index);
-void free_upval(Upval *up);
-
-Native *native(NativeFn native, Arena ar);
-void free_native(Native *native);
-
-void print(Element ar);
-void print_line(Element ar);
-
-long long int hash(Arena key);
-void alloc_entry(Table **e, Table el);
-
-void arena_free_table(Table *t);
-void arena_free_entry(Table *entry);
-
-Arena Var(const char *str);
-Arena func_name(const char *str);
-Arena native_name(const char *str);
-
-Class *class(Arena name);
-void free_class(Class *c);
-
-Instance *instance(Class *c);
-void free_instance(Instance *ic);
+instance *_instance(class *c);
+void free_instance(instance *ic);
 
 #endif

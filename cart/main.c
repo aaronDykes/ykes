@@ -31,7 +31,7 @@ static void repl(void)
 
     initVM();
     char ar[1024] = {0};
-    // Arena ar = GROW_ARRAY(NULL, 1024 * sizeof(char), ARENA_STR);
+    // arena ar = GROW_ARENA(NULL, 1024 * sizeof(char), ARENA_STR);
 
     for (;;)
     {
