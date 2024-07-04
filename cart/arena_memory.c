@@ -286,8 +286,8 @@ void push_arena(element *el, arena ar)
 {
     if ((el->_vector - 1)->len < (el->_vector - 1)->count + 1)
     {
-        (el->_vector - 1)->len = GROW_CAPACITY((el->_vector - 1)->len);
-        el->_vector = GROW_VECTOR(el->_vector, (el->_vector - 1)->len);
+        size_t size = (el->_vector - 1)->len * INC;
+        el->_vector = GROW_VECTOR(el->_vector, size);
     }
 
     el->_vector[(el->_vector - 1)->count++] = ar;

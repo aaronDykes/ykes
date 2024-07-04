@@ -18,9 +18,9 @@ void initVM(void)
     machine.glob = NULL;
 
     machine.stack = GROW_STACK(NULL, STACK_SIZE);
-    machine.call_stack = GROW_STACK(NULL, MIN_SIZE);
-    machine.class_stack = GROW_STACK(NULL, MIN_SIZE);
-    machine.native_calls = GROW_STACK(NULL, MIN_SIZE);
+    machine.call_stack = GROW_STACK(NULL, STACK_SIZE);
+    machine.class_stack = GROW_STACK(NULL, STACK_SIZE);
+    machine.native_calls = GROW_STACK(NULL, STACK_SIZE);
     machine.glob = GROW_TABLE(NULL, STACK_SIZE);
 
     machine.argc = 0;
@@ -763,7 +763,7 @@ Interpretation run(void)
         {
             instance *ic = NULL;
             ic = _instance((machine.class_stack + READ_BYTE())->as.classc);
-            ic->fields = GROW_TABLE(ic->classc->closures, STACK_SIZE);
+            ic->fields = GROW_TABLE(ic->classc->closures, (ic->classc->closures - 1)->len);
             PUSH(INSTANCE(ic));
         }
         break;

@@ -39,63 +39,6 @@ END:
     ptr->val = entry.val;
 }
 
-static void delete_entry(table **t, arena key)
-{
-    table *a = NULL;
-    a = *t;
-    size_t index = key.as.hash & ((a - 1)->len - 1);
-    table e = a[index];
-
-    if (e.key.type == ARENA_NULL || key.type == ARENA_NULL)
-        return;
-
-    if (e.next && (e.key.as.hash == key.as.hash))
-    {
-        table *t = a[index].next;
-        FREE_TABLE_ENTRY(&a[index]);
-        a[index] = arena_entry(Null(), Null());
-        t->prev = NULL;
-        a[index] = new_entry(*t);
-
-        return;
-    }
-    if (!e.next && (e.key.as.hash == key.as.hash))
-    {
-        FREE_TABLE_ENTRY(&a[index]);
-        a[index] = arena_entry(Null(), Null());
-        return;
-    }
-
-    table *tmp = e.next;
-    table *del = NULL;
-
-    if (!tmp->next)
-    {
-        FREE_TABLE_ENTRY(tmp);
-        return;
-    }
-
-    for (; tmp->next; tmp = tmp->next)
-        if (tmp->key.as.hash == key.as.hash)
-            goto DEL;
-
-    if (tmp->key.as.hash == key.as.hash)
-        goto DEL_LAST;
-
-    return;
-DEL:
-    del = tmp->prev;
-    del->next = tmp->next;
-    tmp->next->prev = del;
-    FREE_TABLE_ENTRY(tmp);
-    return;
-
-DEL_LAST:
-    del = tmp->prev;
-    del->next = NULL;
-    FREE_TABLE_ENTRY(tmp);
-}
-
 element find_entry(table **t, arena *hash)
 {
     table *a = *t;
@@ -199,6 +142,15 @@ table new_entry(table t)
     case VECTOR:
         el.val._vector = t.val._vector;
         break;
+    case CLASS:
+        el.val.classc = t.val.classc;
+        break;
+    case STACK:
+        el.val.stack = t.val.stack;
+        break;
+    case INSTANCE:
+        el.val.instance = t.val.instance;
+        break;
     default:
         break;
     }
@@ -246,7 +198,7 @@ table arena_entry(arena key, arena val)
     el.type = ARENA;
     return el;
 }
-static table null_entry()
+static table null_entry(void)
 {
     table el;
     el.key = Null();
@@ -360,7 +312,10 @@ table *realloc_table(table *t, size_t size)
     ptr = alloc_table(size);
 
     for (size_t i = 0; i < new_size; i++)
-        ptr[i] = new_entry(t[i]);
+    {
+        size_t index = t[i].key.as.hash & ((ptr - 1)->len - 1);
+        ptr[index] = new_entry(t[i]);
+    }
 
     FREE(t - 1);
     --t;
@@ -396,8 +351,8 @@ void write_table(table *t, arena a, element b)
 
     if (load_capacity < (t - 1)->count + 1)
     {
-        (t - 1)->len *= INC;
-        t = GROW_TABLE(t, t->len);
+        size_t size = (t - 1)->len * INC;
+        t = GROW_TABLE(t, size);
     }
     (t - 1)->count++;
 

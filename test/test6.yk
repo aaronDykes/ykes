@@ -13,14 +13,14 @@ import "test3.yk";
 
 
 // pr();
-var p = Prime(100000);
-// var fb = Fizzbang();
-// fb.fb();
+// var p = Prime();
+var fb = Fizzbang();
+fb.fb();
 // var nt = Nest(69, 69, 420);
 // var tab = Tables();
 // var scone = Scone();
 // var maker = CoffeeMaker("coffee and chicory");
-// var fib = FIB();
+var fib = FIB();
 // var z = Zoo();
 
 // var b = Blue(
@@ -29,9 +29,9 @@ var p = Prime(100000);
 // );
 // b.file_read_write();
 
-p.res();
+// p.res();
 // rm(p);
-// fib.res();
+fib.res();
 // rm(fib);
 // scone.topping("strawberries ", "cream", 69); 
 // pout(nt.sum());

@@ -8,6 +8,7 @@
 #define LOAD_FACTOR 0.75
 #define FRAMES_MAX 500
 #define STACK_SIZE 64
+#define MED_SIZE 32
 #define MIN_SIZE 16
 
 #define GROW_CAPACITY(capacity) \

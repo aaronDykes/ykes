@@ -1914,47 +1914,53 @@ function *compile(const char *src)
 }
 function *compile_path(const char *src, const char *path, const char *name)
 {
-    compiler c;
+    compiler *c = NULL;
+    c = ALLOC(sizeof(compiler));
 
     init_scanner(src);
 
-    init_compiler(&c, NULL, SCRIPT, Var("SCRIPT"));
+    init_compiler(c, NULL, SCRIPT, Var("SCRIPT"));
 
-    c.base = &c;
-    c.base->meta.cwd = path;
+    c->base = c;
+    c->base->meta.cwd = path;
 
-    c.base->lookup.call = GROW_TABLE(NULL, STACK_SIZE);
-    c.base->lookup.class = GROW_TABLE(NULL, STACK_SIZE);
-    c.base->lookup.include = GROW_TABLE(NULL, STACK_SIZE);
-    c.base->lookup.native = GROW_TABLE(NULL, STACK_SIZE);
+    c->base->lookup.call = NULL;
+    c->base->lookup.class = NULL;
+    c->base->lookup.include = NULL;
+    c->base->lookup.native = NULL;
 
-    c.base->_hash_ref.init = String("init");
-    c.base->_hash_ref.len = CString("len");
-    c.base->_hash_ref.push = CString("push");
-    c.base->_hash_ref.pop = CString("pop");
+    c->base->lookup.call = GROW_TABLE(NULL, MIN_SIZE);
+    c->base->lookup.class = GROW_TABLE(NULL, MIN_SIZE);
+    c->base->lookup.include = GROW_TABLE(NULL, MIN_SIZE);
+    c->base->lookup.native = GROW_TABLE(NULL, MIN_SIZE);
 
-    c.parser.panic = false;
-    c.parser.err = false;
-    c.parser.current_file = name;
+    c->base->_hash_ref.init = String("init");
+    c->base->_hash_ref.len = CString("len");
+    c->base->_hash_ref.push = CString("push");
+    c->base->_hash_ref.pop = CString("pop");
 
-    write_table(c.base->lookup.native, CString("clock"), OBJ(Int(c.base->count.native++)));
-    write_table(c.base->lookup.native, CString("square"), OBJ(Int(c.base->count.native++)));
-    write_table(c.base->lookup.native, CString("prime"), OBJ(Int(c.base->count.native++)));
-    write_table(c.base->lookup.native, CString("file"), OBJ(Int(c.base->count.native++)));
+    c->parser.panic = false;
+    c->parser.err = false;
+    c->parser.current_file = name;
 
-    advance_compiler(&c.parser);
+    write_table(c->base->lookup.native, CString("clock"), OBJ(Int(c->base->count.native++)));
+    write_table(c->base->lookup.native, CString("square"), OBJ(Int(c->base->count.native++)));
+    write_table(c->base->lookup.native, CString("prime"), OBJ(Int(c->base->count.native++)));
+    write_table(c->base->lookup.native, CString("file"), OBJ(Int(c->base->count.native++)));
 
-    while (!match(TOKEN_EOF, &c.parser))
-        declaration(&c);
-    consume(TOKEN_EOF, "Expect end of expression", &c.parser);
+    advance_compiler(&c->parser);
 
-    function *f = end_compile(&c);
+    while (!match(TOKEN_EOF, &c->parser))
+        declaration(c);
+    consume(TOKEN_EOF, "Expect end of expression", &c->parser);
 
-    FREE((char *)(c.parser.current_file));
-    FREE(((c.base->lookup.call - 1)));
-    FREE(((c.base->lookup.native - 1)));
-    FREE(((c.base->lookup.class - 1)));
-    FREE(((c.base->_hash_ref.init.as.String)));
+    function *f = end_compile(c);
 
-    return c.parser.err ? NULL : f;
+    FREE((char *)(c->parser.current_file));
+    FREE(((c->base->lookup.call - 1)));
+    FREE(((c->base->lookup.native - 1)));
+    FREE(((c->base->lookup.class - 1)));
+    FREE(((c->base->_hash_ref.init.as.String)));
+
+    return c->parser.err ? NULL : f;
 }
