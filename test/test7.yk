@@ -20,14 +20,14 @@ sr print_prime(n)
     }
 }
 
-sr res()
+sr res(n)
 {
     var start = clock();
-    print_prime(100000);
+    print_prime(n);
     pout(clock() - start);
 }
 
 
 
 
-res();
+res(1000000);

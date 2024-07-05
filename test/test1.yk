@@ -31,8 +31,6 @@ class Tables
             t["Table"]["Table"]["another"]["nest"]
         );
         
-        rm(t);
-        t = null;
     }
 
 }

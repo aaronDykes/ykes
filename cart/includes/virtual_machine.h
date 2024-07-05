@@ -31,12 +31,16 @@ struct vm
     int cargc;
 
     CallFrame frames[FRAMES_MAX];
+
     stack *stack;
     stack *call_stack;
     stack *method_call_stack;
     stack *class_stack;
     stack *native_calls;
+
     element pop_val;
+    instance *current_instance;
+    table *init_fields;
     upval *open_upvals;
     table *glob;
 };

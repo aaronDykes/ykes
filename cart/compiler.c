@@ -15,6 +15,7 @@ static void init_compiler(compiler *a, compiler *b, ObjType type, arena name)
     local *_local = NULL;
     a->meta.cwd = NULL;
     a->meta.type = type;
+    a->meta.flags = 0;
 
     a->count.local = 0;
     a->count.scope = 0;
@@ -1377,6 +1378,10 @@ static void dot(compiler *c)
             ternary_statement(c);
         else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
+
+        // if (!FLAG_INSTANCE(c->base->meta.flags))
+        //     emit_bytes(c, OP_SET_FIELD, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
+        // else
         emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
     }
     else if (match(TOKEN_ADD_ASSIGN, &c->parser))
@@ -1390,7 +1395,9 @@ static void dot(compiler *c)
         else if (match(TOKEN_CH_NULL_COALESCING, &c->parser))
             null_coalescing_statement(c);
         emit_byte(c, OP_ADD);
+
         emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
+        // emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, OBJ(ar)));
     }
     else if (match(TOKEN_SUB_ASSIGN, &c->parser))
     {
@@ -1593,11 +1600,11 @@ static void _this(compiler *c)
         return;
     }
 
-    int arg = resolve_instance(c, c->class_compiler->instance_name);
+    // int arg = resolve_instance(c, c->class_compiler->instance_name);
 
-    emit_bytes(
-        c, OP_GET_CLASS,
-        arg);
+    // emit_bytes(
+    //     c, OP_GET_CLASS,
+    //     arg);
 }
 
 static void id(compiler *c)
@@ -1624,9 +1631,15 @@ static void id(compiler *c)
         {
             emit_bytes(c, OP_CONSTANT, (uint8_t)add_constant(&c->func->ch, CLOSURE(c->base->stack.instance[arg]->init)));
             match(TOKEN_CH_LPAREN, &c->parser);
+            // allocate table
+            emit_bytes(c, OP_GET_CLASS, (uint8_t)arg);
+
+            // set flag and write to table instead of instance that doesn't exist yet
+            // c->base->meta.flags |= INSTANCE_SET;
             call(c);
         }
-        emit_bytes(c, OP_GET_CLASS, (uint8_t)arg);
+        // c->base->meta.flags &= INSTANCE_CLR;
+        emit_bytes(c, OP_ALLOC_INSTANCE, (uint8_t)arg);
         return;
     }
 

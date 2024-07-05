@@ -312,10 +312,11 @@ table *realloc_table(table *t, size_t size)
     ptr = alloc_table(size);
 
     for (size_t i = 0; i < new_size; i++)
-    {
-        size_t index = t[i].key.as.hash & ((ptr - 1)->len - 1);
-        ptr[index] = new_entry(t[i]);
-    }
+        if (t[i].type != NULL_OBJ)
+        {
+            size_t index = t[i].key.as.hash & ((ptr - 1)->len - 1);
+            ptr[index] = new_entry(t[i]);
+        }
 
     FREE(t - 1);
     --t;

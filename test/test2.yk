@@ -4,4 +4,6 @@ import "./test1.yk";
 var t = Tables();
 t.tables();
 
+rm(t);
+
  

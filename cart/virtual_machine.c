@@ -17,11 +17,14 @@ void initVM(void)
     machine.native_calls = NULL;
     machine.glob = NULL;
 
-    machine.stack = GROW_STACK(NULL, STACK_SIZE);
-    machine.call_stack = GROW_STACK(NULL, STACK_SIZE);
-    machine.class_stack = GROW_STACK(NULL, STACK_SIZE);
-    machine.native_calls = GROW_STACK(NULL, STACK_SIZE);
-    machine.glob = GROW_TABLE(NULL, STACK_SIZE);
+    machine.stack = GROW_STACK(NULL, MIN_SIZE);
+    machine.call_stack = GROW_STACK(NULL, MIN_SIZE);
+    machine.class_stack = GROW_STACK(NULL, MIN_SIZE);
+    machine.native_calls = GROW_STACK(NULL, MIN_SIZE);
+    machine.glob = GROW_TABLE(NULL, MIN_SIZE);
+
+    machine.current_instance = NULL;
+    machine.init_fields = NULL;
 
     machine.argc = 0;
     machine.cargc = 0;
@@ -664,30 +667,37 @@ Interpretation run(void)
         case OP_SET_PROP:
         {
             element el = PEEK();
-            element inst = NPEEK(1);
-            if (inst.type != INSTANCE)
+            // element inst = NPEEK(1);
+            if (!machine.current_instance && !machine.init_fields)
             {
                 runtime_error("ERROR: Can only set properties of an instance.");
                 return INTERPRET_RUNTIME_ERR;
             }
-            write_table(inst.instance->fields, READ_CONSTANT()._arena, el);
+
+            if (machine.init_fields)
+                write_table(machine.init_fields, READ_CONSTANT()._arena, el);
+            else
+                write_table(machine.current_instance->fields, READ_CONSTANT()._arena, el);
             POP();
             break;
         }
+
         case OP_PUSH_TOP:
             PUSH(PEEK());
             break;
         case OP_GET_PROP:
         {
-            if (PEEK().type != INSTANCE)
+            if (!machine.current_instance && !machine.init_fields)
             {
                 runtime_error("ERROR: Only instances contain properties.");
                 return INTERPRET_RUNTIME_ERR;
             }
-            instance *inst = POP().instance;
+
             arena name = READ_CONSTANT()._arena;
 
-            element n = find_entry(&inst->fields, &name);
+            element n = (machine.init_fields)
+                            ? find_entry(&machine.init_fields, &name)
+                            : find_entry(&machine.current_instance->fields, &name);
 
             if (n.type != NULL_OBJ)
             {
@@ -698,6 +708,7 @@ Interpretation run(void)
             runtime_error("ERROR: Undefined property '%s'.", name.as.String);
             return INTERPRET_RUNTIME_ERR;
         }
+
         case OP_CALL:
         {
             uint8_t argc = READ_BYTE();
@@ -761,12 +772,19 @@ Interpretation run(void)
             break;
         case OP_GET_CLASS:
         {
-            instance *ic = NULL;
-            ic = _instance((machine.class_stack + READ_BYTE())->as.classc);
-            ic->fields = GROW_TABLE(ic->classc->closures, (ic->classc->closures - 1)->len);
-            PUSH(INSTANCE(ic));
+            class *c = (machine.class_stack + READ_BYTE())->as.classc;
+            machine.init_fields = GROW_TABLE(c->closures, (c->closures - 1)->len);
+            break;
         }
-        break;
+        case OP_ALLOC_INSTANCE:
+            machine.current_instance = _instance((machine.class_stack + READ_BYTE())->as.classc);
+            machine.current_instance->fields =
+                (machine.init_fields)
+                    ? machine.init_fields
+                    : GROW_TABLE(machine.current_instance->classc->closures, (machine.current_instance->classc->closures - 1)->len);
+            machine.init_fields = NULL;
+            PUSH(INSTANCE(machine.current_instance));
+            break;
         case OP_RM:
             RM();
             break;
@@ -786,6 +804,9 @@ Interpretation run(void)
 
             if (el.type != NULL_OBJ)
             {
+
+                if (el.type == INSTANCE)
+                    machine.current_instance = el.instance;
                 PUSH(el);
                 break;
             }

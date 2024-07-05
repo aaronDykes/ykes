@@ -10,6 +10,12 @@
 #define CWD_MAX 1024
 #define _SIZE(X) sizeof(X) / sizeof(X[0])
 
+#define INSTANCE_SET 0x01 /* 0000 0001 */
+#define INSTANCE_CLR 0xFE /* 1111 1110 */
+
+#define FLAG_INSTANCE(n) \
+    (n & INSTANCE_SET)
+
 struct parser
 {
     token cur;
@@ -96,6 +102,7 @@ struct hash_ref
 
 struct meta
 {
+    uint8_t flags;
     ObjType type;
     const char *cwd;
 };

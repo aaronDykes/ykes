@@ -162,7 +162,7 @@ void *_realloc_(void *ptr, size_t old_size, size_t size)
     }
 
     void *alloced = NULL;
-    alloced = CALLOC(0, size);
+    alloced = ALLOC(size);
 
     size_t new_size = (size < old_size) ? size : old_size;
 
