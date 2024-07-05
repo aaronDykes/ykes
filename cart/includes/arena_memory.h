@@ -17,14 +17,13 @@
     arena_realloc(ar, size, type)
 #define FREE_ARENA(ar) \
     arena_realloc(ar, 0, ARENA_NULL)
+#define ARENA_FREE(ar) \
+    arena_free(ar)
 
 #define GROW_VECTOR(ar, size) \
     realloc_vector(ar, size)
 #define FREE_VECTOR(ar) \
     realloc_vector(ar, 0)
-
-#define ARENA_FREE(ar) \
-    arena_free(ar)
 
 #define FREE_TABLE_ENTRY(ar) \
     free_entry(ar)
@@ -52,9 +51,6 @@
     free_class(c)
 #define FREE_INSTANCE(c) \
     free_instance(c)
-
-void initialize_global_memory(void);
-void destroy_global_memory(void);
 
 arena *alloc_vector(size_t size);
 arena *realloc_vector(arena *ar, size_t size);

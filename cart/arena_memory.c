@@ -146,6 +146,13 @@ static arena realloc_2d_string(arena *ar, size_t size)
     str.count = ((size_t)ar->count > size) ? size : ar->count;
     return str;
 }
+static arena realloc_string(arena *ar, size_t size)
+{
+    ar->as.String = REALLOC(ar->as.String, ar->size, size);
+    ar->as.len = size;
+    ar->size = size;
+    return *ar;
+}
 arena arena_realloc(arena *ar, size_t size, T type)
 {
 
@@ -166,8 +173,7 @@ arena arena_realloc(arena *ar, size_t size, T type)
     case ARENA_STR:
     case ARENA_CSTR:
     case ARENA_VAR:
-        ar->as.String = REALLOC(ar->as.String, ar->size, size);
-        break;
+        return realloc_string(ar, size);
     case ARENA_INTS:
         ar->listof.Ints = REALLOC(ar->listof.Ints, ar->size, size);
         break;
