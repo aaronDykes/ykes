@@ -12,6 +12,9 @@
 #define GROW_TABLE(ar, size) \
     realloc_table(ar, size)
 
+table compiler_entry(arena key, arena val, ObjType type);
+element find_compiler_entry(table **t, arena *hash);
+void compiler_insertion(table *t, arena a, element b);
 void write_table(table *t, arena a, element b);
 element find_entry(table **t, arena *hash);
 table *alloc_table(size_t size);

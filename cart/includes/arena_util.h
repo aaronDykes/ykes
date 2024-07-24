@@ -174,16 +174,10 @@ typedef enum
     TABLE,
     INIT,
     UPVAL,
+    INCLUDE,
     SCRIPT,
     NULL_OBJ
 } ObjType;
-
-typedef enum
-{
-    OBJECT_TYPE,
-    ARENA_TYPE,
-    WILD_CARD
-} Typed;
 
 typedef union vector vector;
 typedef struct value value;

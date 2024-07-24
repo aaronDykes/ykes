@@ -62,6 +62,14 @@ element Obj(arena ar)
 
     return s;
 }
+element type_obj(arena ar, ObjType type)
+{
+    element s;
+    s._arena = ar;
+    s.type = type;
+
+    return s;
+}
 
 element native_fn(native *native)
 {

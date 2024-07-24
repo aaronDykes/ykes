@@ -443,8 +443,6 @@ Interpretation run(void)
     free_asterisk(POP())
 #define POP() \
     (--machine.stack->count, (--machine.stack->top)->as)
-#define CPOP() \
-    (--machine.call_stack->count, (--machine.call_stack->top)->as)
 
     for (;;)
     {
@@ -804,7 +802,6 @@ Interpretation run(void)
 
             if (el.type != NULL_OBJ)
             {
-
                 if (el.type == INSTANCE)
                     machine.current_instance = el.instance;
                 PUSH(el);
@@ -864,7 +861,6 @@ Interpretation run(void)
     }
 
 #undef RM
-#undef CPOP
 #undef POP
 #undef WRITE_GLOB
 #undef WRITE_PARAM

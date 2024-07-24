@@ -28,10 +28,7 @@ static void init_compiler(compiler *a, compiler *b, ObjType type, arena name)
 
     a->count.upvalue = 0;
 
-    a->lookup.call = NULL;
-    a->lookup.native = NULL;
-    a->lookup.class = NULL;
-    a->lookup.include = NULL;
+    a->lookup = NULL;
 
     a->class_compiler = NULL;
     a->func = NULL;
@@ -113,9 +110,9 @@ static char *read_file(const char *path)
 static bool resolve_include(compiler *c, arena ar)
 {
 
-    element el = find_entry(&c->base->lookup.include, &ar);
+    element el = find_compiler_entry(&c->base->lookup, &ar);
 
-    if (el.type != NULL_OBJ)
+    if (el.type == ARENA && el._arena.type == ARENA_STR)
         return true;
 
     return false;
@@ -159,7 +156,7 @@ static void include_file(compiler *c)
     char *remaining = NULL;
 
     consume(TOKEN_STR, "Expect file path.", &c->parser);
-    arena inc = CString(parse_string(c));
+    arena inc = String(parse_string(c));
 
     if (resolve_include(c, inc))
     {
@@ -167,7 +164,7 @@ static void include_file(compiler *c)
         exit(1);
     }
 
-    write_table(c->base->lookup.include, inc, OBJ(inc));
+    compiler_insertion(c->base->lookup, inc, OBJ(inc));
 
     consume(TOKEN_CH_SEMI, "Expect `;` at end of include statement.", &c->parser);
     remaining = (char *)c->parser.cur.start;
@@ -184,7 +181,7 @@ static void include_file(compiler *c)
         SIZE(file, remaining),
         ARENA_STR);
 
-    str_cop(result.as.String, file);
+    strcpy(result.as.String, file);
 
     strcat(result.as.String, remaining);
     init_scanner(result.as.String);
@@ -222,10 +219,12 @@ static void class_declaration(compiler *c)
     classc->closures = GROW_TABLE(NULL, STACK_SIZE);
     class_compiler *cc = ALLOC(sizeof(class_compiler));
 
-    write_table(c->base->lookup.class, classc->name, OBJ(Int(c->base->count.class ++)));
-    c->base->stack.instance[c->base->count.class - 1] = classc;
-    cc->instance_name = ar;
+    compiler_insertion(c->base->lookup, classc->name, type_obj(Int(c->base->count.class), CLASS));
 
+    c->base->stack.instance[c->base->count.class] = classc;
+    ++c->base->count.class;
+
+    cc->instance_name = ar;
     cc->enclosing = c->class_compiler;
     c->class_compiler = cc;
 
@@ -329,7 +328,7 @@ static void func_declaration(compiler *c)
     consume(TOKEN_ID, "Expect function name.", &c->parser);
     arena ar = parse_func_id(c);
 
-    write_table(c->base->lookup.call, ar, OBJ(Int(c->base->count.call++)));
+    compiler_insertion(c->base->lookup, ar, type_obj(Int(c->base->count.call++), FUNCTION));
     func_body(c, CLOSURE, ar);
 }
 
@@ -1213,9 +1212,9 @@ static void _table(compiler *c)
 static int resolve_native(compiler *c, arena *ar)
 {
 
-    element el = find_entry(&c->base->lookup.native, ar);
+    element el = find_compiler_entry(&c->base->lookup, ar);
 
-    if (el.type == ARENA && el._arena.type == ARENA_INT)
+    if (el.type == NATIVE)
         return el._arena.as.Int;
 
     return -1;
@@ -1306,9 +1305,9 @@ static arena get_id(compiler *c)
 static int resolve_call(compiler *c, arena *ar)
 {
 
-    element el = find_entry(&c->base->lookup.call, ar);
+    element el = find_compiler_entry(&c->base->lookup, ar);
 
-    if (el.type == ARENA && el._arena.type == ARENA_INT)
+    if (el.type == FUNCTION)
         return el._arena.as.Int;
 
     return -1;
@@ -1316,9 +1315,9 @@ static int resolve_call(compiler *c, arena *ar)
 
 static int resolve_instance(compiler *c, arena ar)
 {
-    element el = find_entry(&c->base->lookup.class, &ar);
+    element el = find_compiler_entry(&c->base->lookup, &ar);
 
-    if (el.type == ARENA && el._arena.type == ARENA_INT)
+    if (el.type == CLASS)
         return el._arena.as.Int;
 
     return -1;
@@ -1634,11 +1633,8 @@ static void id(compiler *c)
             // allocate table
             emit_bytes(c, OP_GET_CLASS, (uint8_t)arg);
 
-            // set flag and write to table instead of instance that doesn't exist yet
-            // c->base->meta.flags |= INSTANCE_SET;
             call(c);
         }
-        // c->base->meta.flags &= INSTANCE_CLR;
         emit_bytes(c, OP_ALLOC_INSTANCE, (uint8_t)arg);
         return;
     }
@@ -1788,6 +1784,7 @@ static bool idcmp(arena a, arena b)
 static int resolve_local(compiler *c, arena *name)
 {
     for (int i = c->count.local - 1; i >= 0; i--)
+
         if (idcmp(*name, c->stack.local[i].name))
             return i;
     return -1;
@@ -1901,9 +1898,8 @@ function *compile(const char *src)
     c._hash_ref.init = String("init");
     c.base = &c;
     c.base->meta.cwd = NULL;
-    c.base->lookup.call = GROW_TABLE(NULL, STACK_SIZE);
-    c.base->lookup.class = GROW_TABLE(NULL, STACK_SIZE);
-    c.base->lookup.include = GROW_TABLE(NULL, STACK_SIZE);
+    c.base->lookup = NULL;
+    c.base->lookup = GROW_TABLE(NULL, STACK_SIZE);
     c.base->_hash_ref.len = CString("len");
     c.base->_hash_ref.push = CString("push");
     c.base->_hash_ref.pop = CString("pop");
@@ -1919,8 +1915,7 @@ function *compile(const char *src)
 
     function *f = end_compile(&c);
 
-    FREE((c.base->lookup.call - 1));
-    FREE((c.base->lookup.class - 1));
+    FREE((c.base->lookup - 1));
     FREE((c.base->_hash_ref.init.as.String));
 
     return c.parser.err ? NULL : f;
@@ -1937,16 +1932,8 @@ function *compile_path(const char *src, const char *path, const char *name)
     c->base = c;
     c->base->meta.cwd = path;
 
-    c->base->lookup.call = NULL;
-    c->base->lookup.class = NULL;
-    c->base->lookup.include = NULL;
-    c->base->lookup.native = NULL;
-
-    c->base->lookup.call = GROW_TABLE(NULL, MIN_SIZE);
-    c->base->lookup.class = GROW_TABLE(NULL, MIN_SIZE);
-    c->base->lookup.include = GROW_TABLE(NULL, MIN_SIZE);
-    c->base->lookup.native = GROW_TABLE(NULL, MIN_SIZE);
-
+    c->base->lookup = NULL;
+    c->base->lookup = GROW_TABLE(NULL, STACK_SIZE);
     c->base->_hash_ref.init = String("init");
     c->base->_hash_ref.len = CString("len");
     c->base->_hash_ref.push = CString("push");
@@ -1956,10 +1943,10 @@ function *compile_path(const char *src, const char *path, const char *name)
     c->parser.err = false;
     c->parser.current_file = name;
 
-    write_table(c->base->lookup.native, CString("clock"), OBJ(Int(c->base->count.native++)));
-    write_table(c->base->lookup.native, CString("square"), OBJ(Int(c->base->count.native++)));
-    write_table(c->base->lookup.native, CString("prime"), OBJ(Int(c->base->count.native++)));
-    write_table(c->base->lookup.native, CString("file"), OBJ(Int(c->base->count.native++)));
+    compiler_insertion(c->base->lookup, CString("clock"), type_obj(Int(c->base->count.native++), NATIVE));
+    compiler_insertion(c->base->lookup, CString("square"), type_obj(Int(c->base->count.native++), NATIVE));
+    compiler_insertion(c->base->lookup, CString("prime"), type_obj(Int(c->base->count.native++), NATIVE));
+    compiler_insertion(c->base->lookup, CString("file"), type_obj(Int(c->base->count.native++), NATIVE));
 
     advance_compiler(&c->parser);
 
@@ -1970,9 +1957,7 @@ function *compile_path(const char *src, const char *path, const char *name)
     function *f = end_compile(c);
 
     FREE((char *)(c->parser.current_file));
-    FREE(((c->base->lookup.call - 1)));
-    FREE(((c->base->lookup.native - 1)));
-    FREE(((c->base->lookup.class - 1)));
+    FREE(((c->base->lookup - 1)));
     FREE(((c->base->_hash_ref.init.as.String)));
 
     return c->parser.err ? NULL : f;

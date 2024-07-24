@@ -39,6 +39,46 @@ END:
     ptr->val = entry.val;
 }
 
+element find_compiler_entry(table **t, arena *hash)
+{
+    table *a = *t;
+    size_t index = hash->as.hash & ((a - 1)->len - 1);
+    table entry = a[index];
+
+    element null_ = null_obj();
+    if (entry.key.type == ARENA_NULL)
+        return null_;
+
+    if (entry.key.as.hash == hash->as.hash)
+        switch (entry.type)
+        {
+        case ARENA:
+        case NATIVE:
+        case CLASS:
+        case FUNCTION:
+            return type_obj(entry.val._arena, entry.type);
+        default:
+            return null_;
+        }
+
+    table *tmp = entry.next;
+
+    for (; tmp; tmp = tmp->next)
+        if (tmp->key.as.hash == hash->as.hash)
+            switch (tmp->type)
+            {
+            case ARENA:
+            case NATIVE:
+            case CLASS:
+            case FUNCTION:
+                return type_obj(tmp->val._arena, tmp->type);
+            default:
+                return null_;
+            }
+
+    return null_;
+}
+
 element find_entry(table **t, arena *hash)
 {
     table *a = *t;
@@ -187,6 +227,17 @@ table Entry(arena key, element val)
     }
 }
 
+table compiler_entry(arena key, arena val, ObjType type)
+{
+    table el;
+    el.key = key;
+    el.val._arena = val;
+    el.next = NULL;
+    el.prev = NULL;
+    el.size = key.size + val.size;
+    el.type = type;
+    return el;
+}
 table arena_entry(arena key, arena val)
 {
     table el;
@@ -322,6 +373,21 @@ table *realloc_table(table *t, size_t size)
     --t;
     t = NULL;
     return ptr;
+}
+
+void compiler_insertion(table *t, arena a, element b)
+{
+
+    int load_capacity = (int)((t - 1)->len * LOAD_FACTOR);
+
+    if (load_capacity < (t - 1)->count + 1)
+    {
+        size_t size = (t - 1)->len * INC;
+        t = GROW_TABLE(t, size);
+    }
+    (t - 1)->count++;
+
+    insert_entry(&t, compiler_entry(a, b._arena, b.type));
 }
 
 void write_table(table *t, arena a, element b)

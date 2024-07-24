@@ -7,6 +7,7 @@
 stack _value(element el);
 element stack_el(stack *el);
 element Obj(arena ar);
+element type_obj(arena ar, ObjType type);
 element native_fn(native *native);
 element closure_el(closure *clos);
 element new_class(class *classc);

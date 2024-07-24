@@ -8,7 +8,6 @@ class Zoo
         this.donkey   = 1;
         this.elephant = 1;
         this.fox      = 1;
-        this.sum      = 0;
     }
     ant()    { return this.aardvark; }
     banana() { return this.baboon; }
@@ -22,8 +21,11 @@ class Zoo
     res()
     {
 
-        while (this.sum < 10000000000) {
-            this.sum = this.sum + this.ant()
+        var start = clock();
+        var sum = 0;
+
+        while (sum < 10000000000) {
+            sum = sum + this.ant()
                 + this.banana()
                 + this.tuna()
                 + this.hay()
@@ -31,7 +33,8 @@ class Zoo
                 + this.mouse();
         }
         pout(
-            this.sum
+            sum,
+            start - clock()
         );
 
     }

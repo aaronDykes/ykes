@@ -80,7 +80,6 @@ struct counter
     uint8_t scope;
     uint8_t upvalue;
     uint8_t call;
-    uint8_t param;
     uint8_t class;
     uint8_t native;
 };
@@ -107,13 +106,13 @@ struct meta
     const char *cwd;
 };
 
-struct lookup
-{
-    table *call;
-    table *class;
-    table *include;
-    table *native;
-};
+// struct lookup
+// {
+//     table *call;
+//     table *class;
+//     table *include;
+//     table *native;
+// };
 
 struct compiler_stack
 {
@@ -129,7 +128,7 @@ struct compiler
 
     meta meta;
     hash_ref _hash_ref;
-    lookup lookup;
+    table *lookup;
 
     parser parser;
     function *func;
