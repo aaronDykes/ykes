@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <pwd.h>
 #include <unistd.h>
+#include <string.h>
 
 static void repl(void);
 static void run_file(const char *path);

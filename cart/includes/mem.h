@@ -23,7 +23,7 @@
 #define OFFSET sizeof(_free)
 
 typedef union _free _free;
-typedef long long int align;
+typedef long long int Long;
 union _free
 {
     struct
@@ -31,7 +31,7 @@ union _free
         size_t size;
         _free *next;
     };
-    align align;
+    Long align;
 };
 
 static _free *mem;

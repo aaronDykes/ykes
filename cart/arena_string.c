@@ -1,15 +1,6 @@
-#include "arena_memory.h"
-#include <stdio.h>
-#include <stdarg.h>
-
-void log_err(const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    vfprintf(stderr, format, args);
-    va_end(args);
-    fputs("\n", stderr);
-}
+#include "arena_string.h"
+#include "error.h"
+#include <string.h>
 
 void str_swap(char *from, char *to)
 {
@@ -82,239 +73,96 @@ char *lltoa(char *c, long long int n)
     return c;
 }
 
-void str_cat(char *d, char *s)
+static element realloc_string(value ar, size_t size)
 {
-
-    char *dst = d,
-         *src = s;
-
-    while (*src)
-        *dst++ = *src++;
+    ar.String = REALLOC(ar.String, ar.len, size);
+    ar.len = size;
+    return OBJ(ar, T_STR);
 }
-
-arena prepend_int_to_str(arena s, arena a)
+static element append_str_to_str(element s, element str)
 {
-    int len = intlen(s.as.Int);
-    int ival = s.as.Int;
-    if (ival < 0)
-        ++len;
-    s = GROW_ARENA(NULL, sizeof(char) * (len + 1 + a.as.len), ARENA_STR);
-    s.as.String = itoa(s.as.String, ival);
-    strcat(s.as.String, a.as.String);
-    ARENA_FREE(&a);
-    return s;
-}
-arena prepend_char_to_str(arena s, arena a)
-{
-    char c = s.as.Char;
-    s = GROW_ARENA(NULL, sizeof(char) * (a.as.len + 1), ARENA_STR);
-    s.as.String[0] = c;
-    strcat(s.as.String, a.as.String);
-    ARENA_FREE(&a);
-    return s;
-}
-arena prepend_long_to_str(arena s, arena a)
-{
-    int len = longlen(s.as.Long);
-    long long int llint = s.as.Long;
-    if (llint < 0)
-        len++;
-    s = GROW_ARENA(NULL, sizeof(char) * (len + 1 + a.as.len), ARENA_STR);
-    s.as.String = lltoa(s.as.String, llint);
-    strcat(s.as.String, a.as.String);
-    ARENA_FREE(&a);
+    int new = s.val.len + str.val.len + 1;
+    s = realloc_string(s.val, new * sizeof(char));
+    strcat(s.val.String, str.val.String);
+    s.val.String[new] = '\0';
+    FREE(str.val.String);
     return s;
 }
 
-static arena append_int_to_str(arena s, arena i)
+element append(element s, element ar)
 {
-    int len = intlen(i.as.Int);
-    int ival = i.as.Int;
-    if (ival < 0)
-        ++len;
-    int new = len + s.as.len + 1;
-
-    i = GROW_ARENA(NULL, sizeof(char) * len, ARENA_STR);
-    itoa(i.as.String, ival);
-    int tmp = s.size;
-    s = GROW_ARENA(&s, sizeof(char) * new, ARENA_STR);
-    strcat(s.as.String + tmp, i.as.String);
-    ARENA_FREE(&i);
-
-    return s;
-}
-static arena append_str_to_str(arena s, arena str)
-{
-    int new = s.as.len + str.as.len + 1;
-    s = GROW_ARENA(&s, new * sizeof(char), ARENA_STR);
-    strcat(s.as.String, str.as.String);
-    s.as.String[new] = '\0';
-    ARENA_FREE(&str);
-    return s;
-}
-static arena append_char_to_str(arena s, arena c)
-{
-
-    int size = s.as.len + 1;
-    s = GROW_ARENA(&s, sizeof(char) * size, ARENA_STR);
-    s.as.String[s.as.len - 1] = c.as.Char;
-    s.as.String[s.as.len] = '\0';
-    return s;
-}
-static arena append_long_to_str(arena s, arena i)
-{
-    int len = longlen(i.as.Long);
-    long long int llint = i.as.Long;
-    int new = len + 1 + s.as.len;
-
-    if (llint < 0)
-        ++len;
-
-    i = GROW_ARENA(NULL, sizeof(char) * (len + 1), ARENA_STR);
-    i.as.String = lltoa(i.as.String, llint);
-    s = GROW_ARENA(&s, new * sizeof(char), ARENA_STR);
-    strcat(s.as.String, i.as.String);
-    ARENA_FREE(&i);
-    return s;
-}
-arena append(arena s, arena ar)
-{
-    switch (ar.type)
+    if (s.type != ar.type || ((s.type != T_STR) && (ar.type != T_STR)))
     {
-    case ARENA_STR:
-    case ARENA_CSTR:
-        return append_str_to_str(s, ar);
-    case ARENA_CHAR:
-        return append_char_to_str(s, ar);
-    case ARENA_INT:
-        return append_int_to_str(s, ar);
-    case ARENA_LONG:
-        return append_long_to_str(s, ar);
-    default:
-        return ar;
+        error("Invalid string comparison operation");
+        exit(1);
     }
+
+    return append_str_to_str(s, ar);
 }
 
-arena append_to_cstr(arena s, arena ar)
-{
-    s = String(s.as.String);
-    switch (ar.type)
-    {
-    case ARENA_STR:
-    case ARENA_CSTR:
-        return append_str_to_str(s, ar);
-    case ARENA_CHAR:
-        return append_char_to_str(s, ar);
-    case ARENA_INT:
-        return append_int_to_str(s, ar);
-    case ARENA_LONG:
-        return append_long_to_str(s, ar);
-    default:
-        return ar;
-    }
-}
-
-arena ltoa_eqcmp(long long int llint, arena ar)
-{
-    int len = longlen(llint);
-    arena a = GROW_ARENA(NULL, sizeof(char) * len + 1, ARENA_STR);
-    arena res = Bool(strcmp(lltoa(a.as.String, llint), ar.as.String) == 0);
-    ARENA_FREE(&a);
-    return res;
-}
-arena ltoa_neqcmp(long long int llint, arena ar)
-{
-    int len = longlen(llint);
-    arena a = GROW_ARENA(NULL, sizeof(char) * len + 1, ARENA_STR);
-    arena res = Bool(strcmp(lltoa(a.as.String, llint), ar.as.String) != 0);
-    ARENA_FREE(&a);
-    return res;
-}
-arena itoa_eqcmp(int ival, arena ar)
-{
-    int len = intlen(ival);
-    arena a = GROW_ARENA(NULL, sizeof(char) * len + 1, ARENA_STR);
-    arena res = Bool(strcmp(itoa(a.as.String, ival), ar.as.String) == 0);
-    ARENA_FREE(&a);
-    return res;
-}
-arena itoa_neqcmp(int ival, arena ar)
-{
-    int len = intlen(ival);
-    arena a = GROW_ARENA(NULL, sizeof(char) * len + 1, ARENA_STR);
-    arena res = Bool(strcmp(itoa(a.as.String, ival), ar.as.String) != 0);
-    ARENA_FREE(&a);
-    return res;
-}
-
-arena string_eq(arena s, arena c)
+element string_eq(element s, element c)
 {
 
-    switch (c.type)
+    if (s.type != c.type || ((s.type != T_STR) && (c.type != T_STR)))
     {
-    case ARENA_NULL:
-        return Bool(*s.as.String == '\0');
-    case ARENA_CSTR:
-    case ARENA_STR:
-        return Bool(strcmp(s.as.String, c.as.String) == 0);
-    case ARENA_INT:
-        return itoa_eqcmp(c.as.Int, s);
-    case ARENA_LONG:
-        return ltoa_eqcmp(c.as.Int, s);
-    default:
-        return Bool(false);
+        error("Invalid string comparison operation");
+        exit(1);
     }
+
+    return Bool(strcmp(s.val.String, c.val.String) == 0);
 }
-arena string_ne(arena s, arena c)
+element string_ne(element s, element c)
 {
-    switch (c.type)
+
+    if (s.type != c.type || ((s.type != T_STR) && (c.type != T_STR)))
     {
-    case ARENA_NULL:
-        return Bool(*s.as.String != '\0');
-    case ARENA_CSTR:
-    case ARENA_STR:
-        return Bool(strcmp(s.as.String, c.as.String) != 0);
-    case ARENA_INT:
-        return itoa_eqcmp(c.as.Int, s);
-    case ARENA_LONG:
-        return ltoa_eqcmp(c.as.Int, s);
-    default:
-        return Bool(true);
+        error("Invalid string comparison operation");
+        exit(1);
     }
+
+    return Bool(strcmp(s.val.String, c.val.String) != 0);
 }
-arena string_gt(arena s, arena c)
+element string_gt(element s, element c)
 {
-    if (c.type != ARENA_STR)
+
+    if (s.type != c.type || ((s.type != T_STR) && (c.type != T_STR)))
     {
-        log_err("ERROR: string comparison type mismatch\n");
-        return Bool(false);
+        error("Invalid string comparison operation");
+        exit(1);
     }
-    return Bool(strcmp(s.as.String, c.as.String) > 0);
+
+    return Bool(strcmp(s.val.String, c.val.String) > 0);
 }
-arena string_ge(arena s, arena c)
+element string_ge(element s, element c)
 {
-    if (c.type != ARENA_STR)
+
+    if (s.type != c.type || ((s.type != T_STR) && (c.type != T_STR)))
     {
-        log_err("ERROR: string comparison type mismatch\n");
-        return Bool(false);
+        error("Invalid string comparison operation");
+        exit(1);
     }
-    return Bool(strcmp(s.as.String, c.as.String) >= 0);
+
+    return Bool(strcmp(s.val.String, c.val.String) >= 0);
 }
-arena string_lt(arena s, arena c)
+element string_lt(element s, element c)
 {
-    if (c.type != ARENA_STR)
+
+    if (s.type != c.type || ((s.type != T_STR) && (c.type != T_STR)))
     {
-        log_err("ERROR: string comparison type mismatch\n");
-        return Bool(false);
+        error("Invalid string comparison operation");
+        exit(1);
     }
-    return Bool(strcmp(s.as.String, c.as.String) < 0);
+
+    return Bool(strcmp(s.val.String, c.val.String) < 0);
 }
-arena string_le(arena s, arena c)
+element string_le(element s, element c)
 {
-    if (c.type != ARENA_STR)
+
+    if (s.type != c.type || ((s.type != T_STR) && (c.type != T_STR)))
     {
-        log_err("ERROR: string comparison type mismatch\n");
-        return Bool(false);
+        error("Invalid string comparison operation");
+        exit(1);
     }
-    return Bool(strcmp(s.as.String, c.as.String) <= 0);
+
+    return Bool(strcmp(s.val.String, c.val.String) <= 0);
 }

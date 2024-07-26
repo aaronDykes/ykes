@@ -3,49 +3,29 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define OBJ(o) \
-    Obj(o)
-#define VECT(o) \
-    vector_el(o)
-#define FUNC(ar) \
-    Func(ar)
-#define NATIVE(n) \
-    native_fn(n)
-#define CLOSURE(c) \
-    closure_el(c)
-#define CLASS(c) \
-    new_class(c)
-#define INSTANCE(c) \
-    new_instance(c)
-#define TABLE(t) \
-    table_el(t)
+#define VECTOR(el) \
+    ((arena *)(el.obj))
 
-#define STK(stk) \
-    stack_el(stk)
+#define CLOSURE(el) \
+    ((closure *)(el.obj))
 
-typedef enum
-{
+#define FUNC(el) \
+    ((function *)(el.obj))
 
-    ARENA_BYTE,
-    ARENA_SIZE,
-    ARENA_INT,
-    ARENA_DOUBLE,
-    ARENA_LONG,
-    ARENA_CHAR,
-    ARENA_STR,
-    ARENA_CSTR,
-    ARENA_BOOL,
-    ARENA_NULL,
-    ARENA_BYTES,
-    ARENA_INTS,
-    ARENA_DOUBLES,
-    ARENA_LONGS,
-    ARENA_BOOLS,
-    ARENA_SIZES,
-    ARENA_STRS,
-    ARENA_VAR,
+#define NATIVE(el) \
+    ((native *)(el.obj))
 
-} T;
+#define CLASS(el) \
+    ((class *)(el.obj))
+
+#define INSTANCE(el) \
+    ((instance *)(el.obj))
+
+#define TABLE(el) \
+    ((table *)(el.obj))
+
+#define STACK(el) \
+    ((stack *)(el.obj))
 
 typedef enum
 {
@@ -59,7 +39,6 @@ typedef enum
     OP_EACH_ACCESS,
     OP_GET_ACCESS,
     OP_SET_ACCESS,
-    OP_LEN,
 
     OP_ALLOC_TABLE,
 
@@ -67,25 +46,24 @@ typedef enum
     OP_POP__ARRAY_VAL,
     OP_PREPEND_ARRAY_VAL,
 
-    OP_CPY_ARRAY,
     OP_POP,
     OP_POPN,
-    OP_PUSH,
     OP_RM,
     OP_CLOSE_UPVAL,
 
-    OP_PUSH_TOP,
     OP_GET_PROP,
     OP_SET_PROP,
     OP_SET_FIELD,
     OP_GET_FIELD,
 
-    OP_FIND_CLOSURE,
-    OP_GET_CLOSURE,
+    // OP_FIND_CLOSURE,
+    // OP_GET_CLOSURE,
     OP_GET_METHOD,
-    OP_GET_CLASS,
+    // OP_GET_CLASS,
     OP_ALLOC_INSTANCE,
-    OP_GET_NATIVE,
+    // OP_GET_NATIVE,
+    OP_GET_OBJ,
+    OP_SET_OBJ,
 
     OP_GLOBAL_DEF,
     OP_GET_GLOBAL,
@@ -132,8 +110,6 @@ typedef enum
     OP_AND,
     OP_OR,
 
-    OP_SEQ,
-    OP_SNE,
     OP_EQ,
     OP_NE,
     OP_LT,
@@ -144,7 +120,6 @@ typedef enum
     OP_JMP_NIL,
     OP_JMP_NOT_NIL,
     OP_JMPL,
-    OP_JMPC,
     OP_JMPF,
     OP_JMPT,
     OP_JMP,
@@ -161,26 +136,30 @@ typedef enum
 
 typedef enum
 {
-    ARENA,
-    NATIVE,
-    CLASS,
-    INSTANCE,
-    CLOSURE,
-    FUNCTION,
-    VECTOR,
 
-    METHOD,
-    STACK,
-    TABLE,
-    INIT,
-    UPVAL,
-    INCLUDE,
-    SCRIPT,
-    NULL_OBJ
-} ObjType;
+    T_NUM,
+    T_CHAR,
+    T_STR,
+    T_BOOL,
 
-typedef union vector vector;
-typedef struct value value;
+    T_KEY,
+    T_NATIVE,
+    T_CLASS,
+    T_INSTANCE,
+    T_CLOSURE,
+    T_FUNCTION,
+    T_VECTOR,
+    T_INCLUDE,
+
+    T_UPVALS,
+    T_METHOD,
+    T_STACK,
+    T_TABLE,
+    T_NULL
+} obj_t;
+
+typedef struct vector vector;
+typedef union value value;
 typedef struct arena arena;
 typedef struct data data;
 
@@ -194,81 +173,78 @@ typedef struct stack stack;
 typedef struct class class;
 typedef struct instance instance;
 typedef struct table table;
-typedef element (*NativeFn)(int argc, stack *argv);
+typedef struct record record;
+typedef element (*NativeFn)(int argc, element *argv);
+typedef struct _key _key;
 
 struct _key
 {
-    long long int hash;
-    char *key;
+    int hash;
+    char *val;
 };
 
-union vector
-{
-    uint8_t *Bytes;
-    int *Ints;
-    double *Doubles;
-    long long int *Longs;
-    char **Strings;
-    bool *Bools;
-    void *Void;
-    size_t Sizes;
-};
-
-struct value
+union value
 {
 
-    long long int hash;
-    union
+    struct
     {
-        struct
-        {
-            int len;
-            int count;
-            char *String;
-        };
-
-        size_t Size;
-        uint8_t Byte;
-        int Int;
-        double Double;
-        long long int Long;
-        char Char;
-        bool Bool;
-        void *Void;
+        uint16_t len;
+        char *String;
     };
+
+    double Num;
+    char Char;
+    bool Bool;
 };
 
-struct arena
+struct vector
 {
-    size_t size;
-    T type;
+    uint16_t count;
+    uint16_t len;
+    value *of;
+};
+struct _2d_vector
+{
+    uint16_t count;
+    uint16_t len;
+    value **of;
+};
+struct _3d_vector
+{
+    uint16_t count;
+    uint16_t len;
+    value ***of;
+};
 
-    union
-    {
-        struct
-        {
-            int count;
-            int len;
-            vector listof;
-        };
+typedef struct ip_vector ip_vector;
+typedef struct generic_vector generic_vector;
 
-        value as;
-    };
+struct ip_vector
+{
+    uint8_t *bytes;
+    uint16_t count;
+    uint16_t len;
+};
+struct generic_vector
+{
+    uint16_t *bytes;
+    uint16_t count;
+    uint16_t len;
 };
 
 struct chunk
 {
-    arena cases;
-    arena op_codes;
-    arena lines;
+    ip_vector ip;
+    generic_vector cases;
+    generic_vector lines;
     stack *constants;
 };
 
 struct function
 {
-    int arity;
-    int upvalue_count;
-    arena name;
+    uint8_t arity;
+    uint8_t uargc;
+    _key name;
     chunk ch;
 };
 
@@ -276,38 +252,33 @@ struct closure
 {
     function *func;
     upval **upvals;
-    int upval_count;
+    uint8_t uargc;
 };
 
 struct native
 {
-    int arity;
-    arena obj;
+    uint8_t arity;
+    _key name;
     NativeFn fn;
 };
 
 struct element
 {
-    ObjType type;
+    obj_t type;
 
     union
     {
-        arena _arena;
-        arena *_vector;
-        native *native;
-        closure *closure;
-        class *classc;
-        instance *instance;
-        table *table;
-        stack *stack;
-        void *null;
+        value val;
+        _key key;
+        void *obj;
+        void **upvals;
     };
 };
 
 struct class
 {
     closure *init;
-    arena name;
+    _key name;
     table *closures;
 };
 
@@ -319,33 +290,32 @@ struct instance
 
 struct stack
 {
-    int count;
-    int len;
-    size_t size;
-    element as;
-    stack *top;
+    uint16_t count;
+    uint16_t len;
+    element *as;
+    element *top;
 };
 
 struct upval
 {
-    int len;
-    int count;
-    size_t size;
-    stack *index;
-    stack closed;
+    uint16_t len;
+    uint16_t count;
+    element *index;
+    element closed;
     upval *next;
+};
+
+struct record
+{
+    _key key;
+    element val;
+    record *next;
 };
 
 struct table
 {
-    size_t size;
-    arena key;
-    ObjType type;
-    int count;
-    int len;
-
-    element val;
-    table *next;
-    table *prev;
+    uint16_t count;
+    uint16_t len;
+    record *records;
 };
 #endif

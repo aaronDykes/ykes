@@ -149,12 +149,9 @@ static token number(void)
         skip();
         while (digit(next()))
             skip();
-        is_whole = false;
     }
 
-    long long int val = atoll(scan.start);
-    int type = (val < INT32_MAX) ? TOKEN_INT : TOKEN_LLINT;
-    return is_whole ? make_token(type) : make_token(TOKEN_DOUBLE);
+    return make_token(TOKEN_NUMBER);
 }
 static token id(void)
 {
@@ -257,29 +254,12 @@ static int id_type(void)
                 return check_keyword(2, 2, "le", TOKEN_FILE);
             }
     case 'i':
-        if (scan.current - scan.start > 1)
-            switch (scan.start[1])
-            {
-            case 'n':
-                // if (scan.current - scan.start > 2)
-                return check_keyword(2, 1, "t", TOKEN_TYPE_INT);
-            case 'm':
-                return check_keyword(2, 4, "port", TOKEN_INCLUDE);
-            }
+        switch (scan.start[1])
+        {
+        case 'm':
+            return check_keyword(2, 4, "port", TOKEN_INCLUDE);
+        }
         return check_keyword(1, 1, "f", TOKEN_IF);
-    case 'I':
-        return check_keyword(1, 3, "nts", TOKEN_ALLOC_INTS);
-    case 'l':
-        if (scan.current - scan.start > 1)
-            switch (scan.start[1])
-            {
-            case 'l':
-                return check_keyword(2, 3, "int", TOKEN_LLINT);
-            case 'i':
-                return check_keyword(2, 2, "nt", TOKEN_LINT);
-            }
-    case 'L':
-        return check_keyword(1, 4, "ongs", TOKEN_ALLOC_LONGS);
     case 'n':
         return check_keyword(1, 3, "ull", TOKEN_NULL);
     case 'o':
@@ -493,9 +473,7 @@ static void skip_whitespace(void)
         case '\n':
             scan.line++;
             break;
-        // case '\\':
-        // skip();
-        // break;
+
         case '/':
             if (scan.current[1] == '*' || scan.current[1] == '/')
                 skip_comment();

@@ -2,8 +2,10 @@
 #define _VIRTUAL_MACHINE_H
 
 #include "debug.h"
-#include "arena_table.h"
+#include "table.h"
 #include <limits.h>
+
+#define FRAMES_MAX 500
 
 typedef enum
 {
@@ -14,6 +16,8 @@ typedef enum
 } Interpretation;
 
 typedef struct CallFrame CallFrame;
+typedef struct state state;
+typedef struct vm_stack vm_stack;
 typedef struct vm vm;
 
 struct CallFrame
@@ -21,22 +25,29 @@ struct CallFrame
     closure *closure;
     uint8_t *ip;
     uint8_t *ip_start;
-    stack *slots;
+    element *slots;
+};
+
+struct state
+{
+    uint16_t frame;
+    uint8_t argc;
+    uint8_t cargc;
+    uint8_t slot;
+};
+
+struct vm_stack
+{
+    stack *main;
+    stack *obj;
 };
 
 struct vm
 {
-    int frame_count;
-    int argc;
-    int cargc;
+    state count;
 
     CallFrame frames[FRAMES_MAX];
-
-    stack *stack;
-    stack *call_stack;
-    stack *method_call_stack;
-    stack *class_stack;
-    stack *native_calls;
+    vm_stack stack;
 
     element pop_val;
     instance *current_instance;
@@ -45,7 +56,7 @@ struct vm
     table *glob;
 };
 
-vm machine;
+static vm machine;
 
 void initVM(void);
 void freeVM(void);

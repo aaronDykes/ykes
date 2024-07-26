@@ -1,37 +1,11 @@
 #include "stack.h"
 #include <stdio.h>
 
-void write_chunk(chunk *c, uint8_t byte, int line)
-{
-
-    size_t size = 0;
-    if (c->op_codes.len < c->op_codes.count + 1)
-    {
-
-        size = c->op_codes.size * INC;
-        c->op_codes = GROW_ARENA(&c->op_codes, size * sizeof(uint8_t), ARENA_BYTES);
-    }
-
-    if (c->lines.len < c->lines.count + 1)
-    {
-        size = c->lines.size * INC;
-        c->lines = GROW_ARENA(&c->lines, size * sizeof(int), ARENA_INTS);
-    }
-
-    c->lines.listof.Ints[c->lines.count++] = line;
-    c->op_codes.listof.Bytes[c->op_codes.count++] = byte;
-}
-
-int add_constant(chunk *c, element ar)
-{
-    push(&c->constants, ar);
-    return c->constants->count - 1;
-}
-
 void reset_stack(stack *s)
 {
-    s->top = s;
+    s->top = s->as;
 }
+
 void check_stack_size(stack *s)
 {
 
@@ -45,6 +19,12 @@ void check_stack_size(stack *s)
     }
 }
 
+element pop(stack **s)
+{
+    --(*s)->count;
+    return *--(*s)->top;
+}
+
 void popn(stack **s, int ival)
 {
     for (int i = 0; i < ival; i++)
@@ -53,16 +33,15 @@ void popn(stack **s, int ival)
 
 void push(stack **s, element e)
 {
-    stack *st = *s;
-    check_stack_size(st);
+    check_stack_size(*s);
 
-    if (!st)
+    if (!*s || !(*s)->as)
     {
-        st = GROW_STACK(NULL, STACK_SIZE);
-        *s = st;
+        *s = GROW_STACK(NULL, STACK_SIZE);
         reset_stack(*s);
     }
 
-    (st->top++)->as = e;
-    st->count++;
+    *(*s)->top = e;
+    ++(*s)->top;
+    (*s)->count++;
 }

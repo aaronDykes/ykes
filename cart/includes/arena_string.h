@@ -1,32 +1,21 @@
 #ifndef _ARENA_STRING_H
 #define _ARENA_STRING_H
-#include "arena_memory.h"
+#include "arena.h"
 
-arena ltoa_eqcmp(long long int llint, arena ar);
-arena ltoa_neqcmp(long long int llint, arena ar);
-arena itoa_eqcmp(int ival, arena ar);
-arena itoa_neqcmp(int ival, arena ar);
+static void str_swap(char *from, char *to);
+static void string_rev(char *c);
+static int intlen(int n);
+static int longlen(long long int n);
+static char *itoa(char *c, int n);
+static char *lltoa(char *c, long long int n);
 
-void log_err(const char *format, ...);
-void str_swap(char *from, char *to);
-void string_rev(char *c);
-int intlen(int n);
-int longlen(long long int n);
-char *itoa(char *c, int n);
-char *lltoa(char *c, long long int n);
+element append(element s, element ar);
 
-arena prepend_int_to_str(arena s, arena a);
-arena prepend_char_to_str(arena s, arena a);
-arena prepend_long_to_str(arena s, arena a);
-
-arena append(arena s, arena ar);
-arena append_to_cstr(arena s, arena ar);
-
-arena string_eq(arena s, arena c);
-arena string_ne(arena s, arena c);
-arena string_gt(arena s, arena c);
-arena string_ge(arena s, arena c);
-arena string_lt(arena s, arena c);
-arena string_le(arena s, arena c);
+element string_eq(element s, element c);
+element string_ne(element s, element c);
+element string_gt(element s, element c);
+element string_ge(element s, element c);
+element string_lt(element s, element c);
+element string_le(element s, element c);
 
 #endif
