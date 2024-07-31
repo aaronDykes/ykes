@@ -126,6 +126,7 @@ typedef enum
     OP_LOOP,
 
     OP_CALL,
+    OP_INSTANCE,
     OP_METHOD,
 
     OP_NULL,
@@ -293,7 +294,6 @@ struct stack
     uint16_t count;
     uint16_t len;
     element *as;
-    element *top;
 };
 
 struct upval

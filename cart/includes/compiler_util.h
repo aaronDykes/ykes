@@ -212,9 +212,11 @@ static void _or(compiler *c);
 
 static void binary(compiler *c);
 static void unary(compiler *c);
+static void infix_unary(compiler *c);
+static void compound_assign(compiler *c);
 
 static void current_err(const char *err, parser *parser);
-static void error(const char *err, parser *parser);
+static void prev_error(const char *err, parser *parser);
 static void error_at(Token t, parser *parser, const char *err);
 
 static void emit_byte(compiler *c, uint8_t byte);
@@ -266,8 +268,8 @@ static PRule rules[] = {
     [TOKEN_CH_SEMI] = {NULL, NULL, PREC_NONE},
     [TOKEN_CH_DOT] = {NULL, dot, PREC_CALL},
 
-    [TOKEN_OP_INC] = {id, NULL, PREC_TERM},
-    [TOKEN_OP_DEC] = {NULL, NULL, PREC_TERM},
+    [TOKEN_OP_INC] = {unary, infix_unary, PREC_TERM},
+    [TOKEN_OP_DEC] = {unary, infix_unary, PREC_TERM},
 
     [TOKEN_OP_SUB] = {unary, binary, PREC_TERM},
     [TOKEN_OP_ADD] = {NULL, binary, PREC_TERM},
@@ -277,13 +279,13 @@ static PRule rules[] = {
     [TOKEN_OP_MUL] = {NULL, binary, PREC_FACTOR},
 
     [TOKEN_OP_ASSIGN] = {NULL, NULL, PREC_ASSIGNMENT},
-    [TOKEN_ADD_ASSIGN] = {NULL, NULL, PREC_ASSIGNMENT},
-    [TOKEN_SUB_ASSIGN] = {NULL, NULL, PREC_ASSIGNMENT},
-    [TOKEN_MUL_ASSIGN] = {NULL, NULL, PREC_ASSIGNMENT},
-    [TOKEN_DIV_ASSIGN] = {NULL, NULL, PREC_ASSIGNMENT},
-    [TOKEN_MOD_ASSIGN] = {NULL, NULL, PREC_ASSIGNMENT},
-    [TOKEN_AND_ASSIGN] = {NULL, NULL, PREC_ASSIGNMENT},
-    [TOKEN_OR__ASSIGN] = {NULL, NULL, PREC_ASSIGNMENT},
+    [TOKEN_ADD_ASSIGN] = {NULL, compound_assign, PREC_ASSIGNMENT},
+    [TOKEN_SUB_ASSIGN] = {NULL, compound_assign, PREC_ASSIGNMENT},
+    [TOKEN_MUL_ASSIGN] = {NULL, compound_assign, PREC_ASSIGNMENT},
+    [TOKEN_DIV_ASSIGN] = {NULL, compound_assign, PREC_ASSIGNMENT},
+    [TOKEN_MOD_ASSIGN] = {NULL, compound_assign, PREC_ASSIGNMENT},
+    [TOKEN_AND_ASSIGN] = {NULL, compound_assign, PREC_ASSIGNMENT},
+    [TOKEN_OR__ASSIGN] = {NULL, compound_assign, PREC_ASSIGNMENT},
 
     [TOKEN_OP_BANG] = {unary, NULL, PREC_TERM},
     [TOKEN_OP_NE] = {NULL, binary, PREC_EQUALITY},

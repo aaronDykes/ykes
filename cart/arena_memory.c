@@ -37,10 +37,7 @@ stack *_stack(size_t size)
     s = ALLOC(sizeof(stack));
 
     s->as = NULL;
-    s->top = NULL;
-
     s->as = ALLOC(sizeof(element) * size);
-    s->top = s->as;
 
     s->count = 0;
     s->len = (int)size;
@@ -58,16 +55,15 @@ stack *realloc_stack(stack *st, size_t size)
     stack *s = NULL;
     s = _stack(size);
 
-    if (!st || !st->as)
+    if (!st)
         return s;
 
     size_t new_size = (size > st->len) ? st->len : size;
 
     for (size_t i = 0; i < new_size; i++)
-        s->as[i] = st->as[i];
+        *(s->as + i) = *(st->as + i);
 
     s->count = st->count;
-    s->top += s->count;
 
     FREE(st->as);
     st->as = NULL;

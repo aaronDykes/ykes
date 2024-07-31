@@ -77,7 +77,14 @@ int disassemble_instruction(chunk *c, int offset)
 
         return offset;
     }
-
+    case OP_ALLOC_INSTANCE:
+        return byte_instruction("OP_ALLOC_INSTANCE", c, offset);
+    case OP_INSTANCE:
+        return byte_instruction("OP_INSTANCE", c, offset);
+    case OP_GET_OBJ:
+        return byte_instruction("OP_GET_OBJ", c, offset);
+    case OP_SET_OBJ:
+        return byte_instruction("OP_SET_OBJ", c, offset);
     case OP_RESET_ARGC:
         return simple_instruction("OP_RESET_ARGC", offset);
     case OP_SET_ACCESS:

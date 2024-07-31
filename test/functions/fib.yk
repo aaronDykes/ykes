@@ -1,5 +1,9 @@
 class FIB
 {
+    init(n)
+    {
+        this.n = n;
+    }
     fib(n) {
         if (n < 2) return n;
         return this.fib(n - 2) + this.fib(n - 1);
@@ -8,14 +12,14 @@ class FIB
     print_fib(n)
     {
         for (var i = 1; i < n; i++)
-          pout (this.fib(i));
+          pout(this.fib(i));
     }
 
 
     res()
     {
         var start = clock();
-        this.print_fib(30);
+        this.print_fib(this.n);
         pout(clock() - start);
     }
 

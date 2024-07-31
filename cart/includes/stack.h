@@ -8,7 +8,6 @@ int add_constant(chunk *c, element ar);
 void push(stack **s, element e);
 element pop(stack **s);
 void popn(stack **s, int ival);
-void reset_stack(stack *s);
-void check_stack_size(stack *s);
+void check_stack_size(stack **s);
 
 #endif

@@ -26,6 +26,7 @@ struct CallFrame
     uint8_t *ip;
     uint8_t *ip_start;
     element *slots;
+    uint8_t return_index;
 };
 
 struct state
@@ -33,7 +34,6 @@ struct state
     uint16_t frame;
     uint8_t argc;
     uint8_t cargc;
-    uint8_t slot;
 };
 
 struct vm_stack

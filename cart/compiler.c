@@ -2,6 +2,7 @@
 #include "compiler_util.h"
 #include "table.h"
 #include "chunk.h"
+#include "error.h"
 #ifdef DEBUG_TRACE_EXECUTION
 #include "debug.h"
 #endif
@@ -128,11 +129,11 @@ static void include_file(compiler *c)
 {
 
 #define SIZE(x, y) \
-    strlen(x) + strlen(y)
+    (strlen(x) + strlen(y) + 2)
 
     if (c->meta.type != COMPILER_TYPE_SCRIPT)
     {
-        error("Can only include files at top level.", &c->parser);
+        prev_error("Can only include files at top level.", &c->parser);
         exit(1);
     }
 
@@ -143,7 +144,7 @@ static void include_file(compiler *c)
 
     if (resolve_include(c, inc))
     {
-        error("Double include.", &c->parser);
+        prev_error("Double include.", &c->parser);
         exit(1);
     }
 
@@ -285,6 +286,11 @@ static void call(compiler *c)
     uint8_t argc = argument_list(c);
     emit_bytes(c, OP_CALL, argc);
 }
+static void call_instance(compiler *c)
+{
+    uint8_t argc = argument_list(c);
+    emit_bytes(c, OP_INSTANCE, argc);
+}
 
 static int argument_list(compiler *c)
 {
@@ -309,6 +315,9 @@ static void func_declaration(compiler *c)
     consume(TOKEN_ID, "Expect function name.", &c->parser);
     _key ar = parse_id(c);
 
+    if (find_entry(&c->base->lookup, ar).type != T_NULL)
+        exit_error("Duplicate function declarations in scope");
+
     write_table(c->base->lookup, ar, NumType(c->base->count.obj++, T_FUNCTION));
     func_body(c, ar);
 }
@@ -317,6 +326,8 @@ static void func_body(compiler *c, _key ar)
 {
     compiler co;
     init_compiler(&co, c, COMPILER_TYPE_FUNCTION, ar);
+
+    int obj_count = c->base->count.obj - 1;
 
     c = &co;
     begin_scope(c);
@@ -346,7 +357,7 @@ static void func_body(compiler *c, _key ar)
     emit_bytes(
         c, OP_CLOSURE,
         add_constant(&c->func->ch, GEN(clos, T_CLOSURE)));
-    emit_byte(c, c->base->count.obj - 1);
+    emit_byte(c, obj_count);
 
     for (int i = 0; i < tmp->count.upvalue; i++)
         emit_bytes(c,
@@ -684,14 +695,14 @@ static void null_coalescing_statement(compiler *c)
 static void return_statement(compiler *c)
 {
     if (c->meta.type == COMPILER_TYPE_SCRIPT)
-        error("ERROR: Unable to return from top of script.", &c->parser);
+        prev_error("ERROR: Unable to return from top of script.", &c->parser);
 
     else if (match(TOKEN_CH_SEMI, &c->parser))
         emit_return(c);
     else
     {
         if (c->meta.type == COMPILER_TYPE_INIT)
-            error("ERROR: Unable to return value from initializer.", &c->parser);
+            prev_error("ERROR: Unable to return value from initializer.", &c->parser);
         expression(c);
         consume(TOKEN_CH_SEMI, "ERROR: Expect semi colon after return statement.", &c->parser);
         emit_byte(c, OP_RETURN);
@@ -704,7 +715,7 @@ static void patch_jump(compiler *c, int offset)
     int jump = c->func->ch.ip.count - offset - 2;
 
     if (jump >= INT16_MAX)
-        error("ERROR: To great a distance ", &c->parser);
+        prev_error("ERROR: To great a distance ", &c->parser);
 
     c->func->ch.ip.bytes[offset] = (uint8_t)((jump >> 8) & 0xFF);
     c->func->ch.ip.bytes[offset + 1] = (uint8_t)(jump & 0xFF);
@@ -713,11 +724,10 @@ static void patch_jump(compiler *c, int offset)
 static void emit_loop(compiler *c, int byte)
 {
     emit_byte(c, OP_LOOP);
-
     int offset = c->func->ch.ip.count - byte + 2;
 
     if (offset > UINT16_MAX)
-        error("ERROR: big boi loop", &c->parser);
+        prev_error("ERROR: big boi loop", &c->parser);
 
     emit_bytes(c, (offset >> 8) & 0xFF, offset & 0xFF);
 }
@@ -815,7 +825,7 @@ static void parse_precedence(prec_t prec, compiler *c)
 
     if (!prefix_rule)
     {
-        error("ERROR: Expect expression.", &c->parser);
+        prev_error("ERROR: Expect expression.", &c->parser);
         return;
     }
 
@@ -904,6 +914,14 @@ static void unary(compiler *c)
     switch (op)
     {
 
+    case TOKEN_OP_INC:
+        emit_byte(c, OP_INC);
+        emit_bytes(c, c->array.set, c->array.index);
+        break;
+    case TOKEN_OP_DEC:
+        emit_byte(c, OP_DEC);
+        emit_bytes(c, c->array.set, c->array.index);
+        break;
     case TOKEN_OP_SUB:
     case TOKEN_OP_BANG:
         emit_byte(c, OP_NEG);
@@ -913,11 +931,67 @@ static void unary(compiler *c)
     }
 }
 
+static void compound_assign(compiler *c)
+{
+    int op = c->parser.pre.type;
+
+    emit_bytes(c, c->array.get, c->array.index);
+    parse_precedence(PREC_ASSIGNMENT, c);
+
+    switch (op)
+    {
+    case TOKEN_ADD_ASSIGN:
+        emit_byte(c, OP_ADD);
+        break;
+    case TOKEN_SUB_ASSIGN:
+        emit_byte(c, OP_SUB);
+        break;
+    case TOKEN_MUL_ASSIGN:
+        emit_byte(c, OP_MUL);
+        break;
+    case TOKEN_DIV_ASSIGN:
+        emit_byte(c, OP_DIV);
+        break;
+    case TOKEN_MOD_ASSIGN:
+        emit_byte(c, OP_MOD);
+        break;
+    case TOKEN_AND_ASSIGN:
+        emit_byte(c, OP_AND);
+        break;
+    case TOKEN_OR__ASSIGN:
+        emit_byte(c, OP_OR);
+        break;
+    }
+    emit_bytes(c, c->array.set, c->array.index);
+}
+
+static void infix_unary(compiler *c)
+{
+    int op = c->parser.pre.type;
+
+    switch (op)
+    {
+    case TOKEN_OP_INC:
+        emit_byte(c, OP_INC);
+        break;
+    case TOKEN_OP_DEC:
+        emit_byte(c, OP_DEC);
+        break;
+    case TOKEN_OP_SUB:
+    case TOKEN_OP_BANG:
+        emit_byte(c, OP_NEG);
+        break;
+    default:
+        return;
+    }
+    emit_bytes(c, c->array.set, c->array.index);
+}
+
 static void current_err(const char *err, parser *parser)
 {
     error_at(&parser->cur, parser, err);
 }
-static void error(const char *err, parser *parser)
+static void prev_error(const char *err, parser *parser)
 {
     error_at(&parser->pre, parser, err);
 }
@@ -1015,7 +1089,7 @@ static void stack_alloc(compiler *c)
             add_constant(&c->func->ch, GEN(s, T_STACK)));
     }
     else
-        error("ERROR: Invalid expression inside of stack allocation", &c->parser);
+        prev_error("ERROR: Invalid expression inside of stack allocation", &c->parser);
 
     consume(TOKEN_CH_RPAREN, "Expect `)` after stack allocation", &c->parser);
 }
@@ -1091,39 +1165,38 @@ static void dot(compiler *c)
 
     _key ar = parse_id(c);
 
+    int arg = add_constant(&c->func->ch, KEY(ar));
+
+    c->array.get = OP_GET_PROP;
+    c->array.set = OP_SET_PROP;
+    c->array.index = arg;
+
     if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
         expression(c);
-        emit_bytes(c, OP_SET_PROP, (uint8_t)add_constant(&c->func->ch, KEY(ar)));
+        emit_bytes(c, OP_SET_PROP, arg);
     }
     else
-        emit_bytes(c, OP_GET_PROP, add_constant(&c->func->ch, KEY(ar)));
+        emit_bytes(c, OP_GET_PROP, arg);
 }
 
 static void _this(compiler *c)
 {
     if (!c->class_compiler)
     {
-        error("ERROR: can't use `this` keyword outside of a class body.", &c->parser);
+        prev_error("ERROR: can't use `this` keyword outside of a class body.", &c->parser);
         return;
     }
-
-    // int arg = resolve_instance(c, c->class_compiler->instance_name);
-
-    // emit_bytes(
-    //     c, OP_GET_CLASS,
-    //     arg);
 }
 
 static void id(compiler *c)
 {
-    bool pre_inc = (c->parser.pre.type == TOKEN_OP_INC);
-    bool pre_dec = (c->parser.pre.type == TOKEN_OP_DEC);
 
     match(TOKEN_ID, &c->parser);
 
     _key ar = parse_id(c);
-    uint8_t get, set;
+    uint8_t get = OP_GET_GLOBAL, set = OP_SET_GLOBAL;
+
     int arg = resolve_call(c, &ar);
 
     if (arg != -1)
@@ -1141,12 +1214,13 @@ static void id(compiler *c)
             call(c);
         }
         emit_bytes(c, OP_ALLOC_INSTANCE, (uint8_t)arg);
+
+        if (match(TOKEN_CH_LPAREN, &c->parser))
+            call_instance(c);
         return;
     }
 
-    arg = resolve_local(c, &ar);
-
-    if (arg != -1)
+    if ((arg = resolve_local(c, &ar)) != -1)
     {
         get = OP_GET_LOCAL;
         set = OP_SET_LOCAL;
@@ -1157,82 +1231,19 @@ static void id(compiler *c)
         set = OP_SET_UPVALUE;
     }
     else
-    {
         arg = add_constant(&c->func->ch, KEY(ar));
-        get = OP_GET_GLOBAL;
-        set = OP_SET_GLOBAL;
-    }
 
-    if (pre_inc)
-        emit_bytes(c, get == OP_GET_LOCAL ? OP_INC_LOC : OP_INC_GLO, (uint8_t)arg);
-    else if (pre_dec)
-        emit_bytes(c, get == OP_GET_LOCAL ? OP_DEC_LOC : OP_DEC_GLO, (uint8_t)arg);
-    else if (match(TOKEN_OP_DEC, &c->parser))
-        emit_bytes(c, get == OP_GET_LOCAL ? OP_DEC_LOC : OP_DEC_GLO, (uint8_t)arg);
-    else if (match(TOKEN_OP_INC, &c->parser))
-        emit_bytes(c, get == OP_GET_LOCAL ? OP_INC_LOC : OP_INC_GLO, (uint8_t)arg);
-    else if (match(TOKEN_OP_ASSIGN, &c->parser))
+    c->array.set = set;
+    c->array.get = get;
+    c->array.index = arg;
+
+    if (match(TOKEN_OP_ASSIGN, &c->parser))
     {
         expression(c);
-        emit_bytes(c, set, (uint8_t)arg);
-    }
-    else if (match(TOKEN_ADD_ASSIGN, &c->parser))
-    {
-        emit_bytes(c, get, (uint8_t)arg);
-        expression(c);
-        emit_byte(c, OP_ADD);
-        emit_bytes(c, set, (uint8_t)arg);
-    }
-    else if (match(TOKEN_SUB_ASSIGN, &c->parser))
-    {
-        emit_bytes(c, get, (uint8_t)arg);
-        expression(c);
-        emit_byte(c, OP_SUB);
-        emit_bytes(c, set, (uint8_t)arg);
-    }
-    else if (match(TOKEN_MUL_ASSIGN, &c->parser))
-    {
-        emit_bytes(c, get, (uint8_t)arg);
-        expression(c);
-        emit_byte(c, OP_MUL);
-        emit_bytes(c, set, (uint8_t)arg);
-    }
-    else if (match(TOKEN_DIV_ASSIGN, &c->parser))
-    {
-        emit_bytes(c, get, (uint8_t)arg);
-        expression(c);
-        emit_byte(c, OP_DIV);
-        emit_bytes(c, set, (uint8_t)arg);
-    }
-    else if (match(TOKEN_MOD_ASSIGN, &c->parser))
-    {
-        emit_bytes(c, get, (uint8_t)arg);
-        expression(c);
-        emit_byte(c, OP_MOD);
-        emit_bytes(c, set, (uint8_t)arg);
-    }
-    else if (match(TOKEN_AND_ASSIGN, &c->parser))
-    {
-        emit_bytes(c, get, (uint8_t)arg);
-        expression(c);
-        emit_byte(c, OP_AND);
-        emit_bytes(c, set, (uint8_t)arg);
-    }
-    else if (match(TOKEN_OR__ASSIGN, &c->parser))
-    {
-        emit_bytes(c, get, (uint8_t)arg);
-        expression(c);
-        emit_byte(c, OP_OR);
         emit_bytes(c, set, (uint8_t)arg);
     }
     else
-    {
         emit_bytes(c, get, (uint8_t)arg);
-
-        c->array.set = set;
-        c->array.index = arg;
-        c->array.get = get;
-    }
 }
 
 static int parse_var(compiler *c, _key ar)
@@ -1251,7 +1262,6 @@ static bool idcmp(_key a, _key b)
 static int resolve_local(compiler *c, _key *name)
 {
     for (int i = c->count.local - 1; i >= 0; i--)
-
         if (idcmp(*name, c->stack.local[i].name))
             return i;
     return -1;
@@ -1291,7 +1301,7 @@ static int add_upvalue(compiler *c, int index, bool islocal)
 
     if (count > LOCAL_COUNT)
     {
-        error("ERROR: To many closure variables in function.", &c->parser);
+        prev_error("ERROR: To many closure variables in function.", &c->parser);
         return 0;
     }
 
@@ -1313,8 +1323,8 @@ static void declare_var(compiler *c, _key ar)
         if (_local->depth != 0 && _local->depth < c->count.scope)
             break;
 
-        else if (idcmp(ar, _local->name))
-            error("ERROR: Duplicate variable identifiers in scope", &c->parser);
+        if (idcmp(ar, _local->name))
+            prev_error("ERROR: Duplicate variable identifiers in scope", &c->parser);
     }
 
     add_local(c, &ar);
@@ -1324,7 +1334,7 @@ static void add_local(compiler *c, _key *ar)
 {
     if (c->count.local == LOCAL_COUNT)
     {
-        error("ERROR: Too many local variables in function.", &c->parser);
+        prev_error("ERROR: Too many local variables in function.", &c->parser);
         return;
     }
     c->stack.local[c->count.local].name = *ar;
@@ -1356,40 +1366,43 @@ static function *end_compile(compiler *a)
 
 function *compile(const char *src)
 {
-    /*
-        compiler c;
+    compiler *c = NULL;
+    c = ALLOC(sizeof(compiler));
 
-        init_scanner(src);
+    init_scanner(src);
 
-        init_compiler(&c, NULL, SCRIPT, Var("SCRIPT"));
+    init_compiler(c, NULL, COMPILER_TYPE_SCRIPT, Key("SCRIPT", 6));
 
-        c.hash.init = String("init");
-        c.base = &c;
-        c.base->meta.cwd = NULL;
-        c.base->lookup = NULL;
-        c.base->lookup = GROW_TABLE(NULL, STACK_SIZE);
-        c.base->hash.len = CString("len");
-        c.base->hash.push = CString("push");
-        c.base->hash.pop = CString("pop");
+    c->base = c;
 
-        c.parser.flag = false;
-        c.parser.flag = false;
+    c->base->lookup = NULL;
+    c->base->lookup = GROW_TABLE(NULL, STACK_SIZE);
+    c->base->hash.init = hash_key("init");
+    c->base->hash.len = hash_key("len");
+    c->base->hash.push = hash_key("push");
+    c->base->hash.pop = hash_key("pop");
 
-        advance_compiler(&c.parser);
+    c->parser.flag = false;
 
-        while (!match(TOKEN_EOF, &c.parser))
-            declaration(&c);
-        consume(TOKEN_EOF, "Expect end of expression", &c.parser);
+    write_table(c->base->lookup, Key("clock", 5), NumType(c->base->count.obj++, T_NATIVE));
+    write_table(c->base->lookup, Key("square", 6), NumType(c->base->count.obj++, T_NATIVE));
+    write_table(c->base->lookup, Key("file", 4), NumType(c->base->count.obj++, T_NATIVE));
 
-        function *f = end_compile(&c);
+    advance_compiler(&c->parser);
 
-        FREE((c.base->lookup - 1));
-        FREE((c.base->hash.init.as.String));
+    while (!match(TOKEN_EOF, &c->parser))
+        declaration(c);
+    consume(TOKEN_EOF, "Expect end of expression", &c->parser);
 
-        return c.parser.flag ? NULL : f;
-    */
-    return NULL;
+    function *f = end_compile(c);
+
+    FREE((char *)(c->parser.current_file));
+    FREE(c->base->lookup->records);
+    FREE(c->base->lookup);
+
+    return c->parser.flag ? NULL : f;
 }
+
 function *compile_path(const char *src, const char *path, const char *name)
 {
     compiler *c = NULL;

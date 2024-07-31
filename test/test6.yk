@@ -1,10 +1,13 @@
-import "functions/fizzbang.yk";
-import "test1.yk";
-import "functions/prime.yk";
-import "oop/CoffeeMaker.yk";
-import "oop/Scone.yk";
+// import "functions/fizzbang.yk";
+// import "test1.yk";
+// import "functions/prime.yk";
+// import "oop/CoffeeMaker.yk";
+// import "oop/Scone.yk";
 import "functions/fib.yk";
-import "test3.yk";
-import "oop/Zoo.yk";
+// import "test3.yk";
+// import "oop/Zoo.yk";
 
 
+var f = FIB(40);
+
+f.res();
