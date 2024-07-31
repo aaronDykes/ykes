@@ -19,9 +19,9 @@ void initVM(void)
     machine.stack.obj = NULL;
     machine.glob = NULL;
 
-    machine.stack.main = GROW_STACK(NULL, MIN_SIZE);
-    machine.stack.obj = GROW_STACK(NULL, MIN_SIZE);
-    machine.glob = GROW_TABLE(NULL, MIN_SIZE);
+    machine.stack.main = GROW_STACK(NULL, STACK_SIZE);
+    machine.stack.obj = GROW_STACK(NULL, STACK_SIZE);
+    machine.glob = GROW_TABLE(NULL, STACK_SIZE);
 
     machine.current_instance = NULL;
     machine.init_fields = NULL;
@@ -270,7 +270,7 @@ static bool call_value(element el, uint8_t argc)
     case T_NATIVE:
     {
         element res = NATIVE(el)->fn(argc, machine.stack.main->as + (COUNT() - argc));
-        machine.stack.main->count -= argc - 1;
+        machine.stack.main->count -= (argc + 1);
         push(&machine.stack.main, res);
         return true;
     }

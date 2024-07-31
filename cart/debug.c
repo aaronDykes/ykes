@@ -152,10 +152,14 @@ int disassemble_instruction(chunk *c, int offset)
         return simple_instruction("OP_ALLOC_TABLE", offset);
     case OP_NULL:
         return simple_instruction("OP_NULL", offset);
+
     case OP_GET_LOCAL:
         return byte_instruction("OP_GET_LOCAL", c, offset);
+
     case OP_SET_LOCAL:
         return byte_instruction("OP_SET_LOCAL", c, offset);
+    case OP_SET_LOCAL_PARAM:
+        return byte_instruction("OP_SET_LOCAL_PARAM", c, offset);
 
     case OP_RM:
         return byte_instruction("OP_RM", c, offset);

@@ -8,8 +8,6 @@ class Prime
     
     is_prime(l)
     {
-        if (l == 9) 
-            return false;
         var n = square(l);
 
         for (var i = 2; i < n; i++)
