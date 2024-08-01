@@ -1,5 +1,29 @@
 #include "chunk.h"
 
+static generic_vector gen_vec(void)
+{
+    generic_vector g;
+    g.count = 0;
+    g.len = STACK_SIZE;
+    g.bytes = NULL;
+    g.bytes = ALLOC(sizeof(uint16_t) * g.len);
+    return g;
+}
+
+static void init_chunk(chunk *c)
+{
+    c->lines = NULL;
+    c->ip = NULL;
+    c->constants = NULL;
+    c->len = STACK_SIZE;
+    c->count = 0;
+
+    c->cases = gen_vec();
+    c->ip = ALLOC(STACK_SIZE);
+    c->lines = ALLOC(STACK_SIZE * sizeof(uint16_t));
+    c->constants = GROW_STACK(NULL, STACK_SIZE);
+}
+
 function *_function(_key name)
 {
     function *func = ALLOC(sizeof(function));
@@ -10,57 +34,27 @@ function *_function(_key name)
 
     return func;
 }
-ip_vector ip_vec(void)
-{
-
-    ip_vector ip;
-    ip.count = 0;
-    ip.len = STACK_SIZE;
-    ip.bytes = NULL;
-    ip.bytes = ALLOC(sizeof(uint16_t) * ip.len);
-    return ip;
-}
-generic_vector gen_vec(void)
-{
-    generic_vector g;
-    g.count = 0;
-    g.len = STACK_SIZE;
-    g.bytes = NULL;
-    g.bytes = ALLOC(sizeof(uint16_t) * g.len);
-    return g;
-}
-
-void init_chunk(chunk *c)
-{
-    c->lines.bytes = NULL;
-    c->cases.bytes = NULL;
-    c->ip.bytes = NULL;
-    c->constants = NULL;
-
-    c->lines = gen_vec();
-    c->cases = gen_vec();
-    c->ip = ip_vec();
-    c->constants = GROW_STACK(NULL, STACK_SIZE);
-}
 
 void write_chunk(chunk *c, uint8_t byte, uint16_t line)
 {
 
     size_t size = 0;
-    if (c->ip.len < c->ip.count + 1)
+    if (c->len < c->count + 1)
     {
-        size = c->ip.len * INC;
-        c->ip.bytes = REALLOC(c->ip.bytes, c->ip.len, size);
+        size = c->len * INC;
+        c->ip = REALLOC(c->ip, size);
+        c->lines = REALLOC(c->lines, size * sizeof(uint16_t));
+        c->len *= INC;
+    }
+    if (c->cases.len < c->cases.count + 1)
+    {
+        size_t size = c->cases.len * INC * sizeof(uint16_t);
+        c->cases.bytes = REALLOC(c->cases.bytes, size);
+        c->cases.len *= INC;
     }
 
-    if (c->lines.len < c->lines.count + 1)
-    {
-        size = c->lines.len * INC * sizeof(uint16_t);
-        c->lines.bytes = REALLOC(c->lines.bytes, c->lines.len * sizeof(uint16_t), size);
-    }
-
-    c->lines.bytes[c->lines.count++] = line;
-    c->ip.bytes[c->ip.count++] = byte;
+    *(c->lines + c->count) = line;
+    *(c->ip + c->count++) = byte;
 }
 
 int add_constant(chunk *c, element ar)

@@ -19,10 +19,11 @@ sr print_prime(n)
 }
 
 
-
-
-
-
 var start = clock();
-print_prime(1000000);
+print_prime(100000);
 pout(clock() - start);
+
+
+
+
+

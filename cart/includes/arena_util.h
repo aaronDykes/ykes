@@ -3,9 +3,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define VECTOR(el) \
-    ((arena *)(el.obj))
-
 #define CLOSURE(el) \
     ((closure *)(el.obj))
 
@@ -35,16 +32,7 @@ typedef enum
 
     OP_CLASS,
     OP_GET_INSTANCE,
-
-    OP_EACH_ACCESS,
-    OP_GET_ACCESS,
-    OP_SET_ACCESS,
-
     OP_ALLOC_TABLE,
-
-    OP_PUSH_ARRAY_VAL,
-    OP_POP__ARRAY_VAL,
-    OP_PREPEND_ARRAY_VAL,
 
     OP_POP,
     OP_POPN,
@@ -56,12 +44,8 @@ typedef enum
     OP_SET_FIELD,
     OP_GET_FIELD,
 
-    // OP_FIND_CLOSURE,
-    // OP_GET_CLOSURE,
     OP_GET_METHOD,
-    // OP_GET_CLASS,
     OP_ALLOC_INSTANCE,
-    // OP_GET_NATIVE,
     OP_GET_OBJ,
     OP_SET_OBJ,
 
@@ -79,7 +63,6 @@ typedef enum
     OP_GET_UPVALUE,
     OP_SET_UPVALUE,
 
-    OP_ASSIGN,
     OP_ADD_ASSIGN,
     OP_SUB_ASSIGN,
     OP_MUL_ASSIGN,
@@ -89,15 +72,8 @@ typedef enum
     OP__OR_ASSIGN,
 
     OP_NEG,
-
-    OP_INC_LOC,
-    OP_INC_GLO,
-    OP_DEC_LOC,
-    OP_DEC_GLO,
-
     OP_INC,
     OP_DEC,
-
     OP_ADD,
     OP_SUB,
     OP_MUL,
@@ -129,8 +105,7 @@ typedef enum
     OP_INSTANCE,
     OP_METHOD,
 
-    OP_NULL,
-
+    OP_NOOP,
     OP_RETURN
 
 } opcode;
@@ -160,9 +135,9 @@ typedef enum
 } obj_t;
 
 typedef struct vector vector;
+typedef struct _2d_vector _2d_vector;
+typedef struct _3d_vector _3d_vector;
 typedef union value value;
-typedef struct arena arena;
-typedef struct data data;
 
 typedef struct chunk chunk;
 typedef struct function function;
@@ -217,15 +192,8 @@ struct _3d_vector
     value ***of;
 };
 
-typedef struct ip_vector ip_vector;
 typedef struct generic_vector generic_vector;
 
-struct ip_vector
-{
-    uint8_t *bytes;
-    uint16_t count;
-    uint16_t len;
-};
 struct generic_vector
 {
     uint16_t *bytes;
@@ -235,9 +203,12 @@ struct generic_vector
 
 struct chunk
 {
-    ip_vector ip;
+    uint16_t count;
+    uint16_t len;
+    uint8_t *ip;
+    uint16_t *lines;
+
     generic_vector cases;
-    generic_vector lines;
     stack *constants;
 };
 

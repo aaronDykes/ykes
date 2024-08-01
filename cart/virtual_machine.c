@@ -13,7 +13,7 @@
 void initVM(void)
 {
 
-    initialize_global_memory();
+    initialize_global_mem();
 
     machine.stack.main = NULL;
     machine.stack.obj = NULL;
@@ -44,7 +44,9 @@ void freeVM(void)
     machine.stack.main = NULL;
     machine.stack.obj = NULL;
 
+#ifdef GLOBAL_MEM_ARENA
     destroy_global_memory();
+#endif
 }
 
 static void reset_vm_stack(void)
@@ -65,7 +67,7 @@ static void runtime_error(const char *format, ...)
 
         CallFrame *frame = &machine.frames[i];
         function *func = frame->closure->func;
-        int line = frame->closure->func->ch.lines.bytes[i];
+        int line = frame->closure->func->ch.lines[i];
 
         if (!func->name.val)
             fprintf(stderr, "script\n");
@@ -80,7 +82,7 @@ static void runtime_error(const char *format, ...)
 static void define_native(_key ar, NativeFn n, uint8_t index)
 {
     element el = GEN(_native(n, ar), T_NATIVE);
-    *(machine.stack.obj->as + index) = el;
+    set_object(&machine.stack.obj, index, el);
 }
 
 static inline element clock_native(int argc, element *el)
@@ -218,8 +220,8 @@ static bool call(closure *c, uint8_t argc)
     CallFrame *frame = &machine.frames[machine.count.frame++];
     frame->closure = c;
     frame->closure->upvals = c->upvals;
-    frame->ip = c->func->ch.ip.bytes;
-    frame->ip_start = c->func->ch.ip.bytes;
+    frame->ip = c->func->ch.ip;
+    frame->ip_start = c->func->ch.ip;
     frame->return_index = machine.stack.main->count - (argc + 1);
     frame->slots = (machine.stack.main->as + (COUNT() - (argc + 1)));
     return true;
@@ -385,8 +387,10 @@ Interpretation run(void)
 #define NLOCAL(n) \
     (*(frame->slots + n))
 
-#define OBJECT() \
-    (*(machine.stack.obj->as + READ_BYTE()))
+#define GET_OBJ() \
+    get_object(&machine.stack.obj, READ_BYTE())
+#define SET_OBJ(el) \
+    set_object(&machine.stack.obj, READ_BYTE(), el)
 
 #define GET(ar) \
     (find_entry(&machine.glob, ar))
@@ -411,7 +415,7 @@ Interpretation run(void)
         {
             element e = READ_CONSTANT();
 
-            OBJECT() = e;
+            SET_OBJ(e);
 
             for (int i = 0; i < CLOSURE(e)->uargc; i++)
                 CLOSURE(e)->upvals[i] =
@@ -442,39 +446,6 @@ Interpretation run(void)
         case OP_NEG:
             *(machine.stack.main->as + --COUNT()) = _neg(*(machine.stack.main->as + COUNT()++));
             break;
-
-        case OP_INC_GLO:
-        {
-            element key = READ_CONSTANT();
-            element ar = _inc(GET(key.key));
-            SET(key.key, ar);
-            PUSH(ar);
-            break;
-        }
-        case OP_DEC_GLO:
-        {
-            element key = READ_CONSTANT();
-            element ar = _dec(GET(key.key));
-            SET(key.key, ar);
-            PUSH(ar);
-            break;
-        }
-        case OP_INC_LOC:
-        {
-            uint8_t index = READ_BYTE();
-            element el = _inc(NLOCAL(index));
-            NLOCAL(index) = el;
-            PUSH(el);
-            break;
-        }
-        case OP_DEC_LOC:
-        {
-            uint8_t index = READ_BYTE();
-            element el = _dec(NLOCAL(index));
-            NLOCAL(index) = el;
-            PUSH(el);
-            break;
-        }
         case OP_INC:
             *(machine.stack.main->as + --COUNT()) = _inc(*(machine.stack.main->as + COUNT()++));
             break;
@@ -533,7 +504,7 @@ Interpretation run(void)
             machine.count.argc = 0;
             break;
 
-        case OP_NULL:
+        case OP_NOOP:
             PUSH(Null());
             break;
         case OP_JMPF:
@@ -638,28 +609,20 @@ Interpretation run(void)
 
             break;
         case OP_GET_OBJ:
-#ifdef DEBUG_TRACE_EXECUTION
-        {
-            uint8_t index = READ_BYTE();
-            element obj = *(machine.stack.obj->as + index);
-            PUSH(obj);
-        }
-#else
-            PUSH(OBJECT());
-#endif
-        break;
+            PUSH(GET_OBJ());
+            break;
         case OP_SET_OBJ:
-            OBJECT() = READ_CONSTANT();
+            SET_OBJ(READ_CONSTANT());
             break;
         case OP_CLASS:
         {
-            class *c = CLASS(OBJECT());
+            class *c = CLASS(GET_OBJ());
             machine.init_fields = c->closures;
             PUSH(GEN(c->init, T_CLOSURE));
             break;
         }
         case OP_ALLOC_INSTANCE:
-            machine.current_instance = _instance(CLASS(OBJECT()));
+            machine.current_instance = _instance(CLASS(GET_OBJ()));
             machine.current_instance->fields =
                 (machine.init_fields)
                     ? machine.init_fields

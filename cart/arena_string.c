@@ -75,7 +75,7 @@ char *lltoa(char *c, long long int n)
 
 static element realloc_string(value ar, size_t size)
 {
-    ar.String = REALLOC(ar.String, ar.len, size);
+    ar.String = REALLOC(ar.String, size);
     ar.len = size;
     return OBJ(ar, T_STR);
 }

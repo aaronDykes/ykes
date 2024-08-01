@@ -15,6 +15,8 @@ static void init_compiler(compiler *a, compiler *b, compiler_t type, _key name)
 {
 
     local *_local = NULL;
+    a->enclosing = NULL;
+    a->base = NULL;
     a->meta.cwd = NULL;
     a->meta.type = type;
     a->meta.flags = 0;
@@ -38,6 +40,7 @@ static void init_compiler(compiler *a, compiler *b, compiler_t type, _key name)
     if (b)
     {
         a->base = b->base;
+        a->lookup = b->base->lookup;
         a->parser = b->parser;
         a->enclosing = b;
         a->count.scope = b->count.scope;
@@ -316,7 +319,7 @@ static void func_declaration(compiler *c)
     _key ar = parse_id(c);
 
     if (find_entry(&c->base->lookup, ar).type != T_NULL)
-        exit_error("Duplicate function declarations in scope");
+        exit_error("Duplicate function declarations");
 
     write_table(c->base->lookup, ar, NumType(c->base->count.obj++, T_FUNCTION));
     func_body(c, ar);
@@ -354,9 +357,10 @@ static void func_body(compiler *c, _key ar)
 
     c = c->enclosing;
 
-    emit_bytes(
-        c, OP_CLOSURE,
-        add_constant(&c->func->ch, GEN(clos, T_CLOSURE)));
+    int arg = add_constant(&c->func->ch, GEN(clos, T_CLOSURE));
+
+    emit_bytes(c, OP_CLOSURE, arg);
+
     emit_byte(c, obj_count);
 
     for (int i = 0; i < tmp->count.upvalue; i++)
@@ -405,7 +409,7 @@ static void var_dec(compiler *c)
         emit_bytes(c, set, (uint8_t)glob);
     }
     else
-        emit_byte(c, OP_NULL);
+        emit_byte(c, OP_NOOP);
 
     consume(TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser);
 }
@@ -501,7 +505,7 @@ static void for_statement(compiler *c)
             id(c);
     }
 
-    int start = c->func->ch.ip.count;
+    int start = c->func->ch.count;
     int exit = -1;
     if (!match(TOKEN_CH_SEMI, &c->parser))
     {
@@ -513,7 +517,7 @@ static void for_statement(compiler *c)
     if (!match(TOKEN_CH_RPAREN, &c->parser))
     {
         int body_jump = emit_jump(c, OP_JMP);
-        int inc_start = c->func->ch.ip.count;
+        int inc_start = c->func->ch.count;
 
         expression(c);
         emit_byte(c, OP_POP);
@@ -538,7 +542,7 @@ static void for_statement(compiler *c)
 
 static void while_statement(compiler *c)
 {
-    int start = c->func->ch.ip.count;
+    int start = c->func->ch.count;
 
     consume(TOKEN_CH_LPAREN, "Expect `(` after 'while'.", &c->parser);
     expression(c);
@@ -592,7 +596,7 @@ static void switch_statement(compiler *c)
     }
     match(TOKEN_CH_RCURL, &c->parser);
 
-    c->func->ch.cases.bytes[c->func->ch.cases.count++] = c->func->ch.ip.count;
+    c->func->ch.cases.bytes[c->func->ch.cases.count++] = c->func->ch.count;
 }
 
 static void case_statement(compiler *c)
@@ -651,7 +655,7 @@ static void if_statement(compiler *c)
         statement(c);
 
     patch_jump(c, exit);
-    c->func->ch.cases.bytes[c->func->ch.cases.count++] = c->func->ch.ip.count;
+    c->func->ch.cases.bytes[c->func->ch.cases.count++] = c->func->ch.count;
 }
 
 static void elif_statement(compiler *c)
@@ -712,19 +716,19 @@ static void return_statement(compiler *c)
 static void patch_jump(compiler *c, int offset)
 {
 
-    int jump = c->func->ch.ip.count - offset - 2;
+    int jump = c->func->ch.count - offset - 2;
 
     if (jump >= INT16_MAX)
         prev_error("ERROR: To great a distance ", &c->parser);
 
-    c->func->ch.ip.bytes[offset] = (uint8_t)((jump >> 8) & 0xFF);
-    c->func->ch.ip.bytes[offset + 1] = (uint8_t)(jump & 0xFF);
+    c->func->ch.ip[offset] = (uint8_t)((jump >> 8) & 0xFF);
+    c->func->ch.ip[offset + 1] = (uint8_t)(jump & 0xFF);
 }
 
 static void emit_loop(compiler *c, int byte)
 {
     emit_byte(c, OP_LOOP);
-    int offset = c->func->ch.ip.count - byte + 2;
+    int offset = c->func->ch.count - byte + 2;
 
     if (offset > UINT16_MAX)
         prev_error("ERROR: big boi loop", &c->parser);
@@ -737,7 +741,7 @@ static int emit_jump(compiler *c, int byte)
     emit_byte(c, byte);
     emit_bytes(c, 0xFF, 0xFF);
 
-    return c->func->ch.ip.count - 2;
+    return c->func->ch.count - 2;
 }
 
 static void default_expression(compiler *c)
@@ -1366,80 +1370,78 @@ static function *end_compile(compiler *a)
 
 function *compile(const char *src)
 {
-    compiler *c = NULL;
-    c = ALLOC(sizeof(compiler));
+    compiler c;
 
     init_scanner(src);
+    init_compiler(&c, NULL, COMPILER_TYPE_SCRIPT, Key("SCRIPT", 6));
 
-    init_compiler(c, NULL, COMPILER_TYPE_SCRIPT, Key("SCRIPT", 6));
+    c.base = &c;
+    c.base->lookup = NULL;
+    c.base->lookup = GROW_TABLE(NULL, STACK_SIZE);
+    c.hash.init = hash_key("init");
+    c.hash.len = hash_key("len");
+    c.hash.push = hash_key("push");
+    c.hash.pop = hash_key("pop");
 
-    c->base = c;
+    c.parser.flag = false;
+    c.parser.current_file = NULL;
 
-    c->base->lookup = NULL;
-    c->base->lookup = GROW_TABLE(NULL, STACK_SIZE);
-    c->base->hash.init = hash_key("init");
-    c->base->hash.len = hash_key("len");
-    c->base->hash.push = hash_key("push");
-    c->base->hash.pop = hash_key("pop");
+    write_table(c.base->lookup, Key("clock", 5), NumType(c.base->count.obj++, T_NATIVE));
+    write_table(c.base->lookup, Key("square", 6), NumType(c.base->count.obj++, T_NATIVE));
+    write_table(c.base->lookup, Key("file", 4), NumType(c.base->count.obj++, T_NATIVE));
 
-    c->parser.flag = false;
+    advance_compiler(&c.parser);
 
-    write_table(c->base->lookup, Key("clock", 5), NumType(c->base->count.obj++, T_NATIVE));
-    write_table(c->base->lookup, Key("square", 6), NumType(c->base->count.obj++, T_NATIVE));
-    write_table(c->base->lookup, Key("file", 4), NumType(c->base->count.obj++, T_NATIVE));
+    while (!match(TOKEN_EOF, &c.parser))
+        declaration(&c);
+    consume(TOKEN_EOF, "Expect end of expression", &c.parser);
 
-    advance_compiler(&c->parser);
+    function *f = end_compile(&c);
 
-    while (!match(TOKEN_EOF, &c->parser))
-        declaration(c);
-    consume(TOKEN_EOF, "Expect end of expression", &c->parser);
+    FREE((char *)(c.parser.current_file));
+    FREE(c.base->lookup->records);
+    FREE(c.base->lookup);
 
-    function *f = end_compile(c);
-
-    FREE((char *)(c->parser.current_file));
-    FREE(c->base->lookup->records);
-    FREE(c->base->lookup);
-
-    return c->parser.flag ? NULL : f;
+    return c.parser.flag ? NULL : f;
 }
 
 function *compile_path(const char *src, const char *path, const char *name)
 {
-    compiler *c = NULL;
-    c = ALLOC(sizeof(compiler));
+    compiler c;
 
     init_scanner(src);
 
-    init_compiler(c, NULL, COMPILER_TYPE_SCRIPT, Key("SCRIPT", 6));
+    init_compiler(&c, NULL, COMPILER_TYPE_SCRIPT, Key("SCRIPT", 6));
 
-    c->base = c;
-    c->base->meta.cwd = path;
+    c.meta.cwd = path;
 
-    c->base->lookup = NULL;
-    c->base->lookup = GROW_TABLE(NULL, STACK_SIZE);
-    c->base->hash.init = hash_key("init");
-    c->base->hash.len = hash_key("len");
-    c->base->hash.push = hash_key("push");
-    c->base->hash.pop = hash_key("pop");
+    c.base = &c;
+    c.base->lookup = NULL;
+    c.base->lookup = GROW_TABLE(NULL, STACK_SIZE);
 
-    c->parser.flag = false;
-    c->parser.current_file = name;
+    c.hash.init = hash_key("init");
+    c.hash.len = hash_key("len");
+    c.hash.push = hash_key("push");
+    c.hash.pop = hash_key("pop");
 
-    write_table(c->base->lookup, Key("clock", 5), NumType(c->base->count.obj++, T_NATIVE));
-    write_table(c->base->lookup, Key("square", 6), NumType(c->base->count.obj++, T_NATIVE));
-    write_table(c->base->lookup, Key("file", 4), NumType(c->base->count.obj++, T_NATIVE));
+    c.parser.flag = false;
+    c.parser.current_file = name;
 
-    advance_compiler(&c->parser);
+    write_table(c.base->lookup, Key("clock", 5), NumType(c.base->count.obj++, T_NATIVE));
+    write_table(c.base->lookup, Key("square", 6), NumType(c.base->count.obj++, T_NATIVE));
+    write_table(c.base->lookup, Key("file", 4), NumType(c.base->count.obj++, T_NATIVE));
 
-    while (!match(TOKEN_EOF, &c->parser))
-        declaration(c);
-    consume(TOKEN_EOF, "Expect end of expression", &c->parser);
+    advance_compiler(&c.parser);
 
-    function *f = end_compile(c);
+    while (!match(TOKEN_EOF, &c.parser))
+        declaration(&c);
+    consume(TOKEN_EOF, "Expect end of expression", &c.parser);
 
-    FREE((char *)(c->parser.current_file));
-    FREE(c->base->lookup->records);
-    FREE(c->base->lookup);
+    function *f = end_compile(&c);
 
-    return c->parser.flag ? NULL : f;
+    FREE((char *)(c.parser.current_file));
+    FREE(c.base->lookup->records);
+    FREE(c.base->lookup);
+
+    return c.parser.flag ? NULL : f;
 }

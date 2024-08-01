@@ -2,9 +2,10 @@
 #include <string.h>
 #include <sys/mman.h>
 
+#define ARM64_PAGE 16384
+
 static void *request_system_memory(size_t size)
 {
-
     return mmap(
         NULL,
         size,
@@ -17,12 +18,9 @@ static void *request_system_memory(size_t size)
             MAP_ANONYMOUS,
         -1, 0);
 }
-void initialize_global_memory(void)
+void initialize_global_mem(void)
 {
-
-    mem = request_system_memory(ARM64_PAGE);
-    mem->size = OFFSET;
-    mem->next = NULL;
+    mem = NULL;
 }
 
 void destroy_global_memory(void)
@@ -31,7 +29,6 @@ void destroy_global_memory(void)
     _free *tmp = NULL;
     while (mem)
     {
-
         tmp = mem->next;
         munmap(mem, mem->size);
         mem = tmp;
@@ -97,7 +94,7 @@ void *init_alloced_ptr(void *ptr, size_t size)
     alloced->size = size - OFFSET;
     alloced->next = NULL;
 
-    return memset(1 + alloced, 0, size - OFFSET);
+    return 1 + alloced;
 }
 void init_free_ptr(_free **ptr, size_t alloc_size, size_t size)
 {
@@ -106,8 +103,18 @@ void init_free_ptr(_free **ptr, size_t alloc_size, size_t size)
     (*ptr)->next->next = NULL;
 }
 
+static void alloc_free_list(void)
+{
+    mem = request_system_memory(ARM64_PAGE);
+    mem->size = ARM64_PAGE - OFFSET;
+    mem->next = NULL;
+}
+
 void *_malloc_(size_t size)
 {
+
+    if (!mem)
+        alloc_free_list();
 
     _free *prev = NULL;
     _free *next = NULL;
@@ -117,7 +124,6 @@ void *_malloc_(size_t size)
 
     if (next && next->size >= size)
     {
-
         next->size -= size;
 
         if (prev && next->size == 0)
@@ -145,7 +151,7 @@ void *_calloc_(int val, size_t size)
     return memset(ALLOC(size), val, size);
 }
 
-void *_realloc_(void *ptr, size_t old_size, size_t size)
+void *_realloc_(void *ptr, size_t size)
 {
 
     if (!ptr && size != 0)
@@ -164,9 +170,7 @@ void *_realloc_(void *ptr, size_t old_size, size_t size)
     void *alloced = NULL;
     alloced = ALLOC(size);
 
-    size_t new_size = (size < old_size) ? size : old_size;
-
-    memcpy(alloced, ptr, new_size);
+    memcpy(alloced, ptr, size);
     FREE(ptr);
 
     return alloced;

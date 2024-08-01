@@ -75,7 +75,7 @@ stack *realloc_stack(stack *st, size_t size)
 upval **upvals(size_t size)
 {
     upval **up = NULL;
-    ALLOC((sizeof(upval *) * size) + sizeof(upval *));
+    up = ALLOC((sizeof(upval *) * size) + sizeof(upval *));
 
     *up = NULL;
     *up = ALLOC(sizeof(upval));
@@ -236,10 +236,14 @@ static void free_native(native *nat)
 static void free_chunk(chunk *c)
 {
 
-    FREE(c->ip.bytes);
-    FREE(c->lines.bytes);
+    FREE(c->ip);
+    FREE(c->lines);
     FREE(c->cases.bytes);
     free_stack(c->constants);
+    c->ip = NULL;
+    c->lines = NULL;
+    c->cases.bytes = NULL;
+    c->constants = NULL;
 }
 static void free_function(function *func)
 {
