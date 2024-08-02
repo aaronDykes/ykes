@@ -2,10 +2,7 @@
 #include "compiler.h"
 #include "error.h"
 #include "vm_util.h"
-#include <stdarg.h>
-#include <time.h>
-#include <stdio.h>
-#include <math.h>
+#include "native.h"
 
 #define COUNT() \
     (machine.stack.main->count)
@@ -20,7 +17,6 @@ void initVM(void)
     machine.glob = NULL;
 
     machine.stack.main = GROW_STACK(NULL, STACK_SIZE);
-    // machine.stack.obj = GROW_STACK(NULL, STACK_SIZE);
     machine.glob = GROW_TABLE(NULL, STACK_SIZE);
 
     machine.current_instance = NULL;
@@ -46,11 +42,6 @@ void freeVM(void)
 #endif
 }
 
-static void reset_vm_stack(void)
-{
-    machine.count.frame = 0;
-}
-
 static void runtime_error(const char *format, ...)
 {
     va_list args;
@@ -73,130 +64,7 @@ static void runtime_error(const char *format, ...)
         fprintf(stderr, "[line %d] in script\n", line);
     }
 
-    reset_vm_stack();
-}
-
-static void define_native(_key ar, NativeFn n, uint8_t index)
-{
-    element el = GEN(_native(n, ar), T_NATIVE);
-    *(machine.stack.obj->as + index) = el;
-}
-
-static inline element clock_native(int argc, element *el)
-{
-    return Num((double)clock() / CLOCKS_PER_SEC);
-}
-static element get_file(const char *path)
-{
-
-    char rest[PATH_MAX] = {0};
-    char *tmp = NULL;
-    tmp = realpath(path, rest);
-    FILE *file = NULL;
-    file = fopen(tmp, "r");
-
-    if (!file)
-    {
-        fprintf(stderr, "Could not open file \"%s\".\n", path);
-        exit(74);
-    }
-
-    fseek(file, 0L, SEEK_END);
-    size_t fileSize = ftell(file);
-    rewind(file);
-
-    char *buffer = NULL;
-    buffer = ALLOC(fileSize + 1);
-
-    if (!buffer)
-    {
-        fprintf(stderr, "Not enough memory to read \"%s\".\n", path);
-        exit(74);
-    }
-    size_t bytesRead = fread(buffer, sizeof(char), fileSize, file);
-    buffer[bytesRead] = '\0';
-
-    value el;
-    el.String = buffer;
-    el.len = bytesRead;
-
-    fclose(file);
-    return OBJ(el, T_STR);
-}
-
-static void append_file(const char *path, const char *data)
-{
-    FILE *f = NULL;
-
-    char *tmp = NULL;
-    tmp = realpath(path, NULL);
-    if (!tmp)
-    {
-        fprintf(stderr, "Unable to open file: %s\n", tmp);
-        exit(1);
-    }
-
-    f = fopen(tmp, "a");
-
-    if (!f)
-    {
-        fprintf(stderr, "Unable to open file: %s\n", path);
-        exit(1);
-    }
-
-    fprintf(f, "\n%s", data);
-    fclose(f);
-
-    tmp = NULL;
-    f = NULL;
-}
-static void write_file(const char *path, const char *data)
-{
-    FILE *f = NULL;
-
-    char *tmp = NULL;
-    tmp = realpath(path, NULL);
-    if (!tmp)
-    {
-        fprintf(stderr, "Unable to open file: %s\n", tmp);
-        exit(1);
-    }
-
-    f = fopen(tmp, "w");
-
-    if (!f)
-    {
-        fprintf(stderr, "Unable to open file: %s\n", path);
-        exit(1);
-    }
-
-    fprintf(f, "%s", data);
-    fclose(f);
-
-    tmp = NULL;
-    f = NULL;
-}
-
-static inline element file_native(int argc, element *argv)
-{
-    switch (*argv->val.String)
-    {
-    case 'r':
-        return get_file(argv[1].val.String);
-    case 'w':
-        write_file(argv[1].val.String, argv[2].val.String);
-        return Null();
-    case 'a':
-        append_file(argv[1].val.String, argv[2].val.String);
-        return Null();
-    default:
-        return Null();
-    }
-}
-
-static inline element square_native(int argc, element *argv)
-{
-    return _sqr(*argv);
+    machine.count.frame = 0;
 }
 
 static bool call(closure *c, uint8_t argc)
@@ -217,7 +85,7 @@ static bool call(closure *c, uint8_t argc)
     CallFrame *frame = &machine.frames[machine.count.frame++];
     frame->closure = c;
     frame->ip = c->func->ch.ip;
-    frame->ip_start = c->func->ch.ip;
+    frame->ip_return = c->func->ch.ip;
     frame->return_index = machine.stack.main->count - (argc + 1);
     frame->slots = (machine.stack.main->as + (COUNT() - (argc + 1)));
     return true;
@@ -237,10 +105,7 @@ Interpretation interpret(const char *src)
 
     machine.stack.obj = GROW_STACK(NULL, func->objc);
 
-    define_native(Key("clock", 5), clock_native, 0);
-    define_native(Key("square", 6), square_native, 1);
-    define_native(Key("file", 4), file_native, 2);
-
+    define_natives(&machine.stack.obj);
     push(&machine.stack.main, GEN(clos, T_CLOSURE));
 
     close_upvalues();
@@ -260,10 +125,7 @@ Interpretation interpret_path(const char *src, const char *path, const char *nam
 
     machine.stack.obj = GROW_STACK(NULL, func->objc);
 
-    define_native(Key("clock", 5), clock_native, 0);
-    define_native(Key("square", 6), square_native, 1);
-    define_native(Key("file", 4), file_native, 2);
-
+    define_natives(&machine.stack.obj);
     push(&machine.stack.main, GEN(clos, T_CLOSURE));
 
     close_upvalues();
@@ -284,8 +146,8 @@ static bool call_value(element el, uint8_t argc)
         push(&machine.stack.main, res);
         return true;
     }
-    case T_INSTANCE:
-        return true;
+    // case T_INSTANCE:
+    // return true;
     default:
         break;
     }
@@ -360,14 +222,22 @@ Interpretation run(void)
 
     CallFrame *frame = machine.frames + (machine.count.frame - 1);
 
+    register uint8_t *ip = frame->ip;
+    register uint8_t *ip_tmp = NULL;
+    register uint16_t offset = 0;
+    register element obj;
+    _key key;
+    register uint8_t argc = 0;
+
 #define READ_BYTE() \
-    (*frame->ip++)
+    (*ip++)
+
 #define UPPER() \
     ((READ_BYTE() << 8) & 0xFF)
 #define LOWER() \
     (READ_BYTE() & 0xFF)
 #define READ_SHORT() \
-    ((uint16_t)(UPPER() | LOWER()))
+    ((uint16_t)((UPPER()) | LOWER()))
 #define READ_CONSTANT() \
     (*(frame->closure->func->ch.constants->as + READ_BYTE()))
 
@@ -397,12 +267,14 @@ Interpretation run(void)
 
 #define OBJECT() \
     (*(machine.stack.obj->as + READ_BYTE()))
+#define NOBJECT(n) \
+    (*(machine.stack.obj->as + n))
 
-#define SET_OBJ(el) \
-    ((OBJECT() = el))
+#define SET_OBJ(n, el) \
+    ((NOBJECT(n) = el))
 
 #define GET(ar) \
-    (find_entry(&machine.glob, ar))
+    (find_entry(&machine.glob, &ar))
 #define SET(a, b) \
     (write_table(machine.glob, a, b))
 
@@ -412,7 +284,7 @@ Interpretation run(void)
         for (int i = 0; i < COUNT(); i++)
             print(*(machine.stack.main->as + i));
         disassemble_instruction(&frame->closure->func->ch,
-                                (int)(frame->ip - frame->ip_start));
+                                (int)(ip - frame->ip));
 #endif
 
         switch (READ_BYTE())
@@ -422,12 +294,12 @@ Interpretation run(void)
             break;
         case OP_CLOSURE:
         {
-            element e = READ_CONSTANT();
+            obj = READ_CONSTANT();
 
-            SET_OBJ(e);
+            SET_OBJ(READ_BYTE(), obj);
 
-            for (int i = 0; i < CLOSURE(e)->uargc; i++)
-                CLOSURE(e)->upvals[i] =
+            for (int i = 0; i < CLOSURE(obj)->uargc; i++)
+                CLOSURE(obj)->upvals[i] =
                     (READ_BYTE())
                         ? capture_upvalue(frame->slots, READ_BYTE())
                         : frame->closure->upvals[READ_BYTE()];
@@ -435,10 +307,10 @@ Interpretation run(void)
         break;
         case OP_METHOD:
         {
-            element e = READ_CONSTANT();
+            obj = READ_CONSTANT();
 
-            for (int i = 0; i < CLOSURE(e)->uargc; i++)
-                CLOSURE(e)->upvals[i] =
+            for (int i = 0; i < CLOSURE(obj)->uargc; i++)
+                CLOSURE(obj)->upvals[i] =
                     (READ_BYTE())
                         ? capture_upvalue(frame->slots, READ_BYTE())
                         : frame->closure->upvals[READ_BYTE()];
@@ -454,19 +326,19 @@ Interpretation run(void)
         case OP_CLOSE_UPVAL:
             break;
         case OP_NEG:
-            *(machine.stack.main->as + --COUNT()) = _neg(*(machine.stack.main->as + COUNT()++));
+            *(machine.stack.main->as + --COUNT()) = _neg((machine.stack.main->as + COUNT()++));
             break;
         case OP_INC:
-            *(machine.stack.main->as + --COUNT()) = _inc(*(machine.stack.main->as + COUNT()++));
+            *(machine.stack.main->as + --COUNT()) = _inc((machine.stack.main->as + COUNT()++));
             break;
         case OP_DEC:
-            *(machine.stack.main->as + --COUNT()) = _dec(*(machine.stack.main->as + COUNT()++));
+            *(machine.stack.main->as + --COUNT()) = _dec((machine.stack.main->as + COUNT()++));
             break;
         case OP_POPN:
             POPN(READ_CONSTANT().val.Num);
             break;
         case OP_POP:
-            POP();
+            POPN(1);
             break;
         case OP_ADD:
             PUSH(_add(POP(), POP()));
@@ -489,7 +361,6 @@ Interpretation run(void)
         case OP_NE:
             PUSH(_ne(POP(), POP()));
             break;
-
         case OP_LT:
             PUSH(_lt(POP(), POP()));
             break;
@@ -508,7 +379,6 @@ Interpretation run(void)
         case OP_AND:
             PUSH(_and(POP(), POP()));
             break;
-
         case OP_RESET_ARGC:
             machine.count.cargc = 0;
             machine.count.argc = 0;
@@ -517,16 +387,9 @@ Interpretation run(void)
         case OP_NOOP:
             PUSH(Null());
             break;
-        case OP_JMPF:
-            frame->ip += (READ_SHORT() * FALSEY());
-            break;
-        case OP_JMPL:
-            frame->ip = frame->ip_start + *(frame->closure->func->ch.cases.bytes + READ_BYTE());
-            break;
         case OP_SET_PROP:
-        {
-            element el = PEEK();
-            // element inst = NPEEK(1);
+            obj = PEEK();
+
             if (!machine.current_instance && !machine.init_fields)
             {
                 runtime_error("ERROR: Can only set properties of an instance.");
@@ -534,45 +397,56 @@ Interpretation run(void)
             }
 
             if (machine.init_fields)
-                write_table(machine.init_fields, READ_CONSTANT().key, el);
+                write_table(machine.init_fields, READ_CONSTANT().key, obj);
             else
-                write_table(machine.current_instance->fields, READ_CONSTANT().key, el);
-            POP();
+                write_table(machine.current_instance->fields, READ_CONSTANT().key, obj);
+            POPN(1);
             break;
-        }
-
         case OP_GET_PROP:
-        {
             if (!machine.current_instance && !machine.init_fields)
             {
                 runtime_error("ERROR: Only instances contain properties.");
                 return INTERPRET_RUNTIME_ERR;
             }
 
-            _key name = READ_CONSTANT().key;
+            key = READ_CONSTANT().key;
 
-            element n = (machine.init_fields)
-                            ? find_entry(&machine.init_fields, name)
-                            : find_entry(&machine.current_instance->fields, name);
+            obj = (machine.init_fields)
+                      ? find_entry(&machine.init_fields, &key)
+                      : find_entry(&machine.current_instance->fields, &key);
 
-            if (n.type != T_NULL)
+            if (obj.type != T_NULL)
             {
-                PUSH(n);
+                PUSH(obj);
                 break;
             }
-
-            runtime_error("ERROR: Undefined property '%s'.", name.val);
+            runtime_error("ERROR: Undefined property '%s'.", key.val);
             return INTERPRET_RUNTIME_ERR;
-        }
 
         case OP_CALL:
         {
-            uint8_t argc = READ_BYTE();
+            argc = READ_BYTE();
+
+            uint8_t is_closure = 0;
+
+            if (NPEEK(argc).type == T_CLOSURE)
+            {
+                ip_tmp = ip;
+                is_closure = 1;
+            }
 
             if (!call_value(NPEEK(argc), argc))
                 return INTERPRET_RUNTIME_ERR;
 
             frame = (machine.frames + (machine.count.frame - 1));
+
+            if (is_closure)
+            {
+                ip = frame->ip;
+                frame->ip_return = ip_tmp;
+                ip_tmp = NULL;
+            }
+
             machine.count.argc = argc;
             machine.count.cargc = 1;
 
@@ -582,32 +456,42 @@ Interpretation run(void)
             machine.count.argc = READ_BYTE();
             machine.count.cargc = 1;
             break;
+        case OP_JMPF:
+            offset = READ_BYTE(), offset = (offset | READ_BYTE()) * FALSEY();
+            ip += offset;
+            break;
         case OP_JMPT:
-            frame->ip += (READ_SHORT() * TRUTHY());
+            offset = READ_BYTE(), offset = (offset | READ_BYTE()) * TRUTHY();
+            ip += offset;
+            break;
+        case OP_JMPL:
+            offset = READ_BYTE(), offset |= READ_BYTE();
+            ip = frame->ip + *(frame->closure->func->ch.cases.bytes + offset);
             break;
         case OP_JMP_NIL:
-        {
-            uint16_t offset = READ_SHORT();
+            offset = READ_BYTE(), offset |= READ_BYTE();
             if (null(PEEK()))
-                frame->ip += offset;
+                ip += offset;
             break;
-        }
         case OP_JMP_NOT_NIL:
-        {
-            uint16_t offset = READ_SHORT();
+            offset = READ_BYTE(), offset |= READ_BYTE();
             if (not_null(PEEK()))
-                frame->ip += offset;
+                ip += offset;
             break;
-        }
-        break;
         case OP_JMP:
-            frame->ip += READ_SHORT();
+            offset = READ_BYTE(), offset |= READ_BYTE();
+            ip += offset;
             break;
         case OP_LOOP:
-            frame->ip -= READ_SHORT();
+            offset = READ_BYTE(), offset |= READ_BYTE();
+            ip -= offset;
             break;
         case OP_GET_LOCAL:
-            PUSH(LOCAL());
+            obj = LOCAL();
+            if (obj.type == T_INSTANCE)
+                machine.current_instance = NULL,
+                machine.current_instance = INSTANCE(obj);
+            PUSH(obj);
             break;
         case OP_SET_LOCAL:
             LOCAL() = PEEK();
@@ -622,15 +506,16 @@ Interpretation run(void)
             PUSH(OBJECT());
             break;
         case OP_SET_OBJ:
-            SET_OBJ(READ_CONSTANT());
+            argc = READ_BYTE();
+            SET_OBJ(argc, READ_CONSTANT());
             break;
         case OP_CLASS:
         {
             class *c = CLASS(OBJECT());
             machine.init_fields = c->closures;
             PUSH(GEN(c->init, T_CLOSURE));
-            break;
         }
+        break;
         case OP_ALLOC_INSTANCE:
             machine.current_instance = _instance(CLASS(OBJECT()));
             machine.current_instance->fields =
@@ -641,7 +526,7 @@ Interpretation run(void)
             PUSH(GEN(machine.current_instance, T_INSTANCE));
             break;
         case OP_RM:
-            FREE_OBJ(POP());
+            FREE_OBJ(*POP());
             break;
         case OP_ALLOC_TABLE:
             if (PEEK().type != T_NUM)
@@ -649,76 +534,61 @@ Interpretation run(void)
                 runtime_error("ERROR: table argument must be a numeric value.");
                 return INTERPRET_RUNTIME_ERR;
             }
-            PUSH(GEN(GROW_TABLE(NULL, POP().val.Num), T_TABLE));
+            PUSH(GEN(GROW_TABLE(NULL, POP()->val.Num), T_TABLE));
             break;
         case OP_GET_GLOBAL:
-        {
+            key = READ_CONSTANT().key;
+            obj = GET(key);
 
-            _key var = READ_CONSTANT().key;
-            element el = GET(var);
-
-            if (el.type != T_NULL)
+            if (obj.type != T_NULL)
             {
-                if (el.type == T_INSTANCE)
-                    machine.current_instance = INSTANCE(el);
-                PUSH(el);
+                if (obj.type == T_INSTANCE)
+                    machine.current_instance = NULL,
+                    machine.current_instance = INSTANCE(obj);
+                PUSH(obj);
                 break;
             }
 
-            runtime_error("ERROR: Undefined property '%s'.", var.val);
+            runtime_error("ERROR: Undefined property '%s'.", key.val);
             return INTERPRET_RUNTIME_ERR;
-        }
         case OP_GLOBAL_DEF:
-        {
-            element el = READ_CONSTANT();
-            element res = POP();
+            key = READ_CONSTANT().key;
+            obj = *POP();
 
-            if (GET(el.key).type != T_NULL)
+            if (GET(key).type != T_NULL)
             {
-                error("Duplicate global variable identifier: %s\n", el.key.val);
+                error("Duplicate global variable identifier: %s\n", key.val);
                 return INTERPRET_RUNTIME_ERR;
             }
 
-            SET(el.key, res);
+            SET(key, obj);
             break;
-        }
         case OP_SET_GLOBAL:
-
-#ifdef DEBUG_TRACE_EXECUTION
-        {
-            element el = READ_CONSTANT();
-            element res = POP();
-
-            SET(el.key, res);
-        }
-#else
-            SET(READ_CONSTANT().key, POP());
-#endif
-        break;
-        case OP_SET_FUNC_VAR:
-        {
-            element el = READ_CONSTANT();
-            element res = (machine.count.cargc < machine.count.argc)
-                              ? *(frame->slots + machine.count.cargc++)
-                              : POP();
-
-            SET(el.key, res);
+            SET(READ_CONSTANT().key, *POP());
             break;
-        }
+        case OP_SET_FUNC_VAR:
+            key = READ_CONSTANT().key;
+            obj = (machine.count.cargc < machine.count.argc)
+                      ? *(frame->slots + machine.count.cargc++)
+                      : *POP();
+
+            SET(key, obj);
+            break;
         case OP_PRINT:
-            print(POP());
+            print(*POP());
             break;
         case OP_RETURN:
         {
-            element el = POP();
+            element *el = POP();
             --machine.count.frame;
 
             if (machine.count.frame == 0)
                 return INTERPRET_SUCCESS;
 
             machine.stack.main->count = frame->return_index;
-            PUSH(el);
+            PUSH(*el);
 
+            ip = frame->ip_return;
             frame = &machine.frames[machine.count.frame - 1];
             break;
         }

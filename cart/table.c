@@ -1,12 +1,12 @@
 #include "table.h"
 
-static record *alloc_entry(record el)
+static record *alloc_entry(record *el)
 {
     record *tmp = NULL;
     tmp = ALLOC(sizeof(record));
     tmp->next = NULL;
-    tmp->key = el.key;
-    tmp->val = el.val;
+    tmp->key = el->key;
+    tmp->val = el->val;
     return tmp;
 }
 static void insert_entry(table **t, record entry)
@@ -35,23 +35,23 @@ static void insert_entry(table **t, record entry)
         }
 
     record *ptr = NULL;
-    ptr = alloc_entry(entry);
+    ptr = alloc_entry(&entry);
     ptr->next = (*t)->records[index].next;
     (*t)->records[index].next = ptr;
 }
 
-element find_entry(table **t, _key hash)
+element find_entry(table **t, _key *hash)
 {
-    size_t index = hash.hash & ((*t)->len - 1);
+    size_t index = hash->hash & ((*t)->len - 1);
 
     if (!(*t)->records[index].key.val)
         return Null();
 
-    if ((*t)->records[index].key.hash == hash.hash)
+    if ((*t)->records[index].key.hash == hash->hash)
         return (*t)->records[index].val;
 
     for (record *tmp = (*t)->records[index].next; tmp; tmp = tmp->next)
-        if (tmp->key.hash == hash.hash)
+        if (tmp->key.hash == hash->hash)
             return tmp->val;
 
     return Null();
@@ -106,7 +106,7 @@ table *realloc_table(table *t, size_t size)
 void write_table(table *t, _key a, element b)
 {
 
-    if (find_entry(&t, a).type != T_NULL)
+    if (find_entry(&t, &a).type != T_NULL)
         goto OVERWRITE;
 
     int load_capacity = (int)(t->len * LOAD_FACTOR);

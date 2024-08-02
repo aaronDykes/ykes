@@ -24,7 +24,7 @@ struct CallFrame
 {
     closure *closure;
     uint8_t *ip;
-    uint8_t *ip_start;
+    uint8_t *ip_return;
     element *slots;
     uint8_t return_index;
 };

@@ -13,12 +13,12 @@ static void check_stack_size(stack **s)
         *s = GROW_STACK(*s, (*s)->len * INC);
 }
 
-element pop(stack **s)
+element *pop(stack **s)
 {
 
     if ((*s)->count == 0)
-        return *((*s)->as);
-    return *((*s)->as + --(*s)->count);
+        return ((*s)->as);
+    return ((*s)->as + --(*s)->count);
 }
 
 void popn(stack **s, int ival)

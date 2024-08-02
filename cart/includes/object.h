@@ -31,6 +31,5 @@ element Bool(bool boolean);
 element Null(void);
 
 void print(element ar);
-void print(element ar);
 
 #endif

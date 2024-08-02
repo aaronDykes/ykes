@@ -9,9 +9,9 @@ import "functions/fib.yk";
 
 
 
-var p = Prime(1000000);
-var f = FIB(35);
+var p = Prime(100000);
+// var f = FIB(35);
 
 
 p.res();
-f.res();
+// f.res();

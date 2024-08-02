@@ -27,9 +27,9 @@ class Prime
 
     res()
     {
-        var start = clock();
+        this.start = clock();
         this.print_prime(this.n);
-        pout(clock() - start);
+        pout(clock() - this.start);
     }
 
 

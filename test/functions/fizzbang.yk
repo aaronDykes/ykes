@@ -4,14 +4,27 @@ class Fizzbang
 
     fb()
     {
-        for (var i = 1; i < 100; i++)
+        var str;
 
+        for (var i = 1; i < 100; i++)
             if ((i % 15) == 0)
-                pout("Fizzbang");
+            {
+                str = "Fizzbang: " + String(i);
+                pout(str);
+                rm(str);
+            }
             elif ((i % 5) == 0)
-                pout("Bang");
+            {
+                str = "Fizzbang: " + String(i);
+                pout(str);
+                rm(str);
+            }
             elif ((i % 3) == 0)
-                pout("Fizz");
+            {
+                str = "Fizz: " + String(i);
+                pout(str);
+                rm(str);
+            }
             else 
                 pout(i);
 

@@ -107,7 +107,7 @@ static char *read_file(const char *path)
     return buffer;
 }
 
-static bool resolve_include(compiler *c, _key ar)
+static bool resolve_include(compiler *c, _key *ar)
 {
     return find_entry(&c->base->lookup, ar).type == T_KEY;
 }
@@ -145,7 +145,7 @@ static void include_file(compiler *c)
     consume(TOKEN_STR, "Expect file path.", &c->parser);
     _key inc = parse_string(c);
 
-    if (resolve_include(c, inc))
+    if (resolve_include(c, &inc))
     {
         prev_error("Double include.", &c->parser);
         exit(1);
@@ -203,6 +203,9 @@ static void class_declaration(compiler *c)
     class *classc = _class(ar);
     classc->closures = GROW_TABLE(NULL, STACK_SIZE);
     class_compiler *cc = ALLOC(sizeof(class_compiler));
+
+    if (find_entry(&c->lookup, &ar).type != T_NULL)
+        exit_error("Duplicate class declaration: %s\n", ar.val);
 
     write_table(c->base->lookup, ar, NumType(c->base->count.obj, T_CLASS));
 
@@ -318,7 +321,7 @@ static void func_declaration(compiler *c)
     consume(TOKEN_ID, "Expect function name.", &c->parser);
     _key ar = parse_id(c);
 
-    if (find_entry(&c->base->lookup, ar).type != T_NULL)
+    if (find_entry(&c->base->lookup, &ar).type != T_NULL)
         exit_error("Duplicate function declarations");
 
     write_table(c->base->lookup, ar, NumType(c->base->count.obj++, T_FUNCTION));
@@ -1124,7 +1127,7 @@ static void _table(compiler *c)
 static int resolve_native(compiler *c, _key *ar)
 {
 
-    element el = find_entry(&c->base->lookup, *ar);
+    element el = find_entry(&c->base->lookup, ar);
 
     if (el.type == T_NATIVE)
         return el.val.Num;
@@ -1149,7 +1152,7 @@ static _key parse_id(compiler *c)
 static int resolve_call(compiler *c, _key *ar)
 {
 
-    element el = find_entry(&c->base->lookup, *ar);
+    element el = find_entry(&c->base->lookup, ar);
 
     if (el.type == T_FUNCTION)
         return el.val.Num;
@@ -1157,7 +1160,7 @@ static int resolve_call(compiler *c, _key *ar)
     return -1;
 }
 
-static int resolve_instance(compiler *c, _key ar)
+static int resolve_instance(compiler *c, _key *ar)
 {
     element el = find_entry(&c->base->lookup, ar);
 
@@ -1213,7 +1216,7 @@ static void id(compiler *c)
         return;
     }
 
-    if ((arg = resolve_instance(c, ar)) != -1)
+    if ((arg = resolve_instance(c, &ar)) != -1)
     {
         if (c->base->stack.class[arg]->init)
         {

@@ -15,7 +15,7 @@
     realloc_table(ar, size)
 
 void write_table(table *t, _key key, element b);
-element find_entry(table **t, _key key);
+element find_entry(table **t, _key *key);
 table *alloc_table(size_t size);
 table *realloc_table(table *t, size_t size);
 
