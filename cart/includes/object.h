@@ -1,7 +1,7 @@
 
-#ifndef _ARENA_H
-#define _ARENA_H
-#include "arena_util.h"
+#ifndef _OBJECT_H
+#define _OBJECT_H
+#include "object_util.h"
 #include "mem.h"
 
 #define OBJ(o, type) \
@@ -22,6 +22,7 @@ element generic_obj(void *obj, obj_t type);
 _key Key(const char *str, size_t size);
 element KeyObj(const char *str, size_t size);
 
+element StringCpy(const char *str, size_t size);
 element String(const char *str, size_t size);
 element Char(char ch);
 element Num(double Num);

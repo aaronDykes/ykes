@@ -1,5 +1,5 @@
-#ifndef _ARENA_UTIL_H
-#define _ARENA_UTIL_H
+#ifndef _OBJECT_UTIL_H
+#define _OBJECT_UTIL_H
 #include <stdlib.h>
 #include <stdbool.h>
 
@@ -23,6 +23,9 @@
 
 #define STACK(el) \
     ((stack *)(el.obj))
+
+#define UPVAL(el) \
+    ((upval *)(el.obj))
 
 typedef enum
 {
@@ -127,7 +130,7 @@ typedef enum
     T_VECTOR,
     T_INCLUDE,
 
-    T_UPVALS,
+    T_UPVAL,
     T_METHOD,
     T_STACK,
     T_TABLE,
@@ -216,6 +219,7 @@ struct function
 {
     uint8_t arity;
     uint8_t uargc;
+    uint8_t objc;
     _key name;
     chunk ch;
 };
@@ -243,10 +247,15 @@ struct element
         value val;
         _key key;
         void *obj;
-        void **upvals;
     };
 };
 
+struct upval
+{
+    uint8_t index;
+    element closed;
+    upval *next;
+};
 struct class
 {
     closure *init;
@@ -265,15 +274,6 @@ struct stack
     uint16_t count;
     uint16_t len;
     element *as;
-};
-
-struct upval
-{
-    uint16_t len;
-    uint16_t count;
-    element *index;
-    element closed;
-    upval *next;
 };
 
 struct record

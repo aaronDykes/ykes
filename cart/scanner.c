@@ -1,7 +1,7 @@
 #include "scanner.h"
 #include <stdlib.h>
 #include "lex_util.h"
-#include "arena_memory.h"
+// #include "arena_memory.h"
 
 void init_scanner(const char *src)
 {
@@ -140,7 +140,6 @@ static token string(void)
 }
 static token number(void)
 {
-    bool is_whole = true;
 
     while (digit(next()))
         skip();

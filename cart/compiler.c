@@ -366,7 +366,7 @@ static void func_body(compiler *c, _key ar)
     for (int i = 0; i < tmp->count.upvalue; i++)
         emit_bytes(c,
                    tmp->stack.upvalue[i].islocal ? 1 : 0,
-                   (uint8_t)tmp->stack.upvalue[i].index);
+                   tmp->stack.upvalue[i].index);
 }
 
 static void func_var(compiler *c)
@@ -780,7 +780,12 @@ static void end_scope(compiler *c)
         emit_bytes(c, OP_POPN, add_constant(&c->func->ch, Num(c->count.local - 1)));
 
     while (c->count.local > 0 && (c->stack.local[--c->count.local].depth > c->count.scope))
-        ;
+    {
+        if (c->stack.local[c->count.local].captured)
+            emit_byte(c, OP_CLOSE_UPVAL);
+        else
+            emit_byte(c, OP_POP);
+    }
 }
 
 static void parse_block(compiler *c)
@@ -939,7 +944,6 @@ static void compound_assign(compiler *c)
 {
     int op = c->parser.pre.type;
 
-    emit_bytes(c, c->array.get, c->array.index);
     parse_precedence(PREC_ASSIGNMENT, c);
 
     switch (op)
@@ -1438,6 +1442,7 @@ function *compile_path(const char *src, const char *path, const char *name)
     consume(TOKEN_EOF, "Expect end of expression", &c.parser);
 
     function *f = end_compile(&c);
+    f->objc = c.base->count.obj;
 
     FREE((char *)(c.parser.current_file));
     FREE(c.base->lookup->records);

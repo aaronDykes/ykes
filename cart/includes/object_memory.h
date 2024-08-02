@@ -1,7 +1,7 @@
-#ifndef _ARENA_MEMORY_H
-#define _ARENA_MEMORY_H
+#ifndef _OBJECT_MEMORY_H
+#define _OBJECT_MEMORY_H
 
-#include "arena.h"
+#include "object.h"
 #include "common.h"
 
 #define STACK_SIZE 64
@@ -23,7 +23,7 @@ stack *realloc_stack(stack *stack, size_t size);
 
 upval **upvals(size_t size);
 closure *_closure(function *func);
-upval *_upval(element *index);
+upval *_upval(element closed, uint8_t index);
 native *_native(NativeFn native, _key ar);
 class *_class(_key name);
 instance *_instance(class *c);

@@ -20,19 +20,16 @@ void initVM(void)
     machine.glob = NULL;
 
     machine.stack.main = GROW_STACK(NULL, STACK_SIZE);
-    machine.stack.obj = GROW_STACK(NULL, STACK_SIZE);
+    // machine.stack.obj = GROW_STACK(NULL, STACK_SIZE);
     machine.glob = GROW_TABLE(NULL, STACK_SIZE);
 
     machine.current_instance = NULL;
     machine.init_fields = NULL;
+    machine.open_upvals = NULL;
 
     machine.count.argc = 0;
     machine.count.frame = 0;
     machine.count.cargc = 0;
-
-    define_native(Key("clock", 5), clock_native, 0);
-    define_native(Key("square", 6), square_native, 1);
-    define_native(Key("file", 4), file_native, 2);
 }
 void freeVM(void)
 {
@@ -82,7 +79,7 @@ static void runtime_error(const char *format, ...)
 static void define_native(_key ar, NativeFn n, uint8_t index)
 {
     element el = GEN(_native(n, ar), T_NATIVE);
-    set_object(&machine.stack.obj, index, el);
+    *(machine.stack.obj->as + index) = el;
 }
 
 static inline element clock_native(int argc, element *el)
@@ -219,7 +216,6 @@ static bool call(closure *c, uint8_t argc)
 
     CallFrame *frame = &machine.frames[machine.count.frame++];
     frame->closure = c;
-    frame->closure->upvals = c->upvals;
     frame->ip = c->func->ch.ip;
     frame->ip_start = c->func->ch.ip;
     frame->return_index = machine.stack.main->count - (argc + 1);
@@ -239,9 +235,15 @@ Interpretation interpret(const char *src)
     call(clos, 0);
     machine.frames[machine.count.frame - 1].slots = machine.stack.main->as;
 
+    machine.stack.obj = GROW_STACK(NULL, func->objc);
+
+    define_native(Key("clock", 5), clock_native, 0);
+    define_native(Key("square", 6), square_native, 1);
+    define_native(Key("file", 4), file_native, 2);
+
     push(&machine.stack.main, GEN(clos, T_CLOSURE));
 
-    close_upvalues(machine.stack.main->as + (COUNT() - 1));
+    close_upvalues();
     return run();
 }
 Interpretation interpret_path(const char *src, const char *path, const char *name)
@@ -256,9 +258,15 @@ Interpretation interpret_path(const char *src, const char *path, const char *nam
     call(clos, 0);
     machine.frames[machine.count.frame - 1].slots = machine.stack.main->as;
 
+    machine.stack.obj = GROW_STACK(NULL, func->objc);
+
+    define_native(Key("clock", 5), clock_native, 0);
+    define_native(Key("square", 6), square_native, 1);
+    define_native(Key("file", 4), file_native, 2);
+
     push(&machine.stack.main, GEN(clos, T_CLOSURE));
 
-    close_upvalues(machine.stack.main->as + (COUNT() - 1));
+    close_upvalues();
     return run();
 }
 
@@ -285,18 +293,19 @@ static bool call_value(element el, uint8_t argc)
     return false;
 }
 
-static upval *capture_upvalue(element *s)
+static upval *capture_upvalue(element *closed, uint8_t index)
 {
     upval *prev = NULL;
     upval *curr = machine.open_upvals;
 
-    for (; curr && curr->index && curr->index < s; curr = curr->next)
+    for (; curr && curr->index > index; curr = curr->next)
         prev = curr;
 
-    if (curr && curr->index == s)
+    if (curr && curr->index == index)
         return curr;
 
-    upval *new = _upval(s);
+    upval *new = NULL;
+    new = _upval(*(closed + index), index);
     new->next = curr;
 
     if (prev)
@@ -306,15 +315,11 @@ static upval *capture_upvalue(element *s)
     return new;
 }
 
-static void close_upvalues(element *local)
+static void close_upvalues(void)
 {
-    while (machine.open_upvals && machine.open_upvals->index >= local)
-    {
-        upval *up = machine.open_upvals;
-        up->closed = *machine.open_upvals->index;
-        up->index = &up->closed;
-        machine.open_upvals = up->next;
-    }
+    uint8_t local = COUNT() - 1;
+    for (; machine.open_upvals && machine.open_upvals->index >= local; machine.open_upvals = machine.open_upvals->next)
+        ;
 }
 
 static bool not_null(element el)
@@ -353,7 +358,7 @@ static bool null(element el)
 Interpretation run(void)
 {
 
-    CallFrame *frame = &machine.frames[machine.count.frame - 1];
+    CallFrame *frame = machine.frames + (machine.count.frame - 1);
 
 #define READ_BYTE() \
     (*frame->ip++)
@@ -377,6 +382,9 @@ Interpretation run(void)
 #define NPEEK(N) \
     (*(machine.stack.main->as + (COUNT() - 1 - N)))
 
+#define UPVALUE() \
+    ((*(frame->closure->upvals + READ_BYTE()))->closed)
+
 #define FALSEY() \
     (!PEEK().val.Bool)
 #define TRUTHY() \
@@ -387,10 +395,11 @@ Interpretation run(void)
 #define NLOCAL(n) \
     (*(frame->slots + n))
 
-#define GET_OBJ() \
-    get_object(&machine.stack.obj, READ_BYTE())
+#define OBJECT() \
+    (*(machine.stack.obj->as + READ_BYTE()))
+
 #define SET_OBJ(el) \
-    set_object(&machine.stack.obj, READ_BYTE(), el)
+    ((OBJECT() = el))
 
 #define GET(ar) \
     (find_entry(&machine.glob, ar))
@@ -420,7 +429,7 @@ Interpretation run(void)
             for (int i = 0; i < CLOSURE(e)->uargc; i++)
                 CLOSURE(e)->upvals[i] =
                     (READ_BYTE())
-                        ? capture_upvalue(frame->slots + READ_BYTE())
+                        ? capture_upvalue(frame->slots, READ_BYTE())
                         : frame->closure->upvals[READ_BYTE()];
         }
         break;
@@ -431,18 +440,19 @@ Interpretation run(void)
             for (int i = 0; i < CLOSURE(e)->uargc; i++)
                 CLOSURE(e)->upvals[i] =
                     (READ_BYTE())
-                        ? capture_upvalue(frame->slots + READ_BYTE())
+                        ? capture_upvalue(frame->slots, READ_BYTE())
                         : frame->closure->upvals[READ_BYTE()];
         }
         break;
 
         case OP_GET_UPVALUE:
-            PUSH((*frame->closure->upvals + READ_BYTE())->closed);
+            PUSH(UPVALUE());
             break;
         case OP_SET_UPVALUE:
-            ((*frame->closure->upvals + READ_BYTE()))->closed = PEEK();
+            UPVALUE() = PEEK();
             break;
-
+        case OP_CLOSE_UPVAL:
+            break;
         case OP_NEG:
             *(machine.stack.main->as + --COUNT()) = _neg(*(machine.stack.main->as + COUNT()++));
             break;
@@ -516,7 +526,7 @@ Interpretation run(void)
         case OP_SET_PROP:
         {
             element el = PEEK();
-            element inst = NPEEK(1);
+            // element inst = NPEEK(1);
             if (!machine.current_instance && !machine.init_fields)
             {
                 runtime_error("ERROR: Can only set properties of an instance.");
@@ -609,20 +619,20 @@ Interpretation run(void)
 
             break;
         case OP_GET_OBJ:
-            PUSH(GET_OBJ());
+            PUSH(OBJECT());
             break;
         case OP_SET_OBJ:
             SET_OBJ(READ_CONSTANT());
             break;
         case OP_CLASS:
         {
-            class *c = CLASS(GET_OBJ());
+            class *c = CLASS(OBJECT());
             machine.init_fields = c->closures;
             PUSH(GEN(c->init, T_CLOSURE));
             break;
         }
         case OP_ALLOC_INSTANCE:
-            machine.current_instance = _instance(CLASS(GET_OBJ()));
+            machine.current_instance = _instance(CLASS(OBJECT()));
             machine.current_instance->fields =
                 (machine.init_fields)
                     ? machine.init_fields

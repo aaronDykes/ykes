@@ -1,7 +1,8 @@
-#include "arena.h"
+#include "object.h"
 #include <string.h>
 #include <stdio.h>
 
+/*
 static int hash(element key)
 {
     int index = 2166136261u;
@@ -28,6 +29,7 @@ static int hash(element key)
     }
     return index;
 }
+*/
 int hash_key(char *str)
 {
     int index = 2166136261u;
@@ -100,6 +102,14 @@ element Null(void)
     return ar;
 }
 
+element StringCpy(const char *str, size_t size)
+{
+    value ar;
+    ar.String = NULL;
+    ar.String = (char *)str;
+    ar.len = size;
+    return OBJ(ar, T_STR);
+}
 element String(const char *str, size_t size)
 {
     value ar;

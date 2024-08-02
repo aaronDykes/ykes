@@ -1,5 +1,5 @@
-#include "arena_math.h"
-#include "arena_string.h"
+#include "object_math.h"
+#include "object_string.h"
 #include "error.h"
 #include <math.h>
 

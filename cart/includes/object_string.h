@@ -1,14 +1,8 @@
-#ifndef _ARENA_STRING_H
-#define _ARENA_STRING_H
-#include "arena.h"
+#ifndef _OBJECT_STRING_H
+#define _OBJECT_STRING_H
+#include "object.h"
 
-static void str_swap(char *from, char *to);
-static void string_rev(char *c);
-static int intlen(int n);
-static int longlen(long long int n);
-static char *itoa(char *c, int n);
-static char *lltoa(char *c, long long int n);
-
+element lltoa(long long int n);
 element append(element s, element ar);
 
 element string_eq(element s, element c);

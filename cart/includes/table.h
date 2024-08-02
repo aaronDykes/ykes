@@ -1,5 +1,5 @@
-#ifndef _arena_table_H
-#define _arena_table_H
+#ifndef _TABLE_H
+#define _TABLE_H
 
 #include "stack.h"
 

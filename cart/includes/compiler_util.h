@@ -1,7 +1,7 @@
 #ifndef _COMPILER_UTIL_H
 #define _COMPILER_UTIL_H
 #include "scanner.h"
-#include "arena_memory.h"
+#include "object_memory.h"
 
 #define LOCAL_COUNT 255
 #define CALL_COUNT 255

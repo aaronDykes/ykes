@@ -3,7 +3,7 @@ sr is_prime(l)
 {
     var n = square(l);
 
-    for (var i = 2; i < n; i++)
+    for (var i = 2; i < n; i+=1)
         if (l % i == 0)
             return false;
     return true;
@@ -11,7 +11,7 @@ sr is_prime(l)
 
 sr print_prime(n)
 {
-    for (var i = 3; i < n; i++)
+    for (var i = 3; i < n; i+=1)
     {
         if (is_prime(i))
             pout(i);
@@ -19,10 +19,16 @@ sr print_prime(n)
 }
 
 
-var start = clock();
-print_prime(100000);
-pout(clock() - start);
+sr res()
+{
 
+    var start = clock();
+    print_prime(100000);
+    pout(clock() - start);
+
+}
+
+res();
 
 
 

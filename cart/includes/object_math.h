@@ -1,6 +1,6 @@
-#ifndef _ARENA_MATH_H
-#define _ARENA_MATH_H
-#include "arena.h"
+#ifndef _OBJECT_MATH_H
+#define _OBJECT_MATH_H
+#include "object.h"
 
 element _neg(element n);
 element _add(element a, element b);

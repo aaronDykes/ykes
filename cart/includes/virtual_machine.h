@@ -49,7 +49,6 @@ struct vm
     CallFrame frames[FRAMES_MAX];
     vm_stack stack;
 
-    element pop_val;
     instance *current_instance;
     table *init_fields;
     upval *open_upvals;

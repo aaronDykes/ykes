@@ -56,6 +56,8 @@ static void merge_list(void)
 void _free_(void *new)
 {
 
+    if (!new)
+        return;
     _free *ptr = NULL;
     ptr = PTR(new);
 

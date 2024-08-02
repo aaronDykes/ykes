@@ -1,10 +1,10 @@
-#include "arena_memory.h"
+#include "object_memory.h"
 #include "chunk.h"
 
 static void free_entry_list(record *entry);
 static void free_instance(instance *ic);
 static void free_stack(stack *stack);
-static void free_upvals(upval **up);
+static void free_upvals(upval **up, uint8_t uargc);
 static void free_closure(closure *closure);
 static void free_upval(upval *up);
 static void free_native(native *nat);
@@ -75,17 +75,12 @@ stack *realloc_stack(stack *st, size_t size)
 upval **upvals(size_t size)
 {
     upval **up = NULL;
-    up = ALLOC((sizeof(upval *) * size) + sizeof(upval *));
+    up = ALLOC((sizeof(upval *) * size));
 
-    *up = NULL;
-    *up = ALLOC(sizeof(upval));
-
-    (*up)->len = size;
-
-    for (size_t i = 1; i < size; i++)
+    for (size_t i = 0; i < size; i++)
         up[i] = NULL;
 
-    return up + 1;
+    return up;
 }
 native *_native(NativeFn func, _key ar)
 {
@@ -100,6 +95,7 @@ closure *_closure(function *func)
     closure *clos = NULL;
     clos = ALLOC(sizeof(closure));
     clos->func = func;
+    clos->upvals = NULL;
     if (!func)
     {
         clos->uargc = 0;
@@ -107,19 +103,17 @@ closure *_closure(function *func)
     }
     if (func->uargc > 0)
         clos->upvals = upvals(func->uargc);
-    else
-        clos->upvals = NULL;
     clos->uargc = func->uargc;
 
     return clos;
 }
-upval *_upval(element *index)
+upval *_upval(element closed, uint8_t index)
 {
     upval *up = NULL;
     up = ALLOC(sizeof(upval));
     up->index = index;
-    up->closed = *index;
     up->next = NULL;
+    up->closed = closed;
     return up;
 }
 static void free_entry(record *entry)
@@ -195,35 +189,41 @@ static void free_stack(stack *stack)
     FREE(stack);
     stack = NULL;
 }
-static void free_upvals(upval **up)
+static void free_upval(upval *up)
 {
     if (!up)
         return;
-    if (!((*up) - 1))
-        return;
-    for (size_t i = 0; i < ((*up) - 1)->len; i++)
-        (*up)[i].index = NULL;
+    upval *tmp = NULL;
 
-    FREE(((*up) - 1));
-    FREE((up - 1));
-    --up;
+    while (up)
+    {
+        tmp = up->next;
+        FREE(tmp);
+        up = tmp;
+    }
+    up = NULL;
+    tmp = NULL;
+}
+
+static void free_upvals(upval **up, uint8_t uargc)
+{
+    if (!*up)
+        return;
+    for (size_t i = 0; i < uargc; i++)
+        free_upval(up[i]);
+
+    FREE(up);
     up = NULL;
 }
+
 static void free_closure(closure *closure)
 {
     if (!closure)
         return;
 
-    free_upvals(closure->upvals);
+    free_upvals(closure->upvals, closure->uargc);
     FREE(closure);
     closure = NULL;
-}
-static void free_upval(upval *up)
-{
-    if (!up)
-        return;
-    up->index = NULL;
-    up->next = NULL;
 }
 static void free_native(native *nat)
 {
@@ -282,15 +282,15 @@ void free_obj(element el)
     case T_INSTANCE:
         free_instance(INSTANCE(el));
         break;
+    case T_UPVAL:
+        free_upval(UPVAL(el));
+        break;
     case T_METHOD:
     case T_CLOSURE:
         free_closure(CLOSURE(el));
         break;
     case T_FUNCTION:
         free_function(FUNC(el));
-        break;
-    case T_UPVALS:
-        free_upvals((upval **)el.upvals);
         break;
     case T_STACK:
     {
