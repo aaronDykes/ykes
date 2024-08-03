@@ -82,10 +82,15 @@ static bool call(closure *c, uint8_t argc)
         return false;
     }
 
-    CallFrame *frame = &machine.frames[machine.count.frame++];
+    CallFrame *frame = machine.frames + machine.count.frame++;
+
+    frame->closure = NULL;
+    frame->ip = NULL;
+    frame->ip_return = NULL;
+    frame->slots = NULL;
+
     frame->closure = c;
     frame->ip = c->func->ch.ip;
-    frame->ip_return = c->func->ch.ip;
     frame->return_index = machine.stack.main->count - (argc + 1);
     frame->slots = (machine.stack.main->as + (COUNT() - (argc + 1)));
     return true;
@@ -225,9 +230,9 @@ Interpretation run(void)
     register uint8_t *ip = frame->ip;
     register uint8_t *ip_tmp = NULL;
     register uint16_t offset = 0;
-    register element obj;
-    _key key;
     register uint8_t argc = 0;
+    element obj;
+    _key key;
 
 #define READ_BYTE() \
     (*ip++)
@@ -267,11 +272,11 @@ Interpretation run(void)
 
 #define OBJECT() \
     (*(machine.stack.obj->as + READ_BYTE()))
-#define NOBJECT(n) \
+#define NOB_JECT(n) \
     (*(machine.stack.obj->as + n))
 
 #define SET_OBJ(n, el) \
-    ((NOBJECT(n) = el))
+    ((NOB_JECT(n) = el))
 
 #define GET(ar) \
     (find_entry(&machine.glob, &ar))
@@ -425,8 +430,7 @@ Interpretation run(void)
 
         case OP_CALL:
         {
-            argc = READ_BYTE();
-
+            uint8_t argc = READ_BYTE();
             uint8_t is_closure = 0;
 
             if (NPEEK(argc).type == T_CLOSURE)
@@ -578,20 +582,18 @@ Interpretation run(void)
             print(*POP());
             break;
         case OP_RETURN:
-        {
-            element *el = POP();
+            obj = *POP();
             --machine.count.frame;
 
             if (machine.count.frame == 0)
                 return INTERPRET_SUCCESS;
 
             machine.stack.main->count = frame->return_index;
-            PUSH(*el);
+            PUSH(obj);
 
             ip = frame->ip_return;
             frame = &machine.frames[machine.count.frame - 1];
             break;
-        }
         }
     }
 #undef READ_BYTE
