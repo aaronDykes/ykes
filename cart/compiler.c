@@ -55,7 +55,7 @@ static void init_compiler(compiler *a, compiler *b, compiler_t type, _key name)
     _local->captured = false;
 }
 
-static void consume(int t, const char *err, parser *parser)
+static void consume(token_t t, const char *err, parser *parser)
 {
     if (parser->cur.type == t)
     {
@@ -218,6 +218,12 @@ static void class_declaration(compiler *c)
 
     emit_bytes(c, OP_SET_OBJ, c->base->count.obj++);
     emit_byte(c, add_constant(&c->func->ch, GEN(classc, T_CLASS)));
+
+    if (match(TOKEN_CH_SEMI, &c->parser))
+    {
+        c->class_compiler = c->class_compiler->enclosing;
+        return;
+    }
 
     consume(TOKEN_CH_LCURL, "ERROR: Expect ze `{` curl brace", &c->parser);
 
@@ -436,6 +442,8 @@ static void synchronize(parser *parser)
         case TOKEN_PRINT:
         case TOKEN_RETURN:
             return;
+        default:
+            break;
         }
         advance_compiler(parser);
     }
@@ -804,14 +812,14 @@ static void block(compiler *c)
     end_scope(c);
 }
 
-static bool match(int t, parser *parser)
+static bool match(token_t t, parser *parser)
 {
     if (!check(t, parser))
         return false;
     advance_compiler(parser);
     return true;
 }
-static bool check(int t, parser *parser)
+static bool check(token_t t, parser *parser)
 {
     return parser->cur.type == t;
 }
@@ -825,6 +833,101 @@ static void grouping(compiler *c)
     expression(c);
     consume(TOKEN_CH_RPAREN, "Expect `)` after expression", &c->parser);
 }
+
+static void storage_type(compiler *c)
+{
+    switch (c->parser.cur.type)
+    {
+    case TOKEN_STORAGE_TYPE_NUM:
+    case TOKEN_STORAGE_TYPE_CHAR:
+    case TOKEN_STORAGE_TYPE_BOOL:
+    case TOKEN_STORAGE_TYPE_STR:
+        advance_compiler(&c->parser);
+        return;
+    default:
+        error("Expected a destination storage type");
+        exit(1);
+    }
+}
+
+static void cast(compiler *c)
+{
+    token_t from = c->parser.pre.type;
+
+    consume(TOKEN_OP_CAST, "Expected `->` cast operator prior to destination type", &c->parser);
+
+    storage_type(c);
+
+    token_t to = c->parser.pre.type;
+
+    expression(c);
+
+    cast_t op;
+    switch (from)
+    {
+    case TOKEN_STORAGE_TYPE_NUM:
+        switch (to)
+        {
+        case TOKEN_STORAGE_TYPE_CHAR:
+            op = CAST_NUM_CHAR;
+            break;
+        case TOKEN_STORAGE_TYPE_STR:
+            op = CAST_NUM_STR;
+            break;
+        default:
+            return;
+        }
+        break;
+    case TOKEN_STORAGE_TYPE_CHAR:
+        switch (to)
+        {
+        case TOKEN_STORAGE_TYPE_NUM:
+            op = CAST_CHAR_NUM;
+            break;
+        case TOKEN_STORAGE_TYPE_STR:
+            op = CAST_CHAR_STR;
+            break;
+        default:
+            return;
+        }
+        break;
+    case TOKEN_STORAGE_TYPE_BOOL:
+        switch (to)
+        {
+        case TOKEN_STORAGE_TYPE_NUM:
+            op = CAST_BOOL_NUM;
+            break;
+        case TOKEN_STORAGE_TYPE_STR:
+            op = CAST_BOOL_STR;
+            break;
+        default:
+            return;
+        }
+        break;
+    case TOKEN_STORAGE_TYPE_STR:
+        switch (to)
+        {
+        case TOKEN_STORAGE_TYPE_NUM:
+            op = CAST_STR_NUM;
+            break;
+        case TOKEN_STORAGE_TYPE_BOOL:
+            op = CAST_STR_BOOL;
+            break;
+        case TOKEN_STORAGE_TYPE_CHAR:
+            op = CAST_STR_CHAR;
+            break;
+        default:
+            return;
+        }
+        break;
+
+    default:
+        return;
+    }
+
+    emit_bytes(c, OP_CAST, op);
+}
+
 static PRule *get_rule(int t)
 {
     return &rules[t];
@@ -1077,7 +1180,7 @@ static void boolean(compiler *c)
 }
 static _key parse_string(compiler *c)
 {
-    return Key((char *)++c->parser.pre.start, c->parser.pre.size - 2);
+    return Key((char *)++c->parser.pre.start, c->parser.pre.size - 1);
 }
 
 static void stack_alloc(compiler *c)

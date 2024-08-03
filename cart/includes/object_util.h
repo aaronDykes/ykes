@@ -74,6 +74,8 @@ typedef enum
     OP_AND_ASSIGN,
     OP__OR_ASSIGN,
 
+    OP_CAST,
+
     OP_NEG,
     OP_INC,
     OP_DEC,
@@ -109,9 +111,22 @@ typedef enum
     OP_METHOD,
 
     OP_NOOP,
-    OP_RETURN
+    OP_RETURN,
 
-} opcode;
+} opcode_t;
+
+typedef enum
+{
+    CAST_NUM_CHAR,
+    CAST_NUM_STR,
+    CAST_CHAR_NUM,
+    CAST_CHAR_STR,
+    CAST_BOOL_NUM,
+    CAST_BOOL_STR,
+    CAST_STR_NUM,
+    CAST_STR_BOOL,
+    CAST_STR_CHAR,
+} cast_t;
 
 typedef enum
 {

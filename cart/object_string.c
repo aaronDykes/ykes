@@ -1,5 +1,6 @@
 #include "object_string.h"
 #include "error.h"
+#include "object_memory.h"
 #include <string.h>
 
 static void str_swap(char *from, char *to)
@@ -52,6 +53,46 @@ element lltoa(long long int n)
 
     return StringCpy(ch, size);
 }
+element char_to_str(char ch)
+{
+
+    char *tmp = NULL;
+    tmp = ALLOC(2);
+    *tmp = ch;
+    *(tmp + 1) = '\0';
+
+    return StringCpy(tmp, 1);
+}
+element str_to_num(element *a)
+{
+    Long ll = atoll(a->val.String);
+    free_obj(*a);
+    return Num(ll);
+}
+element str_to_bool(element *a)
+{
+    element obj;
+
+    if (strcmp(a->val.String, "true") == 0)
+        obj = Bool(1);
+    else if (strcmp(a->val.String, "false") == 0)
+        obj = Bool(0);
+    else
+    {
+        error("Invalid cast to boolean type");
+        exit(1);
+    }
+
+    free_obj(*a);
+    return obj;
+}
+
+element str_to_char(element *a)
+{
+    char ch = *a->val.String;
+    free_obj(*a);
+    return Char(ch);
+}
 
 static element realloc_string(value ar, size_t size)
 {
@@ -61,7 +102,7 @@ static element realloc_string(value ar, size_t size)
 }
 static element append_str_to_str(element *s, element *str)
 {
-    int new = s->val.len + str->val.len - 1;
+    int new = s->val.len + str->val.len;
     *s = realloc_string(s->val, new * sizeof(char));
     strcat(s->val.String, str->val.String);
     s->val.String[new] = '\0';

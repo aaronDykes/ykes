@@ -76,6 +76,22 @@ static record Entry(_key key, element val)
     return el;
 }
 
+table *copy_table(table *t)
+{
+
+    table *ptr = NULL;
+
+    ptr = alloc_table(t->len);
+
+    for (size_t i = 0; i < t->len; i++)
+        if ((t->records + i)->key.val)
+        {
+            size_t index = (t->records + i)->key.hash & (t->len - 1);
+            *(ptr->records + index) = *(t->records + i);
+        }
+
+    return ptr;
+}
 table *realloc_table(table *t, size_t size)
 {
 

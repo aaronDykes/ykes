@@ -2,9 +2,8 @@
 #ifndef _TOKEN_TYPE_H
 #define _TOKEN_TYPE_H
 
-enum
+typedef enum
 {
-
     TOKEN_CH_LPAREN,
     TOKEN_CH_RPAREN,
     TOKEN_CH_LCURL,
@@ -49,6 +48,7 @@ enum
     TOKEN_AND_ASSIGN,
     TOKEN_OR__ASSIGN,
 
+    TOKEN_OP_CAST,
     TOKEN_OP_BANG,
 
     TOKEN_OP_SEQ,
@@ -81,14 +81,12 @@ enum
     TOKEN_TYPE_STACK,
     TOKEN_TYPE_TABLE,
 
-    TOKEN_INCLUDE,
+    TOKEN_STORAGE_TYPE_NUM,
+    TOKEN_STORAGE_TYPE_CHAR,
+    TOKEN_STORAGE_TYPE_BOOL,
+    TOKEN_STORAGE_TYPE_STR,
 
-    TOKEN_TYPE_BYTE,
-    TOKEN_TYPE_STRING,
-    TOKEN_TYPE_INT,
-    TOKEN_TYPE_LONG,
-    TOKEN_TYPE_DOUBLE,
-    TOKEN_TYPE_CHAR,
+    TOKEN_INCLUDE,
 
     // Keywords.
     TOKEN_CLASS,
@@ -126,6 +124,6 @@ enum
 
     TOKEN_ERR,
     TOKEN_EOF
-};
+} token_t;
 
 #endif

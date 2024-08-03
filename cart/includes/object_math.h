@@ -16,6 +16,8 @@ element _gt(element *a, element *b);
 element _ge(element *a, element *b);
 element _or(element *a, element *b);
 element _and(element *a, element *b);
+
+element _cast(element *a, cast_t type);
 element _inc(element *b);
 element _dec(element *b);
 element _sqr(element *a);

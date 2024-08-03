@@ -143,7 +143,7 @@ struct parse_rule
     prec_t prec;
 };
 
-static void consume(int t, const char *str, parser *parser);
+static void consume(token_t t, const char *str, parser *parser);
 static void advance_compiler(parser *parser);
 
 static void declaration(compiler *c);
@@ -199,8 +199,8 @@ static void return_statement(compiler *c);
 static void default_expression(compiler *c);
 static void expression(compiler *c);
 
-static bool match(int t, parser *parser);
-static bool check(int t, parser *parser);
+static bool match(token_t t, parser *parser);
+static bool check(token_t t, parser *parser);
 static bool is_comment(parser *parser);
 
 static void grouping(compiler *c);
@@ -209,6 +209,8 @@ static void parse_precedence(prec_t precedence, compiler *c);
 
 static void _and(compiler *c);
 static void _or(compiler *c);
+
+static void cast(compiler *c);
 
 static void binary(compiler *c);
 static void unary(compiler *c);
@@ -337,12 +339,11 @@ static PRule rules[] = {
     [TOKEN_THIS] = {_this, NULL, PREC_NONE},
     [TOKEN_VAR] = {NULL, NULL, PREC_NONE},
     [TOKEN_TYPE_ARRAY] = {NULL, NULL, PREC_NONE},
-    [TOKEN_TYPE_INT] = {NULL, NULL, PREC_NONE},
-    [TOKEN_TYPE_DOUBLE] = {NULL, NULL, PREC_NONE},
-    [TOKEN_TYPE_LONG] = {NULL, NULL, PREC_NONE},
-    [TOKEN_TYPE_STRING] = {NULL, NULL, PREC_NONE},
-    [TOKEN_TYPE_CHAR] = {NULL, NULL, PREC_NONE},
-    [TOKEN_TYPE_BYTE] = {NULL, NULL, PREC_NONE},
+
+    [TOKEN_STORAGE_TYPE_NUM] = {cast, NULL, PREC_CALL},
+    [TOKEN_STORAGE_TYPE_STR] = {cast, NULL, PREC_CALL},
+    [TOKEN_STORAGE_TYPE_CHAR] = {cast, NULL, PREC_CALL},
+    [TOKEN_STORAGE_TYPE_BOOL] = {cast, NULL, PREC_CALL},
 
     [TOKEN_PI] = {pi, NULL, PREC_NONE},
     [TOKEN_EULER] = {euler, NULL, PREC_NONE},

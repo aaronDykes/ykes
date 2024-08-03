@@ -1,9 +1,39 @@
-import "./test1.yk";
+class Struct {}
 
 
-var t = Tables();
-t.tables();
 
-rm(t);
+var s = Struct();
+var b = Struct();
+
+b.a = 'A';
+b.a += 1;
+
+b.b = num -> char(65);
+b.b = char -> string(b.b);
+b.b += ", Fuck \nshit!\n";
+
+b.z = "true";
+b.z = string -> bool(b.z);
+
+b.c = 'R';
+b.d = 'O';
+b.e = 'N';
+
+s.a = 'A';
+s.b = 66;
+s.c = 'c';
+
+
+
+
+pout(b.a, b.b, b.c, b.d, b.e, b.z, s.a, s.b, s.c);
+
+rm(s);
+rm(b);
+
+
+
+
+
 
  

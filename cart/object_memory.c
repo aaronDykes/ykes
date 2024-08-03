@@ -1,7 +1,7 @@
 #include "object_memory.h"
 #include "chunk.h"
 
-static void free_entry_list(record *entry);
+static void free_entry_list(record entry);
 static void free_instance(instance *ic);
 static void free_stack(stack *stack);
 static void free_upvals(upval **up, uint8_t uargc);
@@ -121,15 +121,13 @@ static void free_entry(record *entry)
 
     free_obj(entry->val);
     FREE(entry->key.val);
-
-    entry = NULL;
 }
-static void free_entry_list(record *entry)
+static void free_entry_list(record entry)
 {
     record *tmp = NULL;
     record *next = NULL;
-    tmp = entry->next;
-    free_entry(entry);
+    tmp = entry.next;
+    free_entry(&entry);
 
     while (tmp)
     {
@@ -143,8 +141,6 @@ void free_table(table *t)
     if (!t)
         return;
 
-    size_t size = t->len;
-
     if (t->count == 0)
     {
         FREE(t->records);
@@ -153,8 +149,16 @@ void free_table(table *t)
         t = NULL;
         return;
     }
-    for (size_t i = 0; i < size; i++)
-        free_entry_list(&t->records[i]);
+    if (!t->records)
+    {
+        FREE(t);
+        t = NULL;
+        return;
+    }
+
+    for (size_t i = 0; i < t->len; i++)
+        if (t->records[i].key.val)
+            free_entry_list(t->records[i]);
 
     FREE(t->records);
     t->records = NULL;
@@ -207,7 +211,7 @@ static void free_upval(upval *up)
 
 static void free_upvals(upval **up, uint8_t uargc)
 {
-    if (!*up)
+    if (!up)
         return;
     for (size_t i = 0; i < uargc; i++)
         free_upval(up[i]);

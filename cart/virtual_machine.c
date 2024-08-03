@@ -372,6 +372,9 @@ Interpretation run(void)
         case OP_LE:
             PUSH(_le(POP(), POP()));
             break;
+        case OP_CAST:
+            PUSH(_cast(POP(), READ_BYTE()));
+            break;
         case OP_GT:
             PUSH(_gt(POP(), POP()));
             break;
@@ -516,7 +519,7 @@ Interpretation run(void)
         case OP_CLASS:
         {
             class *c = CLASS(OBJECT());
-            machine.init_fields = c->closures;
+            machine.init_fields = copy_table(c->closures);
             PUSH(GEN(c->init, T_CLOSURE));
         }
         break;
@@ -525,7 +528,7 @@ Interpretation run(void)
             machine.current_instance->fields =
                 (machine.init_fields)
                     ? machine.init_fields
-                    : machine.current_instance->classc->closures;
+                    : copy_table(machine.current_instance->classc->closures);
             machine.init_fields = NULL;
             PUSH(GEN(machine.current_instance, T_INSTANCE));
             break;

@@ -22,22 +22,48 @@ element _neg(element *a)
 
 element _add(element *a, element *b)
 {
-    if (a->type != b->type)
-    {
-        error("Invalid comparison");
-        exit(1);
-    }
 
     switch (b->type)
     {
     case T_NUM:
-        return Num(a->val.Num + b->val.Num);
+        return Num(b->val.Num + a->val.Num);
     case T_CHAR:
-        return Char(a->val.Char + b->val.Num);
+        return Char(b->val.Char + a->val.Num);
     case T_STR:
         return append(b, a);
     default:
         error("Invalid type for `++` operation");
+        exit(1);
+    }
+}
+
+element _cast(element *a, cast_t type)
+{
+
+    switch (type)
+    {
+    case CAST_NUM_CHAR:
+        return Char((char)a->val.Num);
+    case CAST_NUM_STR:
+        return lltoa((Long)a->val.Num);
+    case CAST_CHAR_NUM:
+        return Num((Long)a->val.Char);
+    case CAST_CHAR_STR:
+        return char_to_str(a->val.Char);
+    case CAST_BOOL_NUM:
+        return Num(a->val.Bool);
+    case CAST_BOOL_STR:
+        return String(
+            (a->val.Bool) ? "true" : "false",
+            (a->val.Bool) ? 4 : 5);
+    case CAST_STR_NUM:
+        return str_to_num(a);
+    case CAST_STR_BOOL:
+        return str_to_bool(a);
+    case CAST_STR_CHAR:
+        return str_to_char(a);
+    default:
+        error("Invalid cast type: %d\n", type);
         exit(1);
     }
 }

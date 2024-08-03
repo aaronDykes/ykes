@@ -140,6 +140,7 @@ _key Key(const char *str, size_t size)
 static void parse_str(const char *str)
 {
     char *s = (char *)str;
+    // printf("\"");
 
     for (; *s; s++)
         if (*s == '\\' && s[1] == 'n')
@@ -148,6 +149,7 @@ static void parse_str(const char *str)
             printf("\t"), s++;
         else
             printf("%c", *s);
+    // printf("\"");
 }
 
 void print(element ar)
@@ -172,7 +174,7 @@ void print(element ar)
         break;
 
     case T_CHAR:
-        printf("%c\n", ar.val.Char);
+        printf("'%c'\n", ar.val.Char);
         break;
     case T_NUM:
         printf("%f\n", ar.val.Num);
@@ -181,6 +183,7 @@ void print(element ar)
         printf("%s\n", (ar.val.Bool) ? "true" : "false");
         break;
     case T_STR:
+
         parse_str(ar.val.String);
         printf("\n");
         break;
