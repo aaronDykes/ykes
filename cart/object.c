@@ -1,6 +1,6 @@
 #include "object.h"
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
 /*
 static int hash(element key)
@@ -32,166 +32,166 @@ static int hash(element key)
 */
 int hash_key(char *str)
 {
-    int index = 2166136261u;
+	int index = 2166136261u;
 
-    for (char *s = str; *s; s++)
-    {
-        index ^= (int)*s;
-        index *= 16777619;
-    }
+	for (char *s = str; *s; s++)
+	{
+		index ^= (int)*s;
+		index *= 16777619;
+	}
 
-    return index;
+	return index;
 }
 
 element generic_obj(void *obj, obj_t type)
 {
-    element s;
-    s.obj = obj;
-    s.type = type;
-    return s;
+	element s;
+	s.obj  = obj;
+	s.type = type;
+	return s;
 }
 
 element key_obj(_key key)
 {
-    element s;
-    s.key = key;
-    s.type = T_KEY;
-    return s;
+	element s;
+	s.key  = key;
+	s.type = T_KEY;
+	return s;
 }
 
 element value_obj(value val, obj_t type)
 {
-    element s;
-    s.val = val;
-    s.type = type;
-    return s;
+	element s;
+	s.val  = val;
+	s.type = type;
+	return s;
 }
 
 element Char(char Char)
 {
-    value ar;
-    ar.Char = Char;
-    return OBJ(ar, T_CHAR);
+	value ar;
+	ar.Char = Char;
+	return OBJ(ar, T_CHAR);
 }
 element Num(double Num)
 {
-    value ar;
-    ar.Num = Num;
-    return OBJ(ar, T_NUM);
+	value ar;
+	ar.Num = Num;
+	return OBJ(ar, T_NUM);
 }
 
 element NumType(double Num, obj_t type)
 {
-    value ar;
-    ar.Num = Num;
-    return OBJ(ar, type);
+	value ar;
+	ar.Num = Num;
+	return OBJ(ar, type);
 }
 
 element Bool(bool Bool)
 {
-    value ar;
-    ar.Bool = Bool;
-    return OBJ(ar, T_BOOL);
+	value ar;
+	ar.Bool = Bool;
+	return OBJ(ar, T_BOOL);
 }
 
 element Null(void)
 {
-    element ar;
-    ar.type = T_NULL;
-    ar.obj = NULL;
-    return ar;
+	element ar;
+	ar.type = T_NULL;
+	ar.obj  = NULL;
+	return ar;
 }
 
 element StringCpy(const char *str, size_t size)
 {
-    value ar;
-    ar.String = NULL;
-    ar.String = (char *)str;
-    ar.len = size;
-    return OBJ(ar, T_STR);
+	value ar;
+	ar.String = NULL;
+	ar.String = (char *)str;
+	ar.len    = size;
+	return OBJ(ar, T_STR);
 }
 element String(const char *str, size_t size)
 {
-    value ar;
-    ar.String = NULL;
-    ar.String = ALLOC(size);
-    memcpy(ar.String, str, size);
-    ar.String[size] = '\0';
-    ar.len = size;
-    return OBJ(ar, T_STR);
+	value ar;
+	ar.String = NULL;
+	ar.String = ALLOC(size);
+	memcpy(ar.String, str, size);
+	ar.String[size] = '\0';
+	ar.len          = size;
+	return OBJ(ar, T_STR);
 }
 
 element KeyObj(const char *str, size_t size)
 {
-    return KEY(Key(str, size));
+	return KEY(Key(str, size));
 }
 _key Key(const char *str, size_t size)
 {
-    _key ar;
-    ar.val = NULL;
-    ar.val = ALLOC(size);
-    memcpy(ar.val, str, size);
-    ar.val[size] = '\0';
-    int k = hash_key(ar.val);
-    ar.hash = k;
-    return ar;
+	_key ar;
+	ar.val = NULL;
+	ar.val = ALLOC(size);
+	memcpy(ar.val, str, size);
+	ar.val[size] = '\0';
+	int k        = hash_key(ar.val);
+	ar.hash      = k;
+	return ar;
 }
 
 static void parse_str(const char *str)
 {
-    char *s = (char *)str;
-    // printf("\"");
+	char *s = (char *)str;
+	// printf("\"");
 
-    for (; *s; s++)
-        if (*s == '\\' && s[1] == 'n')
-            printf("\n"), s++;
-        else if (*s == '\\' && s[1] == 't')
-            printf("\t"), s++;
-        else
-            printf("%c", *s);
-    // printf("\"");
+	for (; *s; s++)
+		if (*s == '\\' && s[1] == 'n')
+			printf("\n"), s++;
+		else if (*s == '\\' && s[1] == 't')
+			printf("\t"), s++;
+		else
+			printf("%c", *s);
+	// printf("\"");
 }
 
 void print(element ar)
 {
 
-    switch (ar.type)
-    {
-    case T_NATIVE:
-        printf("<native: %s>\n", NATIVE(ar)->name.val);
-        break;
-    case T_CLOSURE:
-        printf("<fn: %s>\n", CLOSURE(ar)->func->name.val);
-        break;
-    case T_CLASS:
-        printf("<class: %s>\n", CLASS(ar)->name.val);
-        break;
-    case T_KEY:
-        printf("<id: %s>\n", ar.key.val);
-        break;
-    case T_INSTANCE:
-        printf("<instance: %s>\n", INSTANCE(ar)->classc->name.val);
-        break;
+	switch (ar.type)
+	{
+	case T_NATIVE:
+		printf("<native: %s>\n", NATIVE(ar)->name.val);
+		break;
+	case T_CLOSURE:
+		printf("<fn: %s>\n", CLOSURE(ar)->func->name.val);
+		break;
+	case T_CLASS:
+		printf("<class: %s>\n", CLASS(ar)->name.val);
+		break;
+	case T_KEY:
+		printf("<id: %s>\n", ar.key.val);
+		break;
+	case T_INSTANCE:
+		printf("<instance: %s>\n", INSTANCE(ar)->classc->name.val);
+		break;
 
-    case T_CHAR:
-        printf("'%c'\n", ar.val.Char);
-        break;
-    case T_NUM:
-        printf("%f\n", ar.val.Num);
-        break;
-    case T_BOOL:
-        printf("%s\n", (ar.val.Bool) ? "true" : "false");
-        break;
-    case T_STR:
+	case T_CHAR:
+		printf("'%c'\n", ar.val.Char);
+		break;
+	case T_NUM:
+		printf("%f\n", ar.val.Num);
+		break;
+	case T_BOOL:
+		printf("%s\n", (ar.val.Bool) ? "true" : "false");
+		break;
+	case T_STR:
 
-        parse_str(ar.val.String);
-        printf("\n");
-        break;
-    case T_NULL:
-        printf("[ null ]\n");
-        break;
+		parse_str(ar.val.String);
+		printf("\n");
+		break;
+	case T_NULL:
+		printf("[ null ]\n");
+		break;
 
-    default:
-        return;
-    }
+	default:
+		return;
+	}
 }

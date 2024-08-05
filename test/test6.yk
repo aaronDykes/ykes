@@ -1,17 +1,19 @@
-// import "functions/fizzbang.yk";
+import "functions/fizzbang.yk";
 // import "test1.yk";
 // import "oop/Zoo.yk";
-import "functions/prime.yk";
+// import "functions/prime.yk";
 // import "oop/CoffeeMaker.yk";
 // import "oop/Scone.yk";
-import "functions/fib.yk";
+// import "functions/fib.yk";
 // import "test3.yk";
 
 
 
-var p = Prime(100000);
+// var p = Prime(100000);
 // var f = FIB(35);
 
+var fb = Fizzbang();
+fb.res();
 
-p.res();
+// p.res();
 // f.res();

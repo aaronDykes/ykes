@@ -325,8 +325,6 @@ static int id_type(void)
             case 't':
                 switch (scan.start[2])
                 {
-                case 'r':
-                    return check_keyword(3, 3, "ing", TOKEN_ALLOC_STR);
                 case 'a':
                     return check_keyword(3, 2, "ck", TOKEN_ALLOC_STACK);
                 }

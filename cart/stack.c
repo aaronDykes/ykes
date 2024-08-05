@@ -6,7 +6,7 @@ static void check_stack_size(stack **s)
 
     if (!*s || !(*s)->as)
     {
-        *s = GROW_STACK(NULL, STACK_SIZE);
+        // *s = GROW_STACK(NULL, STACK_SIZE);
         return;
     }
     if ((*s)->count + 1 > (*s)->len)
@@ -33,6 +33,9 @@ void push(stack **s, element e)
 {
 
     check_stack_size(s);
+
+    if (!*s || !(*s)->as)
+        *s = GROW_STACK(NULL, STACK_SIZE);
 
     *((*s)->as + (*s)->count++) = e;
 }

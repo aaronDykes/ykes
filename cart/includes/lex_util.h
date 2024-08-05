@@ -20,9 +20,9 @@ static bool end(void);
 static bool digit(char c);
 static bool alpha(char c);
 
-static void skip_line_comment(void);
-static void skip_multi_line_comment(void);
-static void skip_whitespace(void);
+static void  skip_line_comment(void);
+static void  skip_multi_line_comment(void);
+static void  skip_whitespace(void);
 static token make_token(int t);
 static token err_token(const char *err);
 static token string(void);
