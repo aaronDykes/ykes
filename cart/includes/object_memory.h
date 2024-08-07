@@ -5,6 +5,7 @@
 #include "object.h"
 
 #define STACK_SIZE 64
+#define INIT_SIZE  16
 #define MIN_SIZE   8
 
 #define GROW_CAPACITY(capacity)                                                \
@@ -12,12 +13,12 @@
 
 #define GROW_STACK(st, size) realloc_stack(st, size)
 #define FREE_STACK(st)       realloc_stack(st, 0)
-
-#define FREE_OBJ(el) free_obj(el)
+#define FREE_OBJ(el)         free_obj(el)
 
 stack *_stack(size_t size);
 stack *realloc_stack(stack *stack, size_t size);
 
+vector   *_vector(size_t size, obj_t type);
 upval   **upvals(size_t size);
 closure  *_closure(function *func);
 upval    *_upval(element closed, uint8_t index);

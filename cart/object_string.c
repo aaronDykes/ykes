@@ -96,7 +96,7 @@ element str_to_char(element *a)
 
 static element realloc_string(value ar, size_t size)
 {
-	ar.String = REALLOC(ar.String, size);
+	ar.String = REALLOC(ar.String, ar.len, size);
 	ar.len    = size;
 	return OBJ(ar, T_STR);
 }
@@ -105,7 +105,7 @@ static element append_str_to_str(element *s, element *str)
 	int new = s->val.len + str->val.len;
 	*s      = realloc_string(s->val, new * sizeof(char));
 	strcat(s->val.String, str->val.String);
-	s->val.String[new] = '\0';
+	// s->val.String[new] = '\0';
 	FREE(str->val.String);
 	return *s;
 }
@@ -186,4 +186,35 @@ element string_le(element *s, element *c)
 	}
 
 	return Bool(strcmp(s->val.String, c->val.String) <= 0);
+}
+
+buffer _buffer(size_t size)
+{
+	buffer b;
+	b.bytes = NULL;
+	b.count = 0;
+	b.len   = size;
+	b.bytes = ALLOC(size);
+	return b;
+}
+void write_buffer(buffer *buf, char byte)
+{
+	if (!buf->bytes)
+		return;
+
+	if (buf->count + 1 > buf->len)
+	{
+
+		buf->bytes = REALLOC(buf->bytes, buf->len, buf->len * INC);
+		buf->len *= INC;
+	}
+
+	*(buf->bytes + buf->count++) = byte;
+}
+void free_buffer(buffer *buf)
+{
+	if (!buf->bytes)
+		return;
+	FREE(buf->bytes);
+	buf->bytes = NULL;
 }

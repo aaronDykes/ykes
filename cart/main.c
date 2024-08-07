@@ -9,7 +9,7 @@
 
 static void  repl(void);
 static void  run_file(const char *path);
-static char *read_file(const char *path);
+static char *read_file(char *path);
 
 int main(int argc, char **argv)
 {
@@ -121,7 +121,7 @@ static void run_file(const char *path)
 	strip_path((char *)path);
 
 	Interpretation result = interpret_path(source, path, name);
-	free(source);
+	FREE(source);
 
 	if (result == INTERPRET_COMPILE_ERR)
 		exit(65);
@@ -131,7 +131,7 @@ static void run_file(const char *path)
 	freeVM();
 }
 
-static char *read_file(const char *path)
+static char *read_file(char *path)
 {
 
 	FILE *file = NULL;
@@ -147,7 +147,7 @@ static char *read_file(const char *path)
 	size_t fileSize = ftell(file);
 	rewind(file);
 
-	char *buffer = malloc(fileSize + 1);
+	char *buffer = ALLOC(fileSize + 1);
 
 	if (!buffer)
 	{
@@ -158,6 +158,7 @@ static char *read_file(const char *path)
 	buffer[bytesRead] = '\0';
 
 	fclose(file);
+	FREE(path);
 	return buffer;
 
 	/*

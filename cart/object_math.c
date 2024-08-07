@@ -32,7 +32,22 @@ element _add(element *a, element *b)
 	case T_STR:
 		return append(b, a);
 	default:
-		error("Invalid type for `++` operation");
+		error("Invalid addition operation");
+		exit(1);
+	}
+}
+element _to_str(element *a)
+{
+	switch (a->type)
+	{
+	case T_NUM:
+		return lltoa(a->val.Num);
+	case T_CHAR:
+		return char_to_str(a->val.Char);
+	case T_CLASS:
+		return Null();
+	default:
+		error("Invalid string conversion");
 		exit(1);
 	}
 }

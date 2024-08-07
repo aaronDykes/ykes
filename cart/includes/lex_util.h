@@ -1,5 +1,6 @@
 #ifndef _LEX_UTIL_H
 #define _LEX_UTIL_H
+#include "scanner.h"
 
 static int id_type(void);
 static int check_keyword(int start, int end, const char *str, int t);
@@ -20,12 +21,13 @@ static bool end(void);
 static bool digit(char c);
 static bool alpha(char c);
 
-static void  skip_line_comment(void);
-static void  skip_multi_line_comment(void);
-static void  skip_whitespace(void);
+static void skip_line_comment(void);
+static void skip_multi_line_comment(void);
+static void skip_whitespace(void);
+
 static token make_token(int t);
 static token err_token(const char *err);
-static token string(void);
+static token string(token_t type);
 static token number(void);
 static token id(void);
 static token character(void);

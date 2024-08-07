@@ -16,4 +16,8 @@ element string_ge(element *s, element *c);
 element string_lt(element *s, element *c);
 element string_le(element *s, element *c);
 
+buffer _buffer(size_t size);
+void   write_buffer(buffer *buf, char byte);
+void   free_buffer(buffer *buf);
+
 #endif

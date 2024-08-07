@@ -232,6 +232,7 @@ static void num(compiler *c);
 static void ch(compiler *c);
 static void boolean(compiler *c);
 static void str(compiler *c);
+static void fmt_str(compiler *c);
 
 static _key parse_string(compiler *c);
 static void stack_alloc(compiler *c);
@@ -296,6 +297,7 @@ static PRule rules[] = {
     [TOKEN_EACH]               = {NULL,                 NULL,                      PREC_NONE      },
     [TOKEN_ID]                 = {id,                   NULL,                      PREC_NONE      },
     [TOKEN_STR]                = {str,                  NULL,                      PREC_NONE      },
+    [TOKEN_FMT_STR]            = {fmt_str,              NULL,                      PREC_NONE      },
     [TOKEN_ALLOC_STACK]        = {stack_alloc,          NULL,                      PREC_NONE      },
     [TOKEN_TABLE]              = {_table,               NULL,                      PREC_NONE      },
     [TOKEN_CH_TERNARY]         = {NULL,                 ternary_statement,         PREC_NONE      },

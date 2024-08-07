@@ -1,15 +1,13 @@
 
 class String {}
 
+var str = String();
 
 class Fizzbang
 {
 
-   
     res(n)
     {
-        var str = String();
-
         for (var i = 1; i < n; i++)
             if ((i % 15) == 0)
             {
@@ -29,11 +27,25 @@ class Fizzbang
             else
                 pout(i);
 
-        rm(str);
     }
 }
 
 
-var fizz = Fizzbang();
 
-fizz.res(100000);
+var fizz = Fizzbang();
+var time = clock();
+fizz.res(100);
+pout(clock() - time);
+
+pout(
+    `fizzbang to_string:
+    ${str.fb},
+    ${str.bang},
+    ${str.fizz}`
+);
+
+rm(fizz);
+rm(str);
+
+
+

@@ -16,5 +16,6 @@ void exit_error(const char *fmt, ...)
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
 	va_end(args);
+	printf("\n");
 	exit(1);
 }

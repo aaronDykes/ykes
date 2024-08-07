@@ -39,15 +39,20 @@ void write_chunk(chunk *c, uint8_t byte, uint16_t line)
 {
 
 	size_t size = 0;
-	if (c->len < c->count + 1) {
+	if (c->len < c->count + 1)
+	{
 		size     = c->len * INC;
-		c->ip    = REALLOC(c->ip, size);
-		c->lines = REALLOC(c->lines, size * sizeof(uint16_t));
+		c->ip    = REALLOC(c->ip, c->len, size);
+		c->lines = REALLOC(
+		    c->lines, c->len * sizeof(uint16_t), size * sizeof(uint16_t)
+		);
 		c->len *= INC;
 	}
-	if (c->cases.len < c->cases.count + 1) {
-		size_t size    = c->cases.len * INC * sizeof(uint16_t);
-		c->cases.bytes = REALLOC(c->cases.bytes, size);
+	if (c->cases.len < c->cases.count + 1)
+	{
+		size_t size = c->cases.len * INC * sizeof(uint16_t);
+		c->cases.bytes =
+		    REALLOC(c->cases.bytes, c->cases.len * sizeof(uint16_t), size);
 		c->cases.len *= INC;
 	}
 

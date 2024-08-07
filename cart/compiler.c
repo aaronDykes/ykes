@@ -2,6 +2,7 @@
 #include "compiler.h"
 #include "compiler_util.h"
 #include "error.h"
+#include "object_string.h"
 #include "table.h"
 #ifdef DEBUG_TRACE_EXECUTION
 #include "debug.h"
@@ -14,28 +15,27 @@
 static void init_compiler(compiler *a, compiler *b, compiler_t type, _key name)
 {
 
-	local *_local = NULL;
-	a->enclosing  = NULL;
-	a->base       = NULL;
-	a->meta.cwd   = NULL;
+	local *_local     = NULL;
+	a->enclosing      = NULL;
+	a->base           = NULL;
+	a->class_compiler = NULL;
+	a->func           = NULL;
+	a->lookup         = NULL;
+	a->meta.cwd       = NULL;
+
 	a->meta.type  = type;
 	a->meta.flags = 0;
 
-	a->count.local = 0;
-	a->count.scope = 0;
-	a->count.obj   = 0;
+	a->count.local   = 0;
+	a->count.scope   = 0;
+	a->count.obj     = 0;
+	a->count.upvalue = 0;
 
 	a->array.index = 0;
 	a->array.set   = 0;
 	a->array.get   = 0;
 
-	a->count.upvalue = 0;
-
-	a->lookup = NULL;
-
-	a->class_compiler = NULL;
-	a->func           = NULL;
-	a->func           = _function(name);
+	a->func = _function(name);
 
 	if (b)
 	{
@@ -202,7 +202,7 @@ static void class_declaration(compiler *c)
 
 	_key   ar          = parse_id(c);
 	class *classc      = _class(ar);
-	classc->closures   = GROW_TABLE(NULL, STACK_SIZE);
+	classc->closures   = GROW_TABLE(NULL, INIT_SIZE);
 	class_compiler *cc = ALLOC(sizeof(class_compiler));
 
 	if (find_entry(&c->lookup, &ar).type != T_NULL)
@@ -264,7 +264,8 @@ static void method_body(compiler *c, compiler_t type, _key ar, class **class)
 			c->func->arity++;
 			if (c->func->arity > 255)
 				current_err(
-				    "Cannot declare more than 255 function parameters",
+				    "Cannot declare more than 255 function "
+				    "parameters",
 				    &c->parser
 				);
 			func_var(c);
@@ -364,7 +365,8 @@ static void func_body(compiler *c, _key ar)
 			c->func->arity++;
 			if (c->func->arity > 255)
 				current_err(
-				    "Cannot declare more than 255 function parameters",
+				    "Cannot declare more than 255 function "
+				    "parameters",
 				    &c->parser
 				);
 			func_var(c);
@@ -550,7 +552,7 @@ static void for_statement(compiler *c)
 		    TOKEN_CH_SEMI, "Expect `;` after 'for' condition.", &c->parser
 		);
 		exit = emit_jump(c, OP_JMPF);
-		emit_byte(c, OP_POP);
+		// emit_byte(c, OP_POP);
 	}
 	if (!match(TOKEN_CH_RPAREN, &c->parser))
 	{
@@ -591,7 +593,6 @@ static void while_statement(compiler *c)
 	);
 
 	int exit_jmp = emit_jump(c, OP_JMPF);
-	emit_byte(c, OP_POP);
 
 	statement(c);
 
@@ -600,7 +601,6 @@ static void while_statement(compiler *c)
 
 	// If true, exit
 	patch_jump(c, exit_jmp);
-	emit_byte(c, OP_POP);
 }
 
 static void consume_if(compiler *c)
@@ -676,7 +676,8 @@ static void case_statement(compiler *c)
 			{
 				consume(
 				    TOKEN_CH_SEMI,
-				    "Expected a semi colon after break statement",
+				    "Expected a semi colon after break "
+				    "statement",
 				    &c->parser
 				);
 				break;
@@ -697,21 +698,18 @@ static void if_statement(compiler *c)
 	consume_if(c);
 
 	int fi = emit_jump(c, OP_JMPF);
-	// If truthy, follow through
-	emit_byte(c, OP_POP);
 	statement(c);
 
 	int exit = emit_jump(c, OP_JMP);
 	patch_jump(c, fi);
-	emit_byte(c, OP_POP);
 
 	elif_statement(c);
 
 	if (match(TOKEN_ELSE, &c->parser))
 		statement(c);
 
-	patch_jump(c, exit);
 	c->func->ch.cases.bytes[c->func->ch.cases.count++] = c->func->ch.count;
+	patch_jump(c, exit);
 }
 
 static void elif_statement(compiler *c)
@@ -720,7 +718,6 @@ static void elif_statement(compiler *c)
 	{
 		consume_elif(c);
 		int exit = emit_jump(c, OP_JMPF);
-		emit_byte(c, OP_POP);
 		statement(c);
 		emit_byte(c, OP_JMPL);
 		emit_bytes(
@@ -734,7 +731,7 @@ static void elif_statement(compiler *c)
 static void ternary_statement(compiler *c)
 {
 	int exit = emit_jump(c, OP_JMPF);
-	emit_byte(c, OP_POP);
+	// emit_byte(c, OP_POP);
 	expression(c);
 	consume(
 	    TOKEN_CH_COLON, "Expect `:` between ternary expressions.", &c->parser
@@ -1240,6 +1237,68 @@ static void str(compiler *c)
 	    c, String((char *)++c->parser.pre.start, c->parser.pre.size - 2)
 	);
 }
+
+static void fmt_str(compiler *c)
+{
+
+	char *tmp = NULL;
+	tmp       = (char *)++c->parser.pre.start;
+
+	buffer  buf;
+	buffer  str  = _buffer(MIN_SIZE);
+	uint8_t expr = 0;
+
+	token t;
+	t = c->parser.cur;
+
+	for (; *tmp != '`'; tmp++)
+	{
+		if (*tmp == '$' && tmp[1] == '{')
+		{
+			tmp += 2;
+			if (str.count > 0)
+			{
+				write_buffer(&str, '\0');
+				emit_constant(c, StringCpy(str.bytes, str.count));
+				if (expr)
+					emit_byte(c, OP_ADD);
+			}
+			buf = _buffer(MIN_SIZE);
+
+			while (*tmp != '}')
+				write_buffer(&buf, *tmp++);
+			write_buffer(&buf, '\0');
+
+			re_init_scanner(buf.bytes, c->parser.cur.line);
+			c->parser.cur = scan_token();
+			expression(c);
+			emit_byte(c, OP_TO_STR);
+			free_buffer(&buf);
+
+			if (str.count > 0)
+			{
+				emit_byte(c, OP_ADD);
+				str = _buffer(MIN_SIZE);
+			}
+
+			expr = 1;
+			if (*++tmp == '`')
+				break;
+		}
+		write_buffer(&str, *tmp);
+	}
+	if (str.count > 0)
+	{
+		emit_constant(c, StringCpy(str.bytes, str.count));
+		if (expr)
+			emit_byte(c, OP_ADD);
+	}
+
+	c->parser.cur = t;
+	re_init_scanner(c->parser.cur.start, c->parser.cur.line);
+	c->parser.cur = scan_token();
+}
+
 static void boolean(compiler *c)
 {
 	if (*c->parser.pre.start == 'n')
@@ -1387,7 +1446,6 @@ static void _this(compiler *c)
 		);
 		return;
 	}
-	uint8_t arg = c->class_compiler->index;
 }
 
 static void id(compiler *c)
@@ -1627,7 +1685,7 @@ function *compile_path(const char *src, const char *path, const char *name)
 
 	c.base         = &c;
 	c.base->lookup = NULL;
-	c.base->lookup = GROW_TABLE(NULL, STACK_SIZE);
+	c.base->lookup = GROW_TABLE(NULL, INIT_SIZE);
 
 	c.hash.init = hash_key("init");
 	c.hash.len  = hash_key("len");

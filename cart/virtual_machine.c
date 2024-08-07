@@ -239,10 +239,6 @@ Interpretation run(void)
 	_key              key;
 
 #define READ_BYTE() (*ip++)
-
-#define UPPER()      ((READ_BYTE() << 8) & 0xFF)
-#define LOWER()      (READ_BYTE() & 0xFF)
-#define READ_SHORT() ((uint16_t)((UPPER()) | LOWER()))
 #define READ_CONSTANT()                                                        \
 	(*(frame->closure->func->ch.constants->as + READ_BYTE()))
 
@@ -254,8 +250,8 @@ Interpretation run(void)
 
 #define UPVALUE() ((*(frame->closure->upvals + READ_BYTE()))->closed)
 
-#define FALSEY() (!PEEK().val.Bool)
-#define TRUTHY() (PEEK().val.Bool)
+#define FALSEY() (!POP()->val.Bool)
+#define TRUTHY() (POP()->val.Bool)
 
 #define LOCAL()   (*(frame->slots + READ_BYTE()))
 #define NLOCAL(n) (*(frame->slots + n))
@@ -271,8 +267,9 @@ Interpretation run(void)
 	for (;;)
 	{
 #ifdef DEBUG_TRACE_EXECUTION
-		for (int i = 0; i < COUNT(); i++)
-			print(*(machine.stack.main->as + i));
+		for (element *e = frame->slots;
+		     e < machine.stack.main->as + COUNT(); e++)
+			print(*e);
 		disassemble_instruction(
 		    &frame->closure->func->ch, (int)(ip - frame->ip)
 		);
@@ -333,7 +330,7 @@ Interpretation run(void)
 			POPN(READ_CONSTANT().val.Num);
 			break;
 		case OP_POP:
-			POPN(1);
+			POP();
 			break;
 		case OP_ADD:
 			PUSH(_add(POP(), POP()));
@@ -363,7 +360,12 @@ Interpretation run(void)
 			PUSH(_le(POP(), POP()));
 			break;
 		case OP_CAST:
+
 			PUSH(_cast(POP(), READ_BYTE()));
+			break;
+		case OP_TO_STR:
+			if (PEEK().type != T_STR)
+				PUSH(_to_str(POP()));
 			break;
 		case OP_GT:
 			PUSH(_gt(POP(), POP()));
@@ -381,15 +383,14 @@ Interpretation run(void)
 			machine.count.cargc = 0;
 			machine.count.argc  = 0;
 			break;
-
 		case OP_NOOP:
 			PUSH(Null());
 			break;
 		case OP_SET_PROP:
 		{
 
-			obj          = *POP();
-			element inst = PEEK();
+			obj          = PEEK();
+			element inst = NPEEK(1);
 
 			if (inst.type != T_INSTANCE && !machine.init_fields)
 			{
@@ -399,21 +400,19 @@ Interpretation run(void)
 				return INTERPRET_RUNTIME_ERR;
 			}
 
-			if (machine.init_fields)
-				write_table(
-				    machine.init_fields, READ_CONSTANT().key, obj
-				);
-			else
-				write_table(
-				    INSTANCE(inst)->fields, READ_CONSTANT().key, obj
-				);
-			// POPN(1);
+			write_table(
+			    machine.init_fields ? machine.init_fields
+							: INSTANCE(inst)->fields,
+			    READ_CONSTANT().key, obj
+			);
+			POPN(2);
+			PUSH(obj);
 		}
 		break;
 		case OP_GET_PROP:
 		{
 
-			element inst = PEEK();
+			element inst = *POP();
 			if (inst.type != T_INSTANCE && !machine.init_fields)
 			{
 				runtime_error(
@@ -521,6 +520,7 @@ Interpretation run(void)
 			argc = READ_BYTE();
 			SET_OBJ(argc, READ_CONSTANT());
 			break;
+
 		case OP_CLASS:
 		{
 			class *c            = CLASS(OBJECT());

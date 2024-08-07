@@ -19,10 +19,12 @@ void initialize_global_mem(void)
 	mem = NULL;
 }
 
-void destroy_global_memory(void)
+static void merge_list(void);
+void        destroy_global_memory(void)
 {
 
 	_free *tmp = NULL;
+
 	while (mem)
 	{
 		tmp = mem->next;
@@ -152,7 +154,7 @@ void *_calloc_(int val, size_t size)
 	return memset(ALLOC(size), val, size);
 }
 
-void *_realloc_(void *ptr, size_t size)
+void *_realloc_(void *ptr, size_t old_size, size_t size)
 {
 
 	if (!ptr && size != 0)
@@ -171,7 +173,7 @@ void *_realloc_(void *ptr, size_t size)
 	void *alloced = NULL;
 	alloced       = ALLOC(size);
 
-	memcpy(alloced, ptr, size);
+	memcpy(alloced, ptr, old_size);
 	FREE(ptr);
 
 	return alloced;

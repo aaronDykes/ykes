@@ -21,8 +21,9 @@ static void insert_entry(table **t, record entry)
 
 	if ((*t)->records[index].key.hash == entry.key.hash)
 	{
+		FREE((*t)->records[index].key.val);
 		FREE_OBJ((*t)->records[index].val);
-		(*t)->records[index].val = entry.val;
+		(*t)->records[index] = entry;
 		return;
 	}
 

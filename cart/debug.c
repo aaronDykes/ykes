@@ -104,7 +104,7 @@ int disassemble_instruction(chunk *c, int offset)
 	case OP_NEG:
 		return simple_instruction("OP_NEG", offset);
 	case OP_INC:
-		return simple_instruction("OP_DEC", offset);
+		return simple_instruction("OP_INC", offset);
 	case OP_DEC:
 		return simple_instruction("OP_DEC", offset);
 	case OP_ADD:
@@ -175,6 +175,10 @@ int disassemble_instruction(chunk *c, int offset)
 		return simple_instruction("OP_POP", offset);
 	case OP_CALL:
 		return byte_instruction("OP_CALL", c, offset);
+	case OP_CAST:
+		return byte_instruction("OP_CAST", c, offset);
+	case OP_TO_STR:
+		return byte_instruction("OP_TO_STR", c, offset);
 	case OP_PRINT:
 		return simple_instruction("OP_PRINT", offset);
 	case OP_RETURN:

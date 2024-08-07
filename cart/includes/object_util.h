@@ -94,6 +94,7 @@ typedef enum
 	OP_CALL,
 	OP_INSTANCE,
 	OP_METHOD,
+	OP_TO_STR,
 
 	OP_NOOP,
 	OP_RETURN,
@@ -137,17 +138,19 @@ typedef enum
 	T_NULL
 } obj_t;
 
-typedef struct vector     vector;
-typedef struct _2d_vector _2d_vector;
-typedef struct _3d_vector _3d_vector;
-typedef union value       value;
-typedef struct chunk      chunk;
-typedef struct function   function;
-typedef struct closure    closure;
-typedef struct upval      upval;
-typedef struct native     native;
-typedef struct element    element;
-typedef struct stack      stack;
+typedef struct vector         vector;
+typedef struct _2d_vector     _2d_vector;
+typedef struct _3d_vector     _3d_vector;
+typedef union value           value;
+typedef struct chunk          chunk;
+typedef struct function       function;
+typedef struct closure        closure;
+typedef struct upval          upval;
+typedef struct generic_vector generic_vector;
+typedef struct buffer         buffer;
+typedef struct native         native;
+typedef struct element        element;
+typedef struct stack          stack;
 
 typedef struct class class;
 typedef struct table    table;
@@ -180,6 +183,7 @@ struct vector
 {
 	uint16_t count;
 	uint16_t len;
+	obj_t    type;
 	value   *of;
 };
 struct _2d_vector
@@ -195,7 +199,12 @@ struct _3d_vector
 	value ***of;
 };
 
-typedef struct generic_vector generic_vector;
+struct buffer
+{
+	char   *bytes;
+	uint8_t count;
+	uint8_t len;
+};
 
 struct generic_vector
 {

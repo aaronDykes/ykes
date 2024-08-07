@@ -22,6 +22,18 @@ class *_class(_key name)
 	return c;
 }
 
+vector *_vector(size_t size, obj_t type)
+{
+	vector *v = NULL;
+	v         = ALLOC(sizeof(vector));
+	v->count  = 0;
+	v->len    = size;
+	v->type   = type;
+	v->of     = NULL;
+	v->of     = ALLOC(size * sizeof(value));
+	return v;
+}
+
 instance *_instance(class *classc)
 {
 	instance *ic = NULL;
@@ -276,6 +288,10 @@ void free_obj(element el)
 	case T_STR:
 		FREE(el.val.String);
 		el.val.String = NULL;
+		break;
+	case T_KEY:
+		FREE(el.key.val);
+		el.key.val = NULL;
 		break;
 	case T_NATIVE:
 		free_native(NATIVE(el));

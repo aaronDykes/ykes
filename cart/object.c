@@ -112,6 +112,8 @@ element StringCpy(const char *str, size_t size)
 }
 element String(const char *str, size_t size)
 {
+	if (size <= 0)
+		return Null();
 	value ar;
 	ar.String = NULL;
 	ar.String = ALLOC(size);
@@ -129,7 +131,7 @@ _key Key(const char *str, size_t size)
 {
 	_key ar;
 	ar.val = NULL;
-	ar.val = ALLOC(size);
+	ar.val = ALLOC(size == 1 ? 2 : size);
 	memcpy(ar.val, str, size);
 	ar.val[size] = '\0';
 	int k        = hash_key(ar.val);

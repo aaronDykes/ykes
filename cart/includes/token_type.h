@@ -72,6 +72,7 @@ typedef enum
 	// Literals.
 	TOKEN_ID,
 	TOKEN_STR,
+	TOKEN_FMT_STR,
 
 	TOKEN_CHAR,
 	TOKEN_NUMBER,

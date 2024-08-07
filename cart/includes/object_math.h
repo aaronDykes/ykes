@@ -18,6 +18,7 @@ element _or(element *a, element *b);
 element _and(element *a, element *b);
 
 element _cast(element *a, cast_t type);
+element _to_str(element *a);
 element _inc(element *b);
 element _dec(element *b);
 element _sqr(element *a);
