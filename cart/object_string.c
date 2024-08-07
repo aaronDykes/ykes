@@ -206,7 +206,7 @@ void write_buffer(buffer *buf, char byte)
 	{
 
 		buf->bytes = REALLOC(buf->bytes, buf->len, buf->len * INC);
-		buf->len *= INC;
+		buf->len += MIN_SIZE;
 	}
 
 	*(buf->bytes + buf->count++) = byte;
