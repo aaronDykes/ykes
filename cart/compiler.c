@@ -1244,52 +1244,62 @@ static void fmt_str(compiler *c)
 	char *tmp = NULL;
 	tmp       = (char *)++c->parser.pre.start;
 
-	buffer  buf;
-	buffer  str  = _buffer(MIN_SIZE);
-	uint8_t expr = 0;
+	buffer buf;
+	// buffer  str  = _buffer(MIN_SIZE);
+	uint8_t expr  = 0;
+	uint8_t count = 0;
 
 	token t;
 	t = c->parser.cur;
 
-	for (; *tmp != '`'; tmp++)
-	{
+	for (; *tmp != '`'; tmp++, count++)
 		if (*tmp == '$' && tmp[1] == '{')
 		{
 			tmp += 2;
-			if (str.count > 0)
+			if (count > 0)
 			{
-				write_buffer(&str, '\0');
-				emit_constant(c, StringCpy(str.bytes, str.count));
+				emit_constant(
+				    c, String(
+					     c->parser.pre.start,
+					     (int)(tmp - c->parser.pre.start) - 2
+					 )
+				);
 				if (expr)
 					emit_byte(c, OP_ADD);
 			}
-			buf = _buffer(MIN_SIZE);
+			// buf = _buffer(MIN_SIZE);
+			c->parser.pre.start = tmp;
 
-			while (*tmp != '}')
-				write_buffer(&buf, *tmp++);
-			write_buffer(&buf, '\0');
+			for (; *tmp != '}'; tmp++)
+				;
+			// write_buffer(&buf, *tmp++);
+			// write_buffer(&buf, '\0');
+			element str = String(
+			    c->parser.pre.start, (int)(tmp - c->parser.pre.start)
+			);
 
-			re_init_scanner(buf.bytes, c->parser.cur.line);
+			re_init_scanner(str.val.String, c->parser.cur.line);
 			c->parser.cur = scan_token();
 			expression(c);
 			emit_byte(c, OP_TO_STR);
-			free_buffer(&buf);
+			FREE_OBJ(str);
 
-			if (str.count > 0)
+			if (count > 0)
 			{
 				emit_byte(c, OP_ADD);
-				str = _buffer(MIN_SIZE);
+				count = 0;
 			}
+			c->parser.pre.start = tmp + 1;
 
 			expr = 1;
 			if (*++tmp == '`')
 				break;
 		}
-		write_buffer(&str, *tmp);
-	}
-	if (str.count > 0)
+	if (count > 0)
 	{
-		emit_constant(c, StringCpy(str.bytes, str.count));
+		emit_constant(
+		    c, String(c->parser.pre.start, (int)(tmp - c->parser.pre.start))
+		);
 		if (expr)
 			emit_byte(c, OP_ADD);
 	}
@@ -1441,7 +1451,8 @@ static void _this(compiler *c)
 	if (!c->class_compiler)
 	{
 		prev_error(
-		    "ERROR: can't use `this` keyword outside of a class body.",
+		    "ERROR: can't use `this` keyword outside of a class "
+		    "body.",
 		    &c->parser
 		);
 		return;

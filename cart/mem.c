@@ -28,7 +28,8 @@ void        destroy_global_memory(void)
 	while (mem)
 	{
 		tmp = mem->next;
-		munmap(mem, mem->size);
+		if (mem->size >= ARM64_PAGE - OFFSET)
+			munmap(mem, mem->size);
 		mem = tmp;
 	}
 	tmp = NULL;
