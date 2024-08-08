@@ -1244,8 +1244,6 @@ static void fmt_str(compiler *c)
 	char *tmp = NULL;
 	tmp       = (char *)++c->parser.pre.start;
 
-	buffer buf;
-	// buffer  str  = _buffer(MIN_SIZE);
 	uint8_t expr  = 0;
 	uint8_t count = 0;
 
@@ -1267,18 +1265,15 @@ static void fmt_str(compiler *c)
 				if (expr)
 					emit_byte(c, OP_ADD);
 			}
-			// buf = _buffer(MIN_SIZE);
 			c->parser.pre.start = tmp;
 
 			for (; *tmp != '}'; tmp++)
 				;
-			// write_buffer(&buf, *tmp++);
-			// write_buffer(&buf, '\0');
 			element str = String(
 			    c->parser.pre.start, (int)(tmp - c->parser.pre.start)
 			);
 
-			re_init_scanner(str.val.String, c->parser.cur.line);
+			re_init_scanner(str.val.String, t.line);
 			c->parser.cur = scan_token();
 			expression(c);
 			emit_byte(c, OP_TO_STR);
@@ -1304,8 +1299,7 @@ static void fmt_str(compiler *c)
 			emit_byte(c, OP_ADD);
 	}
 
-	c->parser.cur = t;
-	re_init_scanner(c->parser.cur.start, c->parser.cur.line);
+	re_init_scanner(t.start, t.line);
 	c->parser.cur = scan_token();
 }
 
