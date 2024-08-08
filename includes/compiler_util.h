@@ -15,22 +15,6 @@
 
 typedef enum
 {
-	PREC_NONE,
-	PREC_ASSIGNMENT, // =
-	PREC_OR,         // or
-	PREC_AND,        // and
-	PREC_EQUALITY,   // == !=
-	PREC_COMPARISON, // < > <= >=
-	PREC_TERM,       // + -
-	PREC_FACTOR,     // * /
-	PREC_UNARY,      // ! -
-	PREC_CALL,       // . ()
-	PREC_PRIMARY
-
-} prec_t;
-
-typedef enum
-{
 	COMPILER_TYPE_SCRIPT,
 	COMPILER_TYPE_FUNCTION,
 	COMPILER_TYPE_INIT,

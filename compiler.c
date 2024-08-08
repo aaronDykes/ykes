@@ -1273,7 +1273,7 @@ static void fmt_str(compiler *c)
 			    c->parser.pre.start, (int)(tmp - c->parser.pre.start)
 			);
 
-			re_init_scanner(str.val.String, t.line);
+			re_init_scanner(str.val.String, c->parser.cur.line);
 			c->parser.cur = scan_token();
 			expression(c);
 			emit_byte(c, OP_TO_STR);
@@ -1299,7 +1299,8 @@ static void fmt_str(compiler *c)
 			emit_byte(c, OP_ADD);
 	}
 
-	re_init_scanner(t.start, t.line);
+	c->parser.cur = t;
+	re_init_scanner(c->parser.cur.start, c->parser.cur.line);
 	c->parser.cur = scan_token();
 }
 
