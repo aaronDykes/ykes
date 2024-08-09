@@ -3,14 +3,13 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#define CLOSURE(el)  ((closure *)(el.obj))
-#define FUNC(el)     ((function *)(el.obj))
-#define NATIVE(el)   ((native *)(el.obj))
-#define CLASS(el)    ((class *)(el.obj))
-#define INSTANCE(el) ((instance *)(el.obj))
-#define TABLE(el)    ((table *)(el.obj))
-#define STACK(el)    ((stack *)(el.obj))
-#define UPVAL(el)    ((upval *)(el.obj))
+#define CLOSURE(el) ((closure *)(el.as.Obj))
+#define FUNC(el)    ((function *)(el.as.Obj))
+#define NATIVE(el)  ((native *)(el.as.Obj))
+#define STRUCT(el)  ((structure *)(el.as.Obj))
+#define TABLE(el)   ((table *)(el.as.Obj))
+#define STACK(el)   ((stack *)(el.as.Obj))
+#define UPVAL(el)   ((upval *)(el.as.Obj))
 
 typedef enum
 {
@@ -18,7 +17,7 @@ typedef enum
 	OP_CLOSURE,
 	OP_PRINT,
 
-	OP_CLASS,
+	OP_STRUCT,
 	OP_GET_INSTANCE,
 	OP_ALLOC_TABLE,
 
@@ -33,7 +32,6 @@ typedef enum
 	OP_GET_FIELD,
 
 	OP_GET_METHOD,
-	OP_ALLOC_INSTANCE,
 	OP_GET_OBJ,
 	OP_SET_OBJ,
 
@@ -86,6 +84,8 @@ typedef enum
 	OP_JMP_NIL,
 	OP_JMP_NOT_NIL,
 	OP_JMPL,
+	OP_JMPL_T,
+	OP_JMPL_F,
 	OP_JMPF,
 	OP_JMPT,
 	OP_JMP,
@@ -124,8 +124,7 @@ typedef enum
 
 	T_KEY,
 	T_NATIVE,
-	T_CLASS,
-	T_INSTANCE,
+	T_STRUCT,
 	T_CLOSURE,
 	T_FUNCTION,
 	T_VECTOR,
@@ -138,31 +137,30 @@ typedef enum
 	T_NULL
 } obj_t;
 
-typedef struct vector         vector;
-typedef struct _2d_vector     _2d_vector;
-typedef struct _3d_vector     _3d_vector;
-typedef union value           value;
-typedef struct chunk          chunk;
-typedef struct function       function;
-typedef struct closure        closure;
-typedef struct upval          upval;
-typedef struct generic_vector generic_vector;
-typedef struct buffer         buffer;
-typedef struct native         native;
-typedef struct element        element;
-typedef struct stack          stack;
+typedef struct vector     vector;
+typedef struct _2d_vector _2d_vector;
+typedef struct _3d_vector _3d_vector;
+typedef union value       value;
+typedef struct chunk      chunk;
+typedef struct function   function;
+typedef struct closure    closure;
+typedef struct upval      upval;
+typedef struct jmp_vector jmp_vector;
+typedef struct buffer     buffer;
+typedef struct native     native;
+typedef struct element    element;
+typedef struct stack      stack;
 
-typedef struct class class;
-typedef struct table    table;
-typedef struct record   record;
-typedef struct instance instance;
+typedef struct structure structure;
+typedef struct table     table;
+typedef struct record    record;
 typedef element (*NativeFn)(int argc, element *argv);
 typedef struct _key _key;
 
 struct _key
 {
 	int   hash;
-	char *val;
+	char *Str;
 };
 
 union value
@@ -177,6 +175,8 @@ union value
 	double Num;
 	char   Char;
 	bool   Bool;
+	void  *Obj;
+	_key   Key;
 };
 
 struct vector
@@ -206,7 +206,7 @@ struct buffer
 	uint8_t len;
 };
 
-struct generic_vector
+struct jmp_vector
 {
 	uint16_t *bytes;
 	uint16_t  count;
@@ -215,12 +215,13 @@ struct generic_vector
 
 struct chunk
 {
-	uint16_t       count;
-	uint16_t       len;
-	uint8_t       *ip;
-	uint16_t      *lines;
-	generic_vector cases;
-	stack         *constants;
+	uint16_t   count;
+	uint16_t   len;
+	uint8_t   *ip;
+	uint16_t  *lines;
+	jmp_vector cases;
+	jmp_vector expr;
+	stack     *constants;
 };
 
 struct function
@@ -249,13 +250,7 @@ struct native
 struct element
 {
 	obj_t type;
-
-	union
-	{
-		value val;
-		_key  key;
-		void *obj;
-	};
+	value as;
 };
 
 struct upval
@@ -264,16 +259,9 @@ struct upval
 	element closed;
 	upval  *next;
 };
-struct class
+struct structure
 {
-	closure *init;
-	_key     name;
-	table   *closures;
-};
-
-struct instance
-{
-	class *classc;
+	_key   name;
 	table *fields;
 };
 

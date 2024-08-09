@@ -1,45 +1,78 @@
+#include "error.h"
 #include "mem.h"
 #include "parser.h"
 #include "parser_util.h"
+
+static void realloc_ast(ast_stack **s)
+{
+	(*s)->as  = realloc_ast_stack(&(*s)->as, (*s)->len, (*s)->count);
+	(*s)->len = (*s)->count;
+}
 
 static void init_parser(parser *parser, const char *file)
 {
 	advance(parser);
 	parser->file = file;
-	parser->ast  = NULL;
 	parser->_obj = 0;
 
+	parser->ast    = NULL;
 	parser->lookup = NULL;
 	parser->lookup = alloc_table(INIT_SIZE);
-	parser->ast    = parser_ast_stack(STACK_SIZE);
+	parser->ast    = _ast_stack(STACK_SIZE);
+
+	write_table(
+	    parser->lookup, Key("clock", 5), NumType(parser->_obj++, T_NATIVE)
+	);
+	write_table(
+	    parser->lookup, Key("square", 6), NumType(parser->_obj++, T_NATIVE)
+	);
+	write_table(
+	    parser->lookup, Key("file", 4), NumType(parser->_obj++, T_NATIVE)
+	);
 }
 static body parse_id(token toke, ast_t type)
 {
 	return _ast(_ast_node(toke), type);
 }
 
-static body class_declaration(parser *parser)
+static body struct_declaration(parser *parser)
 {
+	body b = parse_id(parser->cur, AST_STRUCT);
+	advance(parser);
+	consume(
+	    TOKEN_CH_LCURL, "Expected opening `{` after struct declaration",
+	    parser
+	);
+	consume(
+	    TOKEN_CH_RCURL, "Expected closing `}` after struct declaration",
+	    parser
+	);
+	return b;
 }
+
 static body func_declaration(parser *parser)
 {
-	token      t    = parser->cur;
-	ast_stack *s    = NULL;
-	uint16_t   line = parser->cur.line;
+	token      t = parser->cur;
+	ast_stack *s = NULL;
 
-	s = init_ast_stack(_MIN_BLOCK_SIZE);
+	s = _ast_stack(MIN_BLOCK_SIZE);
 
-	key k = _key((char *)t.start, t.size);
+	_key key = Key((char *)t.start, t.size);
 
 	element el;
-	if ((el = find_entry(&parser->lookup, k.key)).type == T_NULL)
+	if ((el = find_entry(&parser->lookup, &key)).type == T_NULL)
 	{
-		el      = OBJ(_number(parser->_obj++));
+		el      = Num(parser->_obj++);
 		el.type = T_CLOSURE;
-		write_table(&parser->lookup, k, el);
+		write_table(parser->lookup, key, el);
+	}
+	else
+	{
+		error("Duplicate function id", key.Str);
+		exit(1);
 	}
 
-	push_ast(&s, parse_id(t, AST_FUNC_ID));
+	push_ast(&s, parse_id(t, AST_ID));
 	advance(parser);
 
 	consume(
@@ -49,9 +82,8 @@ static body func_declaration(parser *parser)
 	if (!match(TOKEN_CH_RPAREN, parser))
 	{
 		do
-		{
 			push_ast(&s, parse_id(parser->cur, AST_PARAM));
-		} while (match(TOKEN_CH_COMMA, parser));
+		while (match(TOKEN_CH_COMMA, parser));
 
 		consume(
 		    TOKEN_CH_RPAREN,
@@ -59,15 +91,11 @@ static body func_declaration(parser *parser)
 		);
 	}
 
-	if (match(TOKEN_CH_SEMI, parser))
-		return _ast_block(s, AST_FUNC_FD, line);
-
-	consume(
-	    TOKEN_CHAR_TYPE_LCURL, "Expect an `{` prior to function body", parser
-	);
+	consume(TOKEN_CH_LCURL, "Expect an `{` prior to function body", parser);
 	push_ast(&s, _block(parser));
+	realloc_ast(&s);
 
-	return _ast_block(s, AST_FUNC, line);
+	return _ast(s, AST_FUNC);
 }
 
 static uint8_t assignment_op(parser *p)
@@ -108,8 +136,8 @@ static body declaration(parser *parser)
 		b = func_declaration(parser);
 	else if (match(TOKEN_VAR, parser))
 		b = variable_declaration(parser);
-	else if (match(TOKEN_CLASS parser))
-		b = class_declaration(parser);
+	else if (match(TOKEN_STRUCT, parser))
+		b = struct_declaration(parser);
 	else
 		b = statement(parser);
 
@@ -132,17 +160,18 @@ static body generic_expression(parser *parser, ast_t type)
 }
 static body _block(parser *parser)
 {
-	ast_stack *s  = NULL;
-	s             = init_ast_stack(_MIN_BLOCK_SIZE);
-	uint16_t line = parser->cur.line;
+	ast_stack *s = NULL;
+	s            = _ast_stack(MIN_BLOCK_SIZE);
 
-	while (!match(TOKEN_CHAR_TYPE_RCURL, parser))
+	while (!match(TOKEN_CH_RCURL, parser))
 	{
 		body tmp = declaration(parser);
 		push_ast(&s, tmp);
 	}
 
-	return _ast_block(s, AST_BLOCK, line);
+	realloc_ast(&s);
+
+	return _ast(s, AST_BLOCK);
 }
 
 static body _print(parser *parser)
@@ -154,90 +183,99 @@ static body _print(parser *parser)
 
 static void _if_body(parser *parser, ast_stack **stk)
 {
-	if (match(TOKEN_CHAR_TYPE_LCURL, parser))
+	if (match(TOKEN_CH_LCURL, parser))
 		push_ast(stk, _block(parser));
 	else
 		push_ast(stk, statement(parser));
 }
 static body _if(parser *parser)
 {
-	ast_stack *stk  = NULL;
-	uint16_t   line = parser->cur.line;
-	stk             = init_ast_stack(_MIN_BLOCK_SIZE);
+	ast_stack *stk = NULL;
+	stk            = _ast_stack(MIN_BLOCK_SIZE);
 	push_ast(&stk, generic_expression(parser, AST_CONDITION));
 
 	_if_body(parser, &stk);
-	while (match(TOKEN_TYPE_ELSE_IF, parser))
+	while (match(TOKEN_ELSE_IF, parser))
 	{
 		push_ast(&stk, generic_expression(parser, AST_CONDITION));
 		_if_body(parser, &stk);
 	}
-	if (match(TOKEN_TYPE_ELSE, parser))
+	if (match(TOKEN_ELSE, parser))
 		_if_body(parser, &stk);
 
-	return _ast_block(stk, AST_IF, line);
+	realloc_ast(&stk);
+
+	return _ast(stk, AST_IF);
 }
 static body _switch(parser *parser)
 {
-	ast_stack *stk  = NULL;
-	uint16_t   line = parser->cur.line;
-	stk             = init_ast_stack(_MIN_BLOCK_SIZE);
+	ast_stack *stk = NULL;
+	stk            = _ast_stack(MIN_BLOCK_SIZE);
 
-	push_ast(&stk, generic_expression(parser, AST_SWITCH));
+	push_ast(&stk, generic_expression(parser, AST_CONDITION));
 
 	consume(
-	    TOKEN_CHAR_TYPE_LCURL,
+	    TOKEN_CH_LCURL,
 	    "Expected an `{` open brace. Invalid switch statement syntax", parser
 	);
-	while (match(TOKEN_TYPE_CASE, parser))
+	while (match(TOKEN_CASE, parser))
 	{
 
 		push_ast(&stk, _ast(expression(parser), AST_CASE));
 		consume(
-		    TOKEN_CHAR_TYPE_COLON, "Expected a `:` after case expression",
-		    parser
+		    TOKEN_CH_COLON, "Expected a `:` after case expression", parser
 		);
 
-		while (!match(TOKEN_TYPE_BREAK, parser))
+		while (!match(TOKEN_BREAK, parser))
+		{
 			push_ast(&stk, statement(parser));
+			if (match(TOKEN_CH_RCURL, parser))
+			{
+				realloc_ast(&stk);
+				return _ast(stk, AST_SWITCH);
+			}
+		}
+		if (parser->prev.type == TOKEN_BREAK)
+			consume(
+			    TOKEN_CH_SEMI, "Expect semicolon after break statement",
+			    parser
+			);
 	}
-	if (match(TOKEN_TYPE_DEFAULT, parser))
+	if (match(TOKEN_DEFAULT, parser))
 	{
 		consume(
-		    TOKEN_CHAR_TYPE_COLON, "Expected a `:` after default Longword",
-		    parser
+		    TOKEN_CH_COLON, "Expected a `:` after default Longword", parser
 		);
-		while (!match(TOKEN_CHAR_TYPE_RCURL, parser))
+		while (!match(TOKEN_CH_RCURL, parser))
 			push_ast(&stk, statement(parser));
 
-		return _ast_block(stk, AST_SWITCH, line);
+		return _ast(stk, AST_SWITCH);
 	}
 
 	consume(
-	    TOKEN_CHAR_TYPE_RCURL,
+	    TOKEN_CH_RCURL,
 	    "Expected a `}` closing brace. Invalid switch statement syntax",
 	    parser
 	);
 
-	return _ast_block(stk, AST_SWITCH, line);
+	realloc_ast(&stk);
+	return _ast(stk, AST_SWITCH);
 }
 static body _while(parser *parser)
 {
-	ast_stack *stk  = NULL;
-	uint16_t   line = parser->cur.line;
-	stk             = init_ast_stack(_MIN_BLOCK_SIZE);
+	ast_stack *stk = NULL;
+	stk            = _ast_stack(2);
 	push_ast(&stk, generic_expression(parser, AST_WHILE));
 
 	_if_body(parser, &stk);
 
-	return _ast_block(stk, AST_WHILE, line);
+	return _ast(stk, AST_WHILE);
 }
 
 static body _for(parser *parser)
 {
-	ast_stack *stk  = NULL;
-	uint16_t   line = parser->cur.line;
-	stk             = init_ast_stack(_MIN_BLOCK_SIZE);
+	ast_stack *stk = NULL;
+	stk            = _ast_stack(MIN_BLOCK_SIZE);
 
 	consume(
 	    TOKEN_CH_LPAREN, "Expected a `(`. Invalid for statement syntax",
@@ -245,16 +283,19 @@ static body _for(parser *parser)
 	);
 	if (!match(TOKEN_CH_SEMI, parser))
 	{
-		if (match(TOKEN_TYPE_LET, parser))
-			push_ast(&stk, variable_declaration(parser));
-		else
-			push_ast(&stk, default_expression(parser));
+		do
+			if (match(TOKEN_VAR, parser))
+				push_ast(&stk, variable_declaration(parser));
+			else
+				push_ast(&stk, default_expression(parser));
+		while (match(TOKEN_CH_COMMA, parser));
 	}
 	if (!match(TOKEN_CH_SEMI, parser))
 		push_ast(&stk, default_expression(parser));
 
-	while (match(TOKEN_CH_COMMA, parser))
+	do
 		push_ast(&stk, default_expression(parser));
+	while (match(TOKEN_CH_COMMA, parser));
 
 	consume(
 	    TOKEN_CH_RPAREN, "Expected a `)`. Invalid for statement syntax",
@@ -262,8 +303,9 @@ static body _for(parser *parser)
 	);
 
 	_if_body(parser, &stk);
+	realloc_ast(&stk);
 
-	return _ast_block(stk, AST_FOR, line);
+	return _ast(stk, AST_FOR);
 }
 
 static body default_expression(parser *parser)
@@ -275,25 +317,26 @@ static body default_expression(parser *parser)
 }
 static body _return(parser *parser)
 {
+	body b = default_expression(parser);
+	consume(TOKEN_CH_SEMI, "Missing `;` after return statement", parser);
+	return b;
 }
 
 static body statement(parser *parser)
 {
-
 	body b;
-	if (match(TOKEN_TYPE_PRINT, parser))
+	if (match(TOKEN_PRINT, parser))
 		b = _print(parser);
-	else if (match(TOKEN_TYPE_IF, parser))
+	else if (match(TOKEN_IF, parser))
 		b = _if(parser);
-	else if (match(TOKEN_TYPE_SWITCH, parser))
+	else if (match(TOKEN_SWITCH, parser))
 		b = _switch(parser);
-	else if (match(TOKEN_TYPE_WHILE, parser))
+	else if (match(TOKEN_WHILE, parser))
 		b = _while(parser);
-	else if (match(TOKEN_TYPE_FOR, parser))
+	else if (match(TOKEN_FOR, parser))
 		b = _for(parser);
-	else if (match(TOKEN_TYPE_RETURN, parser))
+	else if (match(TOKEN_RETURN, parser))
 		b = _return(parser);
-
 	else
 		b = default_expression(parser);
 	return b;
@@ -306,9 +349,9 @@ static void error_at(token *toke, parser *parser, const char *err)
 	    stderr, "[file: %s, line: %d] Error", parser->file, toke->line - 1
 	);
 
-	if (toke->type == TOKEN_TYPE_EOF)
+	if (toke->type == TOKEN_EOF)
 		fprintf(stderr, " at end");
-	else if (toke->type != TOKEN_TYPE_ERROR)
+	else if (toke->type != TOKEN_ERR)
 		fprintf(stderr, " at '%.*s'", (int)toke->size, toke->start);
 
 	fprintf(stderr, ": %s\n", err);
@@ -344,11 +387,11 @@ static void advance(parser *parser)
 	parser->prev = parser->cur;
 	parser->cur  = scan_token();
 
-	if (parser->cur.type == TOKEN_TYPE_EOF)
+	if (parser->cur.type == TOKEN_EOF)
 		return;
-	if (parser->cur.type == TOKEN_TYPE_ERROR)
+	if (parser->cur.type == TOKEN_ERR)
 		exit_error("Parser encountered invalid token\n");
-	if (parser->cur.type == TOKEN_TYPE_NULL)
+	if (parser->cur.type == TOKEN_NULL)
 		advance(parser);
 }
 
@@ -361,7 +404,8 @@ static ast *unary_node(parser *p)
 {
 	ast *s  = NULL;
 	s       = _ast_node(p->prev);
-	s->left = expression(p);
+	s->left = _prefix(p->cur)(p);
+	advance(p);
 	return s;
 }
 
@@ -393,10 +437,14 @@ static ast *group_node(parser *parser)
 static ast *parse_node(parser *parser)
 {
 
+	if (parser->prev.type == TOKEN_CH_LPAREN)
+		return group_node(parser);
+	if (is_unary(parser->prev.type))
+		return unary_node(parser);
 	if (_infix(parser->cur))
 		return op_node(parser);
 
-	return _prefix(parser->prev)(parser);
+	return NULL;
 }
 
 static ast *parse_prec(prec_t prec, parser *parser)
@@ -412,21 +460,15 @@ static ast *parse_prec(prec_t prec, parser *parser)
 	}
 	s = parse_node(parser);
 
-	if (!_infix(parser->cur))
-		return s;
-	// if (!s)
-	// s = prefix(parser);
+	if (!s)
+		return _prefix(parser->prev)(parser);
 
-	// if (!s)
-	// return prefix(parser);
-
-	if (prec <= _prec(parser->cur))
+	while (prec <= _prec(parser->cur))
 	{
 		advance(parser);
-		s->right = _infix(parser->prev)(parser);
-		// s->right = (parser->cur.type == TOKEN_CH_LPAREN)
-		//    ? expression(parser)
-		//    : _infix(parser->prev)(parser);
+		s->right = (parser->cur.type == TOKEN_CH_LPAREN)
+		               ? expression(parser)
+		               : _infix(parser->prev)(parser);
 	}
 	return s;
 }
@@ -439,7 +481,7 @@ static ast *ternary_statement(parser *parser)
 	consume(
 	    TOKEN_CH_COLON, "Expected a `:` between ternary expressions", parser
 	);
-	root        = _ast_node(_token(TOKEN_CH_COLON));
+	root        = _ast_node(_token(":", TOKEN_CH_COLON));
 	root->left  = s;
 	root->right = expression(parser);
 	return root;
@@ -450,8 +492,44 @@ static ast *_binary(parser *parser)
 	return parse_prec((prec_t)(_prec(parser->cur) + 1), parser);
 }
 
+static void storage_type(parser *p)
+{
+	switch (p->cur.type)
+	{
+	case TOKEN_STORAGE_TYPE_NUM:
+	case TOKEN_STORAGE_TYPE_CHAR:
+	case TOKEN_STORAGE_TYPE_BOOL:
+	case TOKEN_STORAGE_TYPE_STR:
+		advance(p);
+		break;
+	default:
+		error("Expected a destination storage type");
+		exit(1);
+	}
+}
+
 static ast *cast(parser *p)
 {
+
+	token from = p->prev;
+	token to;
+	ast  *root = NULL;
+
+	consume(
+	    TOKEN_OP_CAST,
+	    "Expected `->` cast operator prior to destination type", p
+	);
+	root = _ast_node(p->prev);
+
+	storage_type(p);
+
+	to                = p->prev;
+	root->left        = _ast_node(_token("^", TOKEN_PARAM));
+	root->left->left  = _ast_node(from);
+	root->left->right = _ast_node(to);
+
+	root->right = expression(p);
+	return root;
 }
 
 static ast *_grouping(parser *parser)
@@ -468,7 +546,7 @@ static void _append(ast **s, ast *a)
 	for (tmp = *s; tmp->right; tmp = tmp->right)
 		;
 
-	tmp->right       = _ast_node(_token("^"));
+	tmp->right       = _ast_node(_token("^", TOKEN_PARAM));
 	tmp->right->left = a;
 }
 
@@ -477,15 +555,13 @@ static ast *_call(parser *parser)
 	ast *s = NULL;
 
 	if (match(TOKEN_CH_RPAREN, parser))
-		return _ast_node(_token(TOKEN_CH_RPAREN));
+		return NULL;
 
-	s       = _ast_node(_token("^"));
+	s       = _ast_node(_token("^", TOKEN_PARAM));
 	s->left = expression(parser);
 
 	while (match(TOKEN_CH_COMMA, parser))
 		_append(&s, expression(parser));
-
-	_append(&s, _ast_node(_token(TOKEN_CH_RPAREN)));
 
 	consume(
 	    TOKEN_CH_RPAREN, "Expect closing `)` after function call", parser
@@ -493,12 +569,11 @@ static ast *_call(parser *parser)
 	return s;
 }
 
-uint8_t is_unary(token_t type)
+static uint8_t is_unary(token_t type)
 {
 	switch (type)
 	{
-	case TOKEN_OP_TYPE_BANG:
-	case TOKEN_OP_TYPE_BITWISE_NOT:
+	case TOKEN_OP_BANG:
 		return 1;
 	default:
 		return 0;
@@ -528,6 +603,13 @@ static ast *_literal_(parser *parser)
 {
 	return _ast_node(parser->prev);
 }
+static ast *dot(parser *parser)
+{
+	ast *a = NULL;
+	a      = _ast_node(parser->cur);
+	advance(parser);
+	return a;
+}
 
 static ast *_id_(parser *parser)
 {
@@ -551,7 +633,7 @@ parser parse(const char *src, const char *file)
 	init_scanner(src);
 	init_parser(&parser, file);
 
-	while (!match(TOKEN_TYPE_EOF, &parser))
+	while (!match(TOKEN_EOF, &parser))
 		push_ast(&parser.ast, declaration(&parser));
 
 	return parser;

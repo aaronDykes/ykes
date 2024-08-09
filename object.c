@@ -46,23 +46,23 @@ int hash_key(char *str)
 element generic_obj(void *obj, obj_t type)
 {
 	element s;
-	s.obj  = obj;
-	s.type = type;
+	s.as.Obj = obj;
+	s.type   = type;
 	return s;
 }
 
 element key_obj(_key key)
 {
 	element s;
-	s.key  = key;
-	s.type = T_KEY;
+	s.as.Key = key;
+	s.type   = T_KEY;
 	return s;
 }
 
 element value_obj(value val, obj_t type)
 {
 	element s;
-	s.val  = val;
+	s.as   = val;
 	s.type = type;
 	return s;
 }
@@ -97,8 +97,8 @@ element Bool(bool Bool)
 element Null(void)
 {
 	element ar;
-	ar.type = T_NULL;
-	ar.obj  = NULL;
+	ar.type   = T_NULL;
+	ar.as.Obj = NULL;
 	return ar;
 }
 
@@ -130,11 +130,11 @@ element KeyObj(const char *str, size_t size)
 _key Key(const char *str, size_t size)
 {
 	_key ar;
-	ar.val = NULL;
-	ar.val = ALLOC(size == 1 ? 2 : size);
-	memcpy(ar.val, str, size);
-	ar.val[size] = '\0';
-	int k        = hash_key(ar.val);
+	ar.Str = NULL;
+	ar.Str = ALLOC(size == 1 ? 2 : size);
+	memcpy(ar.Str, str, size);
+	ar.Str[size] = '\0';
+	int k        = hash_key(ar.Str);
 	ar.hash      = k;
 	return ar;
 }
@@ -160,33 +160,28 @@ void print(element ar)
 	switch (ar.type)
 	{
 	case T_NATIVE:
-		printf("<native: %s>\n", NATIVE(ar)->name.val);
+		printf("<native: %s>\n", NATIVE(ar)->name.Str);
 		break;
 	case T_CLOSURE:
-		printf("<fn: %s>\n", CLOSURE(ar)->func->name.val);
+		printf("<fn: %s>\n", CLOSURE(ar)->func->name.Str);
 		break;
-	case T_CLASS:
-		printf("<class: %s>\n", CLASS(ar)->name.val);
+	case T_STRUCT:
+		printf("<class: %s>\n", STRUCT(ar)->name.Str);
 		break;
 	case T_KEY:
-		printf("<id: %s>\n", ar.key.val);
+		printf("<id: %s>\n", ar.as.Key.Str);
 		break;
-	case T_INSTANCE:
-		printf("<instance: %s>\n", INSTANCE(ar)->classc->name.val);
-		break;
-
 	case T_CHAR:
-		printf("'%c'\n", ar.val.Char);
+		printf("'%c'\n", ar.as.Char);
 		break;
 	case T_NUM:
-		printf("%f\n", ar.val.Num);
+		printf("%f\n", ar.as.Num);
 		break;
 	case T_BOOL:
-		printf("%s\n", (ar.val.Bool) ? "true" : "false");
+		printf("%s\n", (ar.as.Bool) ? "true" : "false");
 		break;
 	case T_STR:
-
-		parse_str(ar.val.String);
+		parse_str(ar.as.String);
 		printf("\n");
 		break;
 	case T_NULL:

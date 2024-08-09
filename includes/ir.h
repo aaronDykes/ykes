@@ -1,8 +1,8 @@
-#ifndef _COMPILER_H
-#define _COMPILER_H
-#include "parser.h"
+#ifndef _IR_H
+#define _IR_H
+#include "ir_common.h"
 #include "object.h"
 
-function *compile(const char *src, const char *file);
+ir gen_ir(const char *src, const char *file);
 
 #endif

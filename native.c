@@ -99,15 +99,15 @@ static void write_file(const char *path, const char *data)
 
 element file_native(int argc, element *argv)
 {
-	switch (*argv->val.String)
+	switch (*argv->as.String)
 	{
 	case 'r':
-		return get_file(argv[1].val.String);
+		return get_file(argv[1].as.String);
 	case 'w':
-		write_file(argv[1].val.String, argv[2].val.String);
+		write_file(argv[1].as.String, argv[2].as.String);
 		return Null();
 	case 'a':
-		append_file(argv[1].val.String, argv[2].val.String);
+		append_file(argv[1].as.String, argv[2].as.String);
 		return Null();
 	default:
 		return Null();

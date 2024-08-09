@@ -32,7 +32,7 @@ struct PRule
 
 struct parser
 {
-	ast_stack   ast;
+	ast_stack  *ast;
 	token       cur;
 	token       prev;
 	table      *lookup;

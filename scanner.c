@@ -82,11 +82,11 @@ token scan_token(void)
 	case '&':
 		if (match('='))
 			return make_token(TOKEN_AND_ASSIGN);
-		return make_token(match('&') ? TOKEN_SC_AND : TOKEN_LG_AND);
+		return make_token(match('&') ? TOKEN_OP_AND : TOKEN_OP_BW_AND);
 	case '|':
 		if (match('='))
 			return make_token(TOKEN_OR__ASSIGN);
-		return make_token(match('|') ? TOKEN_SC_OR : TOKEN_LG_OR);
+		return make_token(match('|') ? TOKEN_OP_OR : TOKEN_OP_BW_OR);
 	case '!':
 		if (check('=') && check_peek(1, '='))
 			return strict_toke(TOKEN_OP_SNE);
@@ -197,7 +197,7 @@ static int id_type(void)
 			switch (scan.start[1])
 			{
 			case 'r':
-				return check_keyword(2, 3, "ray", TOKEN_TYPE_ARRAY);
+				return check_keyword(2, 3, "ray", TOKEN_ARRAY);
 			case 'n':
 				return check_keyword(2, 1, "d", TOKEN_OP_AND);
 			}
@@ -216,13 +216,7 @@ static int id_type(void)
 		case 'a':
 			return check_keyword(2, 2, "se", TOKEN_CASE);
 		case 'l':
-			switch (scan.start[2])
-			{
-			case 'o':
-				return check_keyword(3, 2, "ck", TOKEN_CLOCK);
-			case 'a':
-				return check_keyword(3, 2, "ss", TOKEN_CLASS);
-			}
+			return check_keyword(2, 3, "ock", TOKEN_CLOCK);
 		case 'h':
 			return check_keyword(2, 2, "ar", TOKEN_STORAGE_TYPE_CHAR);
 		}
@@ -236,13 +230,7 @@ static int id_type(void)
 		case 'a':
 			return check_keyword(2, 2, "ch", TOKEN_EACH);
 		case 'l':
-			switch (scan.start[2])
-			{
-			case 's':
-				return check_keyword(3, 1, "e", TOKEN_ELSE);
-			case 'i':
-				return check_keyword(3, 1, "f", TOKEN_ELIF);
-			}
+			return check_else_if(2, 2, "se");
 		}
 	case 'f':
 		if (scan.current - scan.start > 1)
@@ -321,13 +309,20 @@ static int id_type(void)
 				switch (scan.start[2])
 				{
 				case 'r':
-					return check_keyword(
-					    2, 4, "ring", TOKEN_STORAGE_TYPE_STR
-					);
+					switch (scan.start[3])
+					{
+					case 'u':
+						return check_keyword(
+						    4, 2, "ct", TOKEN_STRUCT
+						);
+
+					case 'i':
+						return check_keyword(
+						    4, 2, "ng", TOKEN_STORAGE_TYPE_STR
+						);
+					}
 				case 'a':
-					return check_keyword(
-					    2, 3, "ack", TOKEN_TYPE_STACK
-					);
+					return check_keyword(2, 3, "ack", TOKEN_STACK);
 				}
 			}
 
@@ -350,7 +345,7 @@ static int id_type(void)
 			switch (scan.start[1])
 			{
 			case 'a':
-				return check_keyword(2, 3, "ble", TOKEN_TYPE_TABLE);
+				return check_keyword(2, 3, "ble", TOKEN_TABLE);
 			case 'h':
 				return check_keyword(2, 2, "is", TOKEN_THIS);
 			case 'r':
@@ -367,7 +362,7 @@ static int id_type(void)
 			case 'a':
 				return check_keyword(2, 1, "r", TOKEN_VAR);
 			case 'e':
-				return check_keyword(2, 4, "ctor", TOKEN_TYPE_VECTOR);
+				return check_keyword(2, 4, "ctor", TOKEN_VECTOR);
 			}
 		}
 	case 'V':
@@ -377,6 +372,22 @@ static int id_type(void)
 	}
 	return TOKEN_ID;
 }
+
+static int check_else_if(int start, int end, const char *expected)
+{
+	if ((memcmp((char *)scan.start + start, (char *)expected, end) == 0) &&
+	    ((int)(scan.current - scan.start) == start + end))
+	{
+		if (check(' ') && check_peek('i', 1) && check_peek('f', 2))
+		{
+			nskip(3);
+			return TOKEN_ELSE_IF;
+		}
+		return TOKEN_ELSE;
+	}
+	return TOKEN_ID;
+}
+
 static int check_keyword(int start, int end, const char *str, int t)
 {
 

@@ -65,17 +65,17 @@ element char_to_str(char ch)
 }
 element str_to_num(element *a)
 {
-	Long ll = atoll(a->val.String);
-	free_obj(*a);
+	Long ll = atoll(a->as.String);
+	free_obj(a);
 	return Num(ll);
 }
 element str_to_bool(element *a)
 {
 	element obj;
 
-	if (strcmp(a->val.String, "true") == 0)
+	if (strcmp(a->as.String, "true") == 0)
 		obj = Bool(1);
-	else if (strcmp(a->val.String, "false") == 0)
+	else if (strcmp(a->as.String, "false") == 0)
 		obj = Bool(0);
 	else
 	{
@@ -83,30 +83,30 @@ element str_to_bool(element *a)
 		exit(1);
 	}
 
-	free_obj(*a);
+	free_obj(a);
 	return obj;
 }
 
 element str_to_char(element *a)
 {
-	char ch = *a->val.String;
-	free_obj(*a);
+	char ch = *a->as.String;
+	free_obj(a);
 	return Char(ch);
 }
 
-static element realloc_string(value ar, size_t size)
+static element realloc_string(element *ar, size_t size)
 {
-	ar.String = REALLOC(ar.String, ar.len, size);
-	ar.len    = size;
-	return OBJ(ar, T_STR);
+	ar->as.String = REALLOC(ar->as.String, ar->as.len, size);
+	ar->as.len    = size;
+	return *ar;
 }
 static element append_str_to_str(element *s, element *str)
 {
-	int new = s->val.len + str->val.len;
-	*s      = realloc_string(s->val, new * sizeof(char));
-	strcat(s->val.String, str->val.String);
-	// s->val.String[new] = '\0';
-	FREE(str->val.String);
+	int new = s->as.len + str->as.len;
+	*s      = realloc_string(s, new * sizeof(char));
+	strcat(s->as.String, str->as.String);
+	// s->as.String[new] = '\0';
+	FREE(str->as.String);
 	return *s;
 }
 
@@ -130,7 +130,7 @@ element string_eq(element *s, element *c)
 		exit(1);
 	}
 
-	return Bool(strcmp(s->val.String, c->val.String) == 0);
+	return Bool(strcmp(s->as.String, c->as.String) == 0);
 }
 element string_ne(element *s, element *c)
 {
@@ -141,7 +141,7 @@ element string_ne(element *s, element *c)
 		exit(1);
 	}
 
-	return Bool(strcmp(s->val.String, c->val.String) != 0);
+	return Bool(strcmp(s->as.String, c->as.String) != 0);
 }
 element string_gt(element *s, element *c)
 {
@@ -152,7 +152,7 @@ element string_gt(element *s, element *c)
 		exit(1);
 	}
 
-	return Bool(strcmp(s->val.String, c->val.String) > 0);
+	return Bool(strcmp(s->as.String, c->as.String) > 0);
 }
 element string_ge(element *s, element *c)
 {
@@ -163,7 +163,7 @@ element string_ge(element *s, element *c)
 		exit(1);
 	}
 
-	return Bool(strcmp(s->val.String, c->val.String) >= 0);
+	return Bool(strcmp(s->as.String, c->as.String) >= 0);
 }
 element string_lt(element *s, element *c)
 {
@@ -174,7 +174,7 @@ element string_lt(element *s, element *c)
 		exit(1);
 	}
 
-	return Bool(strcmp(s->val.String, c->val.String) < 0);
+	return Bool(strcmp(s->as.String, c->as.String) < 0);
 }
 element string_le(element *s, element *c)
 {
@@ -185,7 +185,7 @@ element string_le(element *s, element *c)
 		exit(1);
 	}
 
-	return Bool(strcmp(s->val.String, c->val.String) <= 0);
+	return Bool(strcmp(s->as.String, c->as.String) <= 0);
 }
 
 buffer _buffer(size_t size)

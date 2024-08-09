@@ -4,6 +4,7 @@
 
 static int id_type(void);
 static int check_keyword(int start, int end, const char *str, int t);
+static int check_else_if(int start, int end, const char *expected);
 
 static char next(void);
 static char advance(void);

@@ -9,11 +9,11 @@ element _neg(element *a)
 	switch (a->type)
 	{
 	case T_NUM:
-		return Num(-a->val.Num);
+		return Num(-a->as.Num);
 	case T_CHAR:
-		return Char(-a->val.Char);
+		return Char(-a->as.Char);
 	case T_BOOL:
-		return Bool(!a->val.Bool);
+		return Bool(!a->as.Bool);
 	default:
 		error("Invalid type for `++` operation");
 		exit(1);
@@ -26,9 +26,9 @@ element _add(element *a, element *b)
 	switch (b->type)
 	{
 	case T_NUM:
-		return Num(b->val.Num + a->val.Num);
+		return Num(b->as.Num + a->as.Num);
 	case T_CHAR:
-		return Char(b->val.Char + a->val.Num);
+		return Char(b->as.Char + a->as.Num);
 	case T_STR:
 		return append(b, a);
 	default:
@@ -41,10 +41,10 @@ element _to_str(element *a)
 	switch (a->type)
 	{
 	case T_NUM:
-		return lltoa(a->val.Num);
+		return lltoa(a->as.Num);
 	case T_CHAR:
-		return char_to_str(a->val.Char);
-	case T_CLASS:
+		return char_to_str(a->as.Char);
+	case T_STRUCT:
 		return Null();
 	default:
 		error("Invalid string conversion");
@@ -58,18 +58,18 @@ element _cast(element *a, cast_t type)
 	switch (type)
 	{
 	case CAST_NUM_CHAR:
-		return Char((char)a->val.Num);
+		return Char((char)a->as.Num);
 	case CAST_NUM_STR:
-		return lltoa((Long)a->val.Num);
+		return lltoa((Long)a->as.Num);
 	case CAST_CHAR_NUM:
-		return Num((Long)a->val.Char);
+		return Num((Long)a->as.Char);
 	case CAST_CHAR_STR:
-		return char_to_str(a->val.Char);
+		return char_to_str(a->as.Char);
 	case CAST_BOOL_NUM:
-		return Num(a->val.Bool);
+		return Num(a->as.Bool);
 	case CAST_BOOL_STR:
 		return String(
-		    (a->val.Bool) ? "true" : "false", (a->val.Bool) ? 4 : 5
+		    (a->as.Bool) ? "true" : "false", (a->as.Bool) ? 4 : 5
 		);
 	case CAST_STR_NUM:
 		return str_to_num(a);
@@ -88,9 +88,9 @@ element _inc(element *a)
 	switch (a->type)
 	{
 	case T_NUM:
-		return Num(++a->val.Num);
+		return Num(++a->as.Num);
 	case T_CHAR:
-		return Char(++a->val.Char);
+		return Char(++a->as.Char);
 	default:
 		error("Invalid type for `++` operation");
 		exit(1);
@@ -102,9 +102,9 @@ element _dec(element *a)
 	switch (a->type)
 	{
 	case T_NUM:
-		return Num(--a->val.Num);
+		return Num(--a->as.Num);
 	case T_CHAR:
-		return Char(--a->val.Char);
+		return Char(--a->as.Char);
 	default:
 		error("Invalid type for `--` operation");
 		exit(1);
@@ -121,9 +121,9 @@ element _sub(element *a, element *b)
 	switch (b->type)
 	{
 	case T_NUM:
-		return Num(b->val.Num - a->val.Num);
+		return Num(b->as.Num - a->as.Num);
 	case T_CHAR:
-		return Char(b->val.Char - a->val.Char);
+		return Char(b->as.Char - a->as.Char);
 	default:
 		error("Invalid type for `-` operation");
 		exit(1);
@@ -140,9 +140,9 @@ element _mul(element *a, element *b)
 	switch (b->type)
 	{
 	case T_NUM:
-		return Num(b->val.Num * a->val.Num);
+		return Num(b->as.Num * a->as.Num);
 	case T_CHAR:
-		return Num((Long)b->val.Char * a->val.Char);
+		return Num((Long)b->as.Char * a->as.Char);
 	default:
 		error("Invalid type for `*` operation");
 		exit(1);
@@ -159,9 +159,9 @@ element _div(element *a, element *b)
 	switch (b->type)
 	{
 	case T_NUM:
-		return Num(b->val.Num / a->val.Num);
+		return Num(b->as.Num / a->as.Num);
 	case T_CHAR:
-		return Num((double)b->val.Char / (double)a->val.Char);
+		return Num((double)b->as.Char / (double)a->as.Char);
 	default:
 		error("Invalid type for `/` operation");
 		exit(1);
@@ -178,9 +178,9 @@ element _mod(element *a, element *b)
 	switch (b->type)
 	{
 	case T_NUM:
-		return Num((Long)b->val.Num % (Long)a->val.Num);
+		return Num((Long)b->as.Num % (Long)a->as.Num);
 	case T_CHAR:
-		return Char(b->val.Char % a->val.Char);
+		return Char(b->as.Char % a->as.Char);
 	default:
 		error("Invalid type for `%` operation");
 		exit(1);
@@ -197,9 +197,9 @@ element _eq(element *a, element *b)
 	switch (b->type)
 	{
 	case T_NUM:
-		return Bool(b->val.Num == a->val.Num);
+		return Bool(b->as.Num == a->as.Num);
 	case T_CHAR:
-		return Bool(b->val.Char == a->val.Char);
+		return Bool(b->as.Char == a->as.Char);
 	case T_STR:
 		return string_ne(b, a);
 	default:
@@ -218,9 +218,9 @@ element _ne(element *a, element *b)
 	switch (b->type)
 	{
 	case T_NUM:
-		return Bool(b->val.Num != a->val.Num);
+		return Bool(b->as.Num != a->as.Num);
 	case T_CHAR:
-		return Bool(b->val.Char != a->val.Char);
+		return Bool(b->as.Char != a->as.Char);
 	case T_STR:
 		return string_ne(b, a);
 	default:
@@ -239,9 +239,9 @@ element _lt(element *a, element *b)
 	switch (b->type)
 	{
 	case T_NUM:
-		return Bool(b->val.Num < a->val.Num);
+		return Bool(b->as.Num < a->as.Num);
 	case T_CHAR:
-		return Bool(b->val.Char < a->val.Char);
+		return Bool(b->as.Char < a->as.Char);
 	case T_STR:
 		return string_lt(b, a);
 	default:
@@ -260,9 +260,9 @@ element _le(element *a, element *b)
 	switch (b->type)
 	{
 	case T_NUM:
-		return Bool(b->val.Num <= a->val.Num);
+		return Bool(b->as.Num <= a->as.Num);
 	case T_CHAR:
-		return Bool(b->val.Char <= a->val.Char);
+		return Bool(b->as.Char <= a->as.Char);
 	case T_STR:
 		return string_le(b, a);
 	default:
@@ -281,9 +281,9 @@ element _gt(element *a, element *b)
 	switch (b->type)
 	{
 	case T_NUM:
-		return Bool(b->val.Num > a->val.Num);
+		return Bool(b->as.Num > a->as.Num);
 	case T_CHAR:
-		return Bool(b->val.Char > a->val.Char);
+		return Bool(b->as.Char > a->as.Char);
 	case T_STR:
 		return string_gt(b, a);
 	default:
@@ -302,9 +302,9 @@ element _ge(element *a, element *b)
 	switch (b->type)
 	{
 	case T_NUM:
-		return Bool(b->val.Num >= a->val.Num);
+		return Bool(b->as.Num >= a->as.Num);
 	case T_CHAR:
-		return Bool(b->val.Char >= a->val.Char);
+		return Bool(b->as.Char >= a->as.Char);
 	case T_STR:
 		return string_ge(b, a);
 	default:
@@ -315,11 +315,11 @@ element _ge(element *a, element *b)
 
 element _or(element *a, element *b)
 {
-	return Bool(a->val.Bool || b->val.Bool);
+	return Bool(a->as.Bool || b->as.Bool);
 }
 element _and(element *a, element *b)
 {
-	return Bool(b->val.Bool && a->val.Bool);
+	return Bool(b->as.Bool && a->as.Bool);
 }
 
 element _sqr(element *a)
@@ -330,5 +330,5 @@ element _sqr(element *a)
 		exit(1);
 	}
 
-	return Num(sqrt(a->val.Num));
+	return Num(sqrt(a->as.Num));
 }

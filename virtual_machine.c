@@ -1,5 +1,6 @@
 #include "compiler.h"
 #include "error.h"
+#include "ir.h"
 #include "native.h"
 #include "virtual_machine.h"
 #include "vm_util.h"
@@ -18,9 +19,7 @@ void initVM(void)
 	machine.stack.main = GROW_STACK(NULL, STACK_SIZE);
 	machine.glob       = GROW_TABLE(NULL, STACK_SIZE);
 
-	machine.current_instance = NULL;
-	machine.init_fields      = NULL;
-	machine.open_upvals      = NULL;
+	machine.open_upvals = NULL;
 
 	machine.count.argc  = 0;
 	machine.count.frame = 0;
@@ -56,10 +55,10 @@ static void runtime_error(const char *format, ...)
 		function  *func  = frame->closure->func;
 		int        line  = frame->closure->func->ch.lines[i];
 
-		if (!func->name.val)
+		if (!func->name.Str)
 			fprintf(stderr, "script\n");
 		else
-			fprintf(stderr, "%s()\n", func->name.val);
+			fprintf(stderr, "%s()\n", func->name.Str);
 		fprintf(stderr, "[line %d] in script\n", line);
 	}
 
@@ -100,43 +99,50 @@ static bool call(closure *c, uint8_t argc)
 Interpretation interpret(const char *src)
 {
 
-	function *func = NULL;
+	/*
+	      function *func = NULL;
 
-	if (!(func = compile(src)))
-		return INTERPRET_RUNTIME_ERR;
+	      if (!(func = compile(src)))
+	            return INTERPRET_RUNTIME_ERR;
 
-	closure *clos = _closure(func);
-	call(clos, 0);
-	machine.frames[machine.count.frame - 1].slots = machine.stack.main->as;
+	      closure *clos = _closure(func);
+	      call(clos, 0);
+	      machine.frames[machine.count.frame - 1].slots =
+	   machine.stack.main->as;
 
-	machine.stack.obj = GROW_STACK(NULL, func->objc);
+	      machine.stack.obj = GROW_STACK(NULL, func->objc);
 
-	define_natives(&machine.stack.obj);
-	push(&machine.stack.main, GEN(clos, T_CLOSURE));
+	      define_natives(&machine.stack.obj);
+	      push(&machine.stack.main, GEN(clos, T_CLOSURE));
 
-	close_upvalues();
-	return run();
+	      close_upvalues();
+	*/
+	return INTERPRET_RUNTIME_ERR;
 }
 Interpretation
 interpret_path(const char *src, const char *path, const char *name)
 {
 
-	function *func = NULL;
+	//  *func = NULL;
 
-	if (!(func = compile_path(src, path, name)))
-		return INTERPRET_RUNTIME_ERR;
+	// if (!(func = gen_ir(src, path)))
+	// return INTERPRET_RUNTIME_ERR;
 
-	closure *clos = _closure(func);
-	call(clos, 0);
-	machine.frames[machine.count.frame - 1].slots = machine.stack.main->as;
+	/*
+	      closure *clos = _closure(func);
+	      call(clos, 0);
+	      machine.frames[machine.count.frame - 1].slots =
+	   machine.stack.main->as;
 
-	machine.stack.obj = GROW_STACK(NULL, func->objc);
+	      machine.stack.obj = GROW_STACK(NULL, func->objc);
 
-	define_natives(&machine.stack.obj);
-	push(&machine.stack.main, GEN(clos, T_CLOSURE));
+	      define_natives(&machine.stack.obj);
+	      push(&machine.stack.main, GEN(clos, T_CLOSURE));
 
-	close_upvalues();
-	return run();
+	      close_upvalues();
+	      return run();
+	*/
+	return INTERPRET_RUNTIME_ERR;
 }
 
 static bool call_value(element el, uint8_t argc)
@@ -198,13 +204,12 @@ static bool not_null(element el)
 	switch (el.type)
 	{
 	case T_STR:
-		return el.val.String ? true : false;
+		return el.as.String ? true : false;
 	case T_TABLE:
 	case T_CLOSURE:
-	case T_CLASS:
-	case T_INSTANCE:
+	case T_STRUCT:
 	case T_STACK:
-		return el.obj ? true : false;
+		return el.as.Obj ? true : false;
 	default:
 		return false;
 	}
@@ -214,13 +219,12 @@ static bool null(element el)
 	switch (el.type)
 	{
 	case T_STR:
-		return el.val.String ? false : true;
+		return el.as.String ? false : true;
 	case T_TABLE:
 	case T_CLOSURE:
-	case T_CLASS:
-	case T_INSTANCE:
+	case T_STRUCT:
 	case T_STACK:
-		return el.obj ? false : true;
+		return el.as.Obj ? false : true;
 	default:
 		return true;
 	}
@@ -250,8 +254,8 @@ Interpretation run(void)
 
 #define UPVALUE() ((*(frame->closure->upvals + READ_BYTE()))->closed)
 
-#define FALSEY() (!POP()->val.Bool)
-#define TRUTHY() (POP()->val.Bool)
+#define FALSEY() (!POP()->as.Bool)
+#define TRUTHY() (POP()->as.Bool)
 
 #define LOCAL()   (*(frame->slots + READ_BYTE()))
 #define NLOCAL(n) (*(frame->slots + n))
@@ -327,7 +331,7 @@ Interpretation run(void)
 			    _dec((machine.stack.main->as + COUNT()++));
 			break;
 		case OP_POPN:
-			POPN(READ_CONSTANT().val.Num);
+			POPN(READ_CONSTANT().as.Num);
 			break;
 		case OP_POP:
 			POP();
@@ -392,7 +396,7 @@ Interpretation run(void)
 			obj          = PEEK();
 			element inst = NPEEK(1);
 
-			if (inst.type != T_INSTANCE && !machine.init_fields)
+			if (inst.type != T_STRUCT)
 			{
 				runtime_error(
 				    "ERROR: Can only set properties of an instance."
@@ -401,9 +405,7 @@ Interpretation run(void)
 			}
 
 			write_table(
-			    machine.init_fields ? machine.init_fields
-							: INSTANCE(inst)->fields,
-			    READ_CONSTANT().key, obj
+			    STRUCT(inst)->fields, READ_CONSTANT().as.Key, obj
 			);
 			POPN(2);
 			PUSH(obj);
@@ -413,7 +415,7 @@ Interpretation run(void)
 		{
 
 			element inst = *POP();
-			if (inst.type != T_INSTANCE && !machine.init_fields)
+			if (inst.type != T_STRUCT)
 			{
 				runtime_error(
 				    "ERROR: Only instances contain properties."
@@ -421,18 +423,16 @@ Interpretation run(void)
 				return INTERPRET_RUNTIME_ERR;
 			}
 
-			key = READ_CONSTANT().key;
+			key = READ_CONSTANT().as.Key;
 
-			obj = (machine.init_fields)
-			          ? find_entry(&machine.init_fields, &key)
-			          : find_entry(&INSTANCE(inst)->fields, &key);
+			obj = find_entry(&STRUCT(inst)->fields, &key);
 
 			if (obj.type != T_NULL)
 			{
 				PUSH(obj);
 				break;
 			}
-			runtime_error("ERROR: Undefined property '%s'.", key.val);
+			runtime_error("ERROR: Undefined property '%s'.", key.Str);
 			return INTERPRET_RUNTIME_ERR;
 		}
 
@@ -521,26 +521,16 @@ Interpretation run(void)
 			SET_OBJ(argc, READ_CONSTANT());
 			break;
 
-		case OP_CLASS:
+		case OP_STRUCT:
 		{
-			class *c            = CLASS(OBJECT());
-			machine.init_fields = copy_table(c->closures);
-			PUSH(GEN(c->init, T_CLOSURE));
+			structure *c = NULL;
+			c            = STRUCT(OBJECT());
+			c->fields    = GROW_TABLE(NULL, INIT_SIZE);
+			PUSH(GEN(c, T_STRUCT));
 		}
 		break;
-		case OP_ALLOC_INSTANCE:
-			machine.current_instance = _instance(CLASS(OBJECT()));
-			machine.current_instance->fields =
-			    (machine.init_fields)
-				  ? machine.init_fields
-				  : copy_table(
-					  machine.current_instance->classc->closures
-				    );
-			machine.init_fields = NULL;
-			PUSH(GEN(machine.current_instance, T_INSTANCE));
-			break;
 		case OP_RM:
-			FREE_OBJ(*POP());
+			FREE_OBJ(POP());
 			break;
 		case OP_ALLOC_TABLE:
 			if (PEEK().type != T_NUM)
@@ -550,10 +540,10 @@ Interpretation run(void)
 				);
 				return INTERPRET_RUNTIME_ERR;
 			}
-			PUSH(GEN(GROW_TABLE(NULL, POP()->val.Num), T_TABLE));
+			PUSH(GEN(GROW_TABLE(NULL, POP()->as.Num), T_TABLE));
 			break;
 		case OP_GET_GLOBAL:
-			key = READ_CONSTANT().key;
+			key = READ_CONSTANT().as.Key;
 			obj = GET(key);
 
 			if (obj.type != T_NULL)
@@ -562,17 +552,17 @@ Interpretation run(void)
 				break;
 			}
 
-			runtime_error("ERROR: Undefined property '%s'.", key.val);
+			runtime_error("ERROR: Undefined property '%s'.", key.Str);
 			return INTERPRET_RUNTIME_ERR;
 		case OP_GLOBAL_DEF:
-			key = READ_CONSTANT().key;
+			key = READ_CONSTANT().as.Key;
 			obj = *POP();
 
 			if (GET(key).type != T_NULL)
 			{
 				error(
 				    "Duplicate global variable identifier: %s\n",
-				    key.val
+				    key.Str
 				);
 				return INTERPRET_RUNTIME_ERR;
 			}
@@ -580,10 +570,10 @@ Interpretation run(void)
 			SET(key, obj);
 			break;
 		case OP_SET_GLOBAL:
-			SET(READ_CONSTANT().key, *POP());
+			SET(READ_CONSTANT().as.Key, *POP());
 			break;
 		case OP_SET_FUNC_VAR:
-			key = READ_CONSTANT().key;
+			key = READ_CONSTANT().as.Key;
 			obj = (machine.count.cargc < machine.count.argc)
 			          ? *(frame->slots + machine.count.cargc++)
 			          : *POP();

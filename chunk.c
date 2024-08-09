@@ -1,10 +1,10 @@
 #include "chunk.h"
 
-static generic_vector gen_vec(void)
+static jmp_vector gen_vec(size_t size)
 {
-	generic_vector g;
+	jmp_vector g;
 	g.count = 0;
-	g.len   = STACK_SIZE;
+	g.len   = size;
 	g.bytes = NULL;
 	g.bytes = ALLOC(sizeof(uint16_t) * g.len);
 	return g;
@@ -18,7 +18,8 @@ static void init_chunk(chunk *c)
 	c->len       = STACK_SIZE;
 	c->count     = 0;
 
-	c->cases     = gen_vec();
+	c->cases     = gen_vec(INIT_SIZE);
+	c->expr      = gen_vec(STACK_SIZE);
 	c->ip        = ALLOC(STACK_SIZE);
 	c->lines     = ALLOC(STACK_SIZE * sizeof(uint16_t));
 	c->constants = GROW_STACK(NULL, STACK_SIZE);
@@ -54,6 +55,13 @@ void write_chunk(chunk *c, uint8_t byte, uint16_t line)
 		c->cases.bytes =
 		    REALLOC(c->cases.bytes, c->cases.len * sizeof(uint16_t), size);
 		c->cases.len *= INC;
+	}
+	if (c->expr.len < c->expr.count + 1)
+	{
+		size_t size = c->expr.len * INC * sizeof(uint16_t);
+		c->expr.bytes =
+		    REALLOC(c->expr.bytes, c->expr.len * sizeof(uint16_t), size);
+		c->expr.len *= INC;
 	}
 
 	*(c->lines + c->count) = line;

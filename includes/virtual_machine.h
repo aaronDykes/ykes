@@ -49,10 +49,8 @@ struct vm
 	CallFrame frames[FRAMES_MAX];
 	vm_stack  stack;
 
-	instance *current_instance;
-	table    *init_fields;
-	upval    *open_upvals;
-	table    *glob;
+	upval *open_upvals;
+	table *glob;
 };
 
 static vm machine;

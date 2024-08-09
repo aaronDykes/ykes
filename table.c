@@ -13,7 +13,7 @@ static void insert_entry(table **t, record entry)
 {
 	size_t index = entry.key.hash & ((*t)->len - 1);
 
-	if (!(*t)->records[index].key.val)
+	if (!(*t)->records[index].key.Str)
 	{
 		(*t)->records[index] = entry;
 		return;
@@ -21,8 +21,8 @@ static void insert_entry(table **t, record entry)
 
 	if ((*t)->records[index].key.hash == entry.key.hash)
 	{
-		FREE((*t)->records[index].key.val);
-		FREE_OBJ((*t)->records[index].val);
+		FREE((*t)->records[index].key.Str);
+		FREE_OBJ(&(*t)->records[index].val);
 		(*t)->records[index] = entry;
 		return;
 	}
@@ -30,7 +30,7 @@ static void insert_entry(table **t, record entry)
 	for (record *ptr = (*t)->records[index].next; ptr; ptr = ptr->next)
 		if (ptr->key.hash == entry.key.hash)
 		{
-			FREE_OBJ(ptr->val);
+			FREE_OBJ(&ptr->val);
 			ptr->val = entry.val;
 			return;
 		}
@@ -45,7 +45,7 @@ element find_entry(table **t, _key *hash)
 {
 	size_t index = hash->hash & ((*t)->len - 1);
 
-	if (!(*t)->records[index].key.val)
+	if (!(*t)->records[index].key.Str)
 		return Null();
 
 	if ((*t)->records[index].key.hash == hash->hash)
@@ -85,7 +85,7 @@ table *copy_table(table *t)
 	ptr = alloc_table(t->len);
 
 	for (size_t i = 0; i < t->len; i++)
-		if ((t->records + i)->key.val)
+		if ((t->records + i)->key.Str)
 		{
 			size_t index = (t->records + i)->key.hash & (t->len - 1);
 			*(ptr->records + index) = *(t->records + i);
@@ -106,7 +106,7 @@ table *realloc_table(table *t, size_t size)
 	ptr = alloc_table(size);
 
 	for (size_t i = 0; i < new_size; i++)
-		if (t->records[i].key.val)
+		if (t->records[i].key.Str)
 		{
 			size_t index        = t->records[i].key.hash & (size - 1);
 			ptr->records[index] = new_entry(t->records[i]);
@@ -150,7 +150,7 @@ table *alloc_table(size_t size)
 	t->records = ALLOC(sizeof(record) * size);
 
 	for (int i = 0; i < t->len; i++)
-		t->records[i].key.val = NULL;
+		t->records[i].key.Str = NULL;
 
 	return t;
 }

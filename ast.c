@@ -17,16 +17,15 @@ ast *_ast_node(token token)
 	ast *a = NULL;
 	a      = ALLOC(sizeof(ast));
 
-	a->left  = NULL;
-	a->right = NULL;
+	a->evaluated = 0;
+	a->left      = NULL;
+	a->right     = NULL;
 #ifdef _DEBUG_AST_STRUCTURE
 	a->token       = token;
 	a->token.start = strip_token(&token);
 #else
-	a->token = token;
+	a->token = token_cpy(token);
 #endif
-
-	a->size = token.size;
 
 	return a;
 }
@@ -36,7 +35,7 @@ ast _ast_null(void)
 	ast a;
 	a.left       = NULL;
 	a.right      = NULL;
-	a.token.type = TOKEN_TYPE_ERROR;
+	a.token.type = TOKEN_ERR;
 	return a;
 }
 
@@ -102,6 +101,14 @@ token _token(const char *val, token_t type)
 	t.start = val;
 	t.size  = 1;
 	t.type  = type;
+	return t;
+}
+token token_cpy(token src)
+{
+	token t;
+	t.start = src.start;
+	t.size  = src.size;
+	t.type  = src.type;
 	return t;
 }
 
