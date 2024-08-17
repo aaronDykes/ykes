@@ -75,6 +75,9 @@
           "include": "#function-declaration"
         },
         {
+          "include": "#class-declaration"
+        },
+        {
           "include": "#struct-declaration"
         },
         {
@@ -148,7 +151,7 @@
               "name": "keyword.control.flow.js"
             }
           },
-          "end": "(?=[;}]|$|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|struct|const|continue|declare|do|else|elif|enum|export|finally|sr|for|each|goto|if|import|include|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))",
+          "end": "(?=[;}]|$|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|class|struct|const|continue|declare|do|else|elif|enum|export|finally|sr|for|each|goto|if|import|include|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))",
           "patterns": [
             {
               "include": "#expression"
@@ -243,6 +246,9 @@
           "include": "#function-expression"
         },
         {
+          "include": "#class-expression"
+        },
+        {
           "include": "#struct-expression"
         },
         {
@@ -313,7 +319,7 @@
         {
           "name": "meta.var.expr.js",
           "begin": "(?=(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(?:(\\bexport)\\s+)?(?:(\\bdeclare)\\s+)?\\b(var|let|num|double|long|byte|char|string|)(?![_$[:alnum:]])(?:(?=\\.\\.\\.)|(?!\\.)))",
-          "end": "(?!(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(?:(\\bexport)\\s+)?(?:(\\bdeclare)\\s+)?\\b(var|num|double|long|byte|char|string|let)(?![_$[:alnum:]])(?:(?=\\.\\.\\.)|(?!\\.)))((?=^|;|}|((?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(of|in)\\s+)|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|struct|const|continue|declare|do|else|enum|export|finally|function|for|each|goto|if|import|include|interface|let|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))|((?<!^let|[^\\._$[:alnum:]]let|^var|[^\\._$[:alnum:]]var)(?=\\s*$)))",
+          "end": "(?!(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(?:(\\bexport)\\s+)?(?:(\\bdeclare)\\s+)?\\b(var|num|double|long|byte|char|string|let)(?![_$[:alnum:]])(?:(?=\\.\\.\\.)|(?!\\.)))((?=^|;|}|((?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(of|in)\\s+)|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|class|const|continue|declare|do|else|enum|export|finally|function|for|each|goto|if|import|include|interface|let|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))|((?<!^let|[^\\._$[:alnum:]]let|^var|[^\\._$[:alnum:]]var)(?=\\s*$)))",
           "patterns": [
             {
               "begin": "(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(?:(\\bexport)\\s+)?(?:(\\bdeclare)\\s+)?\\b(var|num|double|long|byte|char|string|let)(?![_$[:alnum:]])(?:(?=\\.\\.\\.)|(?!\\.))\\s*",
@@ -387,7 +393,7 @@
               "name": "storage.type.js"
             }
           },
-          "end": "(?!(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(?:(\\bexport)\\s+)?(?:(\\bdeclare)\\s+)?\\b(const(?!\\s+enum\\b))(?![_$[:alnum:]])(?:(?=\\.\\.\\.)|(?!\\.)))((?=^|;|}|((?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(of|in)\\s+)|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|struct|const|continue|declare|do|else|enum|export|finally|function|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))|((?<!^const|[^\\._$[:alnum:]]const)(?=\\s*$)))",
+          "end": "(?!(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(?:(\\bexport)\\s+)?(?:(\\bdeclare)\\s+)?\\b(const(?!\\s+enum\\b))(?![_$[:alnum:]])(?:(?=\\.\\.\\.)|(?!\\.)))((?=^|;|}|((?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(of|in)\\s+)|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|class|const|continue|declare|do|else|enum|export|finally|function|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))|((?<!^const|[^\\._$[:alnum:]]const)(?=\\s*$)))",
           "patterns": [
             {
               "begin": "(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(?:(\\bexport)\\s+)?(?:(\\bdeclare)\\s+)?\\b(const(?!\\s+enum\\b))(?![_$[:alnum:]])(?:(?=\\.\\.\\.)|(?!\\.))\\s*",
@@ -461,7 +467,7 @@
               "name": "storage.type.js"
             }
           },
-          "end": "(?!(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(?:(\\bexport)\\s+)?(?:(\\bdeclare)\\s+)?\\b((?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b))(?![_$[:alnum:]])(?:(?=\\.\\.\\.)|(?!\\.)))((?=;|}|((?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(of|in)\\s+)|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|struct|struct|const|continue|declare|do|else|enum|export|finally|function|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))|((?<!^using|[^\\._$[:alnum:]]using|^await\\s+using|[^\\._$[:alnum:]]await\\s+using)(?=\\s*$)))",
+          "end": "(?!(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(?:(\\bexport)\\s+)?(?:(\\bdeclare)\\s+)?\\b((?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b))(?![_$[:alnum:]])(?:(?=\\.\\.\\.)|(?!\\.)))((?=;|}|((?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(of|in)\\s+)|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|class|const|continue|declare|do|else|enum|export|finally|function|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))|((?<!^using|[^\\._$[:alnum:]]using|^await\\s+using|[^\\._$[:alnum:]]await\\s+using)(?=\\s*$)))",
           "patterns": [
             {
               "begin": "(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(?:(\\bexport)\\s+)?(?:(\\bdeclare)\\s+)?\\b((?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b))(?![_$[:alnum:]])(?:(?=\\.\\.\\.)|(?!\\.))\\s*",
@@ -530,7 +536,7 @@
               "name": "keyword.operator.definiteassignment.js"
             }
           },
-          "end": "(?=$|^|[;,=}]|((?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(of|in)\\s+)|(;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|struct|struct|const|continue|declare|do|else|enum|export|finally|function|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b)))",
+          "end": "(?=$|^|[;,=}]|((?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(of|in)\\s+)|(;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|class|const|continue|declare|do|else|enum|export|finally|function|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b)))",
           "patterns": [
             {
               "include": "#var-single-variable-type-annotation"
@@ -548,7 +554,7 @@
               "name": "keyword.operator.definiteassignment.js"
             }
           },
-          "end": "(?=$|^|[;,=}]|((?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(of|in)\\s+)|(;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|struct|struct|const|continue|declare|do|else|enum|export|finally|function|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b)))",
+          "end": "(?=$|^|[;,=}]|((?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(of|in)\\s+)|(;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|class|const|continue|declare|do|else|enum|export|finally|function|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b)))",
           "patterns": [
             {
               "include": "#var-single-variable-type-annotation"
@@ -566,7 +572,7 @@
               "name": "keyword.operator.definiteassignment.js"
             }
           },
-          "end": "(?=$|^|[;,=}]|((?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(of|in)\\s+)|(;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|struct|const|continue|declare|do|else|enum|export|finally|function|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b)))",
+          "end": "(?=$|^|[;,=}]|((?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(of|in)\\s+)|(;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|class|const|continue|declare|do|else|enum|export|finally|function|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b)))",
           "patterns": [
             {
               "include": "#var-single-variable-type-annotation"
@@ -585,7 +591,7 @@
               "name": "meta.definition.variable.js variable.other.constant.js entity.name.function.js"
             }
           },
-          "end": "(?=$|^|[;,=}]|((?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(of|in)\\s+)|(;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|struct|const|continue|declare|do|else|enum|export|finally|function|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b)))",
+          "end": "(?=$|^|[;,=}]|((?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(of|in)\\s+)|(;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|class|const|continue|declare|do|else|enum|export|finally|function|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b)))",
           "patterns": [
             {
               "include": "#var-single-variable-type-annotation"
@@ -600,7 +606,7 @@
               "name": "meta.definition.variable.js variable.other.constant.js"
             }
           },
-          "end": "(?=$|^|[;,=}]|((?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(of|in)\\s+)|(;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|struct|const|continue|declare|do|else|enum|export|finally|function|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b)))",
+          "end": "(?=$|^|[;,=}]|((?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(of|in)\\s+)|(;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|class|const|continue|declare|do|else|enum|export|finally|function|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b)))",
           "patterns": [
             {
               "include": "#var-single-variable-type-annotation"
@@ -1288,7 +1294,7 @@
           "name": "meta.definition.function.js entity.name.function.js"
         }
       },
-      "end": "(?=;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|struct|const|continue|declare|do|else|enum|export|finally|sr|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))|(?<=\\})",
+      "end": "(?=;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|class|const|continue|declare|do|else|enum|export|finally|sr|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))|(?<=\\})",
       "patterns": [
         {
           "include": "#function-name"
@@ -1547,7 +1553,7 @@
               "name": "storage.modifier.async.js"
             }
           },
-          "end": "(?==>|\\{|(^\\s*(export|sr|struct|struct|interface|let|var|num|byte|double|char|string|long|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|const|import|include|enum|namespace|module|type|abstract|declare)\\s+))",
+          "end": "(?==>|\\{|(^\\s*(export|sr|struct|class|interface|let|var|num|byte|double|char|string|long|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|const|import|include|enum|namespace|module|type|abstract|declare)\\s+))",
           "patterns": [
             {
               "include": "#comment"
@@ -1779,6 +1785,72 @@
         }
       ]
     },
+    "class-declaration": {
+      "name": "meta.class.js",
+      "begin": "(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(?:(\\bexport)\\s+)?(?:(\\bdeclare)\\s+)?\\b(?:(abstract)\\s+)?\\b(class)\\b(?=\\s+|/[/*])",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.export.js"
+        },
+        "2": {
+          "name": "storage.modifier.js"
+        },
+        "3": {
+          "name": "storage.modifier.js"
+        },
+        "4": {
+          "name": "storage.type.class.js"
+        }
+      },
+      "end": "(?<=\\})",
+      "patterns": [
+        {
+          "include": "#class-declaration-or-expression-patterns"
+        }
+      ]
+    },
+    "class-expression": {
+      "name": "meta.class.js",
+      "begin": "(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(?:(abstract)\\s+)?(class)\\b(?=\\s+|[<{]|\\/[\\/*])",
+      "beginCaptures": {
+        "1": {
+          "name": "storage.modifier.js"
+        },
+        "2": {
+          "name": "storage.type.class.js"
+        }
+      },
+      "end": "(?<=\\})",
+      "patterns": [
+        {
+          "include": "#class-declaration-or-expression-patterns"
+        }
+      ]
+    },
+    "class-declaration-or-expression-patterns": {
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#class-or-interface-heritage"
+        },
+        {
+          "match": "[_$[:alpha:]][_$[:alnum:]]*",
+          "captures": {
+            "0": {
+              "name": "entity.name.type.class.js"
+            }
+          }
+        },
+        {
+          "include": "#type-parameters"
+        },
+        {
+          "include": "#class-or-interface-body"
+        }
+      ]
+    },
     "interface-declaration": {
       "name": "meta.interface.js",
       "begin": "(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(?:(\\bexport)\\s+)?(?:(\\bdeclare)\\s+)?\\b(?:(abstract)\\s+)?\\b(interface)\\b(?=\\s+|/[/*])",
@@ -1805,6 +1877,9 @@
           "include": "#struct-or-interface-heritage"
         },
         {
+          "include": "#class-or-interface-heritage"
+        },
+        {
           "match": "[_$[:alpha:]][_$[:alnum:]]*",
           "captures": {
             "0": {
@@ -1816,7 +1891,131 @@
           "include": "#type-parameters"
         },
         {
+          "include": "#class-or-interface-body"
+        },
+        {
           "include": "#struct-or-interface-body"
+        }
+      ]
+    },
+    "class-or-interface-heritage": {
+      "begin": "(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(?:\\b(extends|implements)\\b)(?![_$[:alnum:]])(?:(?=\\.\\.\\.)|(?!\\.))",
+      "beginCaptures": {
+        "1": {
+          "name": "storage.modifier.js"
+        }
+      },
+      "end": "(?=\\{)",
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#class-or-interface-heritage"
+        },
+        {
+          "include": "#type-parameters"
+        },
+        {
+          "include": "#expressionWithoutIdentifiers"
+        },
+        {
+          "match": "([_$[:alpha:]][_$[:alnum:]]*)\\s*(?:(\\.)|(\\?\\.(?!\\s*[[:digit:]])))(?=\\s*[_$[:alpha:]][_$[:alnum:]]*(\\s*\\??\\.\\s*[_$[:alpha:]][_$[:alnum:]]*)*\\s*)",
+          "captures": {
+            "1": {
+              "name": "entity.name.type.module.js"
+            },
+            "2": {
+              "name": "punctuation.accessor.js"
+            },
+            "3": {
+              "name": "punctuation.accessor.optional.js"
+            }
+          }
+        },
+        {
+          "match": "([_$[:alpha:]][_$[:alnum:]]*)",
+          "captures": {
+            "1": {
+              "name": "entity.other.inherited-struct.js"
+            }
+          }
+        },
+        {
+          "include": "#expressionPunctuations"
+        }
+      ]
+    },
+    "class-or-interface-body": {
+      "begin": "\\{",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.block.js"
+        }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.block.js"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#decorator"
+        },
+        {
+          "begin": "(?<=:)\\s*",
+          "end": "(?=\\s|[;),}\\]:\\-\\+]|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|class|const|continue|declare|do|else|enum|export|finally|sr|for|each|goto|if|import|include|interface|let|module|namespace|num|double|long|byte|char|string|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))",
+          "patterns": [
+            {
+              "include": "#expression"
+            }
+          ]
+        },
+        {
+          "include": "#method-declaration"
+        },
+        {
+          "include": "#indexer-declaration"
+        },
+        {
+          "include": "#field-declaration"
+        },
+        {
+          "include": "#string"
+        },
+        {
+          "include": "#type-annotation"
+        },
+        {
+          "include": "#variable-initializer"
+        },
+        {
+          "include": "#access-modifier"
+        },
+        {
+          "include": "#property-accessor"
+        },
+        {
+          "include": "#async-modifier"
+        },
+        {
+          "include": "#after-operator-block-as-object-literal"
+        },
+        {
+          "include": "#decl-block"
+        },
+        {
+          "include": "#expression"
+        },
+        {
+          "include": "#punctuation-comma"
+        },
+        {
+          "include": "#punctuation-semicolon"
         }
       ]
     },
@@ -1890,7 +2089,7 @@
         },
         {
           "begin": "(?<=:)\\s*",
-          "end": "(?=\\s|[;),}\\]:\\-\\+]|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|struct|const|continue|declare|do|else|enum|export|finally|sr|for|each|goto|if|import|include|interface|let|module|namespace|num|double|long|byte|char|string|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))",
+          "end": "(?=\\s|[;),}\\]:\\-\\+]|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|class|const|continue|declare|do|else|enum|export|finally|sr|for|each|goto|if|import|include|interface|let|module|namespace|num|double|long|byte|char|string|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))",
           "patterns": [
             {
               "include": "#expression"
@@ -2051,7 +2250,7 @@
           "name": "storage.type.namespace.js"
         }
       },
-      "end": "(?<=\\})|(?=;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|struct|const|continue|declare|do|else|enum|export|finally|sr|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))",
+      "end": "(?<=\\})|(?=;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|class|const|continue|declare|do|else|enum|export|finally|sr|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))",
       "patterns": [
         {
           "include": "#comment"
@@ -2088,7 +2287,7 @@
           "name": "entity.name.type.alias.js"
         }
       },
-      "end": "(?=\\}|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|struct|const|continue|declare|do|else|enum|export|finally|sr|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))",
+      "end": "(?=\\}|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|class|const|continue|declare|do|else|enum|export|finally|sr|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))",
       "patterns": [
         {
           "include": "#comment"
@@ -2106,7 +2305,7 @@
               "name": "keyword.control.intrinsic.js"
             }
           },
-          "end": "(?=\\}|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|struct|const|continue|declare|do|else|enum|export|finally|sr|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))",
+          "end": "(?=\\}|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|class|const|continue|declare|do|else|enum|export|finally|sr|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))",
           "patterns": [
             {
               "include": "#type"
@@ -2120,7 +2319,7 @@
               "name": "keyword.operator.assignment.js"
             }
           },
-          "end": "(?=\\}|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|struct|const|continue|declare|do|else|enum|export|finally|sr|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))",
+          "end": "(?=\\}|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|class|const|continue|declare|do|else|enum|export|finally|sr|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))",
           "patterns": [
             {
               "include": "#type"
@@ -2311,7 +2510,7 @@
               "name": "keyword.control.default.js"
             }
           },
-          "end": "(?=$|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|struct|const|continue|declare|do|else|enum|export|finally|sr|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))",
+          "end": "(?=$|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|class|const|continue|declare|do|else|enum|export|finally|sr|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))",
           "patterns": [
             {
               "include": "#interface-declaration"
@@ -2323,7 +2522,7 @@
         },
         {
           "name": "meta.export.js",
-          "begin": "(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(export)(?:\\s+(type))?\\b(?!(\\$)|(\\s*:))((?=\\s*[\\{*])|((?=\\s*[_$[:alpha:]][_$[:alnum:]]*(\\s|,))(?!\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|struct|const|continue|declare|do|else|enum|export|finally|sr|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b)))",
+          "begin": "(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(export)(?:\\s+(type))?\\b(?!(\\$)|(\\s*:))((?=\\s*[\\{*])|((?=\\s*[_$[:alpha:]][_$[:alnum:]]*(\\s|,))(?!\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|class|const|continue|declare|do|else|enum|export|finally|sr|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b)))",
           "beginCaptures": {
             "1": {
               "name": "keyword.control.export.js"
@@ -2332,7 +2531,7 @@
               "name": "keyword.control.type.js"
             }
           },
-          "end": "(?=$|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|struct|const|continue|declare|do|else|enum|export|finally|sr|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))",
+          "end": "(?=$|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|catch|struct|class|const|continue|declare|do|else|enum|export|finally|sr|for|each|goto|if|import|include|interface|let|num|double|long|byte|char|string|module|namespace|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))",
           "patterns": [
             {
               "include": "#import-export-declaration"
@@ -3560,7 +3759,7 @@
           "name": "keyword.operator.expression.typeof.js"
         }
       },
-      "end": "(?=[,);}\\]=>:&|{\\?]|(extends\\s+)|$|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|sr|catch|pout|struct|struct|const|continue|declare|do|else|elif|enum|export|finally|sr|for|each|goto|if|import|include|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))",
+      "end": "(?=[,);}\\]=>:&|{\\?]|(extends\\s+)|$|;|^\\s*$|(?:^\\s*(?:abstract|async|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|break|case|sr|catch|pout|struct|class|const|continue|declare|do|else|elif|enum|export|finally|sr|for|each|goto|if|import|include|switch|return|throw|try|type|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|var|while|each)\\b))",
       "patterns": [
         {
           "include": "#type-arguments"
@@ -4084,7 +4283,7 @@
           "name": "keyword.operator.type.annotation.js"
         }
       },
-      "end": "(?==>|\\{|(^\\s*(export|sr|elif|struct|struct|interface|let|var|num|byte|double|char|string|long|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|const|import|include|enum|namespace|module|type|abstract|declare)\\s+))",
+      "end": "(?==>|\\{|(^\\s*(export|sr|elif|struct|class|interface|let|var|num|byte|double|char|string|long|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|const|import|include|enum|namespace|module|type|abstract|declare)\\s+))",
       "patterns": [
         {
           "include": "#arrow-return-type-body"
@@ -4098,7 +4297,7 @@
           "name": "meta.arrow.js meta.return.type.arrow.js keyword.operator.type.annotation.js"
         }
       },
-      "end": "(?==>|\\{|(^\\s*(export|sr|elif|struct|struct|interface|let|var|num|byte|double|char|string|long|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|const|import|include|enum|namespace|module|type|abstract|declare)\\s+))",
+      "end": "(?==>|\\{|(^\\s*(export|sr|elif|struct|class|interface|let|var|num|byte|double|char|string|long|(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)|(?:\\bawait\\s+(?:\\busing(?=\\s+(?!in\\b|of\\b(?!\\s*(?:of\\b|=)))[_$[:alpha:]])\\b)\\b)|const|import|include|enum|namespace|module|type|abstract|declare)\\s+))",
       "contentName": "meta.arrow.js meta.return.type.arrow.js",
       "patterns": [
         {
@@ -5447,7 +5646,7 @@
           ]
         },
         {
-          "match": "(?x) ((@)kind) \\s+ (struct|struct|constant|event|external|file|sr|member|mixin|module|namespace|typedef) \\b",
+          "match": "(?x) ((@)kind) \\s+ (struct|class|constant|event|external|file|sr|member|mixin|module|namespace|typedef) \\b",
           "captures": {
             "1": {
               "name": "storage.type.struct.jsdoc"
@@ -5663,7 +5862,7 @@
         },
         {
           "name": "storage.type.struct.jsdoc",
-          "match": "(?x) (@) (?:abstract|access|alias|api|arg|argument|async|attribute|augments|author|beta|borrows|bubbles |callback|chainable|struct|struct|structdesc|code|config|const|constant|constructor|constructs|copyright |default|defaultvalue|define|deprecated|desc|description|dict|emits|enum|event|example|exception |exports?|extends|extension(?:_?for|each)?|external|externs|file|fileoverview|final|fires|for|each|func |sr|generator|global|hideconstructor|host|ignore|implements|implicitCast|inherit[Dd]oc |inner|instance|interface|internal|kind|lends|license|listens|main|member|memberof!?|method |mixes|mixins?|modifies|module|name|namespace|noalias|nocollapse|nocompile|nosideeffects |override|overview|package|param|polymer(?:Behavior)?|preserve|private|prop|property|protected |public|read[Oo]nly|record|require[ds]|returns?|see|since|static|struct|submodule|summary |suppress|template|this|throws|todo|tutorial|type|typedef|unrestricted|uses|var|variation |version|virtual|writeOnce|yields?) \\b",
+          "match": "(?x) (@) (?:abstract|access|alias|api|arg|argument|async|attribute|augments|author|beta|borrows|bubbles |callback|chainable|struct|class|structdesc|code|config|const|constant|constructor|constructs|copyright |default|defaultvalue|define|deprecated|desc|description|dict|emits|enum|event|example|exception |exports?|extends|extension(?:_?for|each)?|external|externs|file|fileoverview|final|fires|for|each|func |sr|generator|global|hideconstructor|host|ignore|implements|implicitCast|inherit[Dd]oc |inner|instance|interface|internal|kind|lends|license|listens|main|member|memberof!?|method |mixes|mixins?|modifies|module|name|namespace|noalias|nocollapse|nocompile|nosideeffects |override|overview|package|param|polymer(?:Behavior)?|preserve|private|prop|property|protected |public|read[Oo]nly|record|require[ds]|returns?|see|since|static|struct|class|submodule|summary |suppress|template|this|throws|todo|tutorial|type|typedef|unrestricted|uses|var|variation |version|virtual|writeOnce|yields?) \\b",
           "captures": {
             "1": {
               "name": "punctuation.definition.block.tag.jsdoc"
