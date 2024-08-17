@@ -9,9 +9,7 @@ static void *request_system_memory(size_t size)
 	return mmap(
 	    NULL, size, PROT_READ | PROT_WRITE,
 
-	    POSIX_MADV_RANDOM | POSIX_MADV_NORMAL | POSIX_MADV_WILLNEED |
-		  MAP_PRIVATE | MAP_ANONYMOUS,
-	    -1, 0
+	    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0
 	);
 }
 void initialize_global_mem(void)

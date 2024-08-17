@@ -1,6 +1,7 @@
 #ifndef _OBJECT_UTIL_H
 #define _OBJECT_UTIL_H
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #define CLOSURE(el)  ((closure *)(el.obj))

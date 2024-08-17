@@ -574,10 +574,7 @@ static void for_statement(compiler *c)
 	emit_loop(c, start);
 
 	if (exit != -1)
-	{
 		patch_jump(c, exit);
-		emit_byte(c, OP_POP);
-	}
 
 	end_scope(c);
 }
@@ -664,7 +661,6 @@ static void case_statement(compiler *c)
 		emit_byte(c, OP_EQ);
 
 		int exit = emit_jump(c, OP_JMPF);
-		emit_byte(c, OP_POP);
 
 		while (!check(TOKEN_BREAK, &c->parser))
 		{
@@ -738,7 +734,6 @@ static void ternary_statement(compiler *c)
 	);
 	int tr = emit_jump(c, OP_JMP);
 	patch_jump(c, exit);
-	emit_byte(c, OP_POP);
 	expression(c);
 	patch_jump(c, tr);
 }
@@ -811,7 +806,7 @@ static void default_expression(compiler *c)
 {
 	expression(c);
 	consume(TOKEN_CH_SEMI, "Expect `;` after expression.", &c->parser);
-	emit_byte(c, OP_POP);
+	// emit_byte(c, OP_POP);
 }
 
 static void print_statement(compiler *c)
@@ -844,18 +839,8 @@ static void end_scope(compiler *c)
 	if (c->count.local > 0 &&
 	    (c->stack.local[c->count.local - 1].depth > c->count.scope))
 		emit_bytes(
-		    c, OP_POPN, add_constant(&c->func->ch, Num(c->count.local - 1))
+		    c, OP_POPN, add_constant(&c->func->ch, Num(c->count.local))
 		);
-
-	while (c->count.local > 0 &&
-	       (c->stack.local[c->count.local - 1].depth > c->count.scope))
-	{
-		--c->count.local;
-		if (c->stack.local[c->count.local].captured)
-			emit_byte(c, OP_CLOSE_UPVAL);
-		else
-			emit_byte(c, OP_POP);
-	}
 }
 
 static void parse_block(compiler *c)
@@ -1021,7 +1006,6 @@ static void _and(compiler *c)
 {
 	int end = emit_jump(c, OP_JMPF);
 
-	emit_byte(c, OP_POP);
 	parse_precedence(PREC_AND, c);
 
 	patch_jump(c, end);
@@ -1030,7 +1014,6 @@ static void _or(compiler *c)
 {
 	int else_jmp = emit_jump(c, OP_JMPT);
 
-	emit_byte(c, OP_POP);
 	parse_precedence(PREC_OR, c);
 
 	patch_jump(c, else_jmp);
@@ -1312,7 +1295,7 @@ static void boolean(compiler *c)
 }
 static _key parse_string(compiler *c)
 {
-	return Key((char *)++c->parser.pre.start, c->parser.pre.size - 1);
+	return Key((char *)++c->parser.pre.start, c->parser.pre.size - 2);
 }
 
 static void stack_alloc(compiler *c)
@@ -1471,7 +1454,7 @@ static void id(compiler *c)
 
 	if ((arg = resolve_class(c, &ar)) != -1)
 	{
-		if (c->base->stack.class[arg]->init)
+		if (c->base->stack.class[arg] -> init)
 		{
 			match(TOKEN_CH_LPAREN, &c->parser);
 			emit_bytes(c, OP_CLASS, (uint8_t)arg);

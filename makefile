@@ -11,7 +11,7 @@ YKES	:= ./
 all: ykes
 
 ykes:	$(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS)
+	$(CC) -o $@ $^ $(CFLAGS) -lm
 
 %.o:	$(YKES)%.c
 	$(CC) -I$(YKES)includes -c $< $(CFLAGS)
