@@ -405,7 +405,6 @@ Interpretation run(void)
 							: INSTANCE(inst)->fields,
 			    READ_CONSTANT().key, obj
 			);
-			// POPN(2);
 			PUSH(obj);
 		}
 		break;
