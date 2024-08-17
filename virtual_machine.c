@@ -389,8 +389,8 @@ Interpretation run(void)
 		case OP_SET_PROP:
 		{
 
-			obj          = PEEK();
-			element inst = NPEEK(1);
+			obj          = *POP();
+			element inst = *POP();
 
 			if (inst.type != T_INSTANCE && !machine.init_fields)
 			{
@@ -405,7 +405,7 @@ Interpretation run(void)
 							: INSTANCE(inst)->fields,
 			    READ_CONSTANT().key, obj
 			);
-			POPN(2);
+			// POPN(2);
 			PUSH(obj);
 		}
 		break;

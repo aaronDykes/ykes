@@ -10,24 +10,28 @@ class Fizzbang
     {
         var str = String();
 
-        for (var i = 1; i < 100; i++)
+        for (var i = 1; i < 100000; i++)
             if ((i % 15) == 0)
             {
                 str.fb = "Fizzbang: " + (num -> string i);
-                pout(str);
+                pout(str.fb);
             }
             elif ((i % 5) == 0)
             {
                 str.bang = "Bang: " + (num -> string i);
-                pout(str);
+                pout(str.bang);
             }
             elif ((i % 3) == 0)
             {
                 str.fizz = "Fizz: " + (num -> string i);
-                pout(str);
+                pout(str.fizz);
             }
             else 
                 pout(i);
+
+
+
+        pout(`${str.fb}, ${str.bang}, ${str.fizz}`);
 
         rm(str);
 

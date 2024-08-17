@@ -552,7 +552,6 @@ static void for_statement(compiler *c)
 		    TOKEN_CH_SEMI, "Expect `;` after 'for' condition.", &c->parser
 		);
 		exit = emit_jump(c, OP_JMPF);
-		// emit_byte(c, OP_POP);
 	}
 	if (!match(TOKEN_CH_RPAREN, &c->parser))
 	{
@@ -806,7 +805,7 @@ static void default_expression(compiler *c)
 {
 	expression(c);
 	consume(TOKEN_CH_SEMI, "Expect `;` after expression.", &c->parser);
-	// emit_byte(c, OP_POP);
+	emit_byte(c, OP_POP);
 }
 
 static void print_statement(compiler *c)
@@ -1192,16 +1191,6 @@ static void emit_bytes(compiler *c, uint8_t b1, uint8_t b2)
 static void emit_constant(compiler *c, element ar)
 {
 	emit_bytes(c, OP_CONSTANT, add_constant(&c->func->ch, ar));
-}
-
-static void pi(compiler *c)
-{
-	emit_constant(c, Num(M_PI));
-}
-
-static void euler(compiler *c)
-{
-	emit_constant(c, Num(M_E));
 }
 
 static void num(compiler *c)
