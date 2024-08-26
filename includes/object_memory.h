@@ -16,7 +16,7 @@
 #define FREE_OBJ(el)         free_obj(el)
 
 stack *_stack(size_t size);
-stack *realloc_stack(stack *stack, size_t size);
+stack *realloc_stack(stack **stack, size_t size);
 
 vector   *_vector(size_t size, obj_t type);
 upval   **upvals(size_t size);
@@ -26,7 +26,8 @@ native   *_native(NativeFn native, _key ar);
 class    *_class(_key name);
 instance *_instance(class *c);
 
-void free_table(table *t);
+void free_vector(vector **v);
+void free_table(table **t);
 void free_obj(element el);
 
 #endif

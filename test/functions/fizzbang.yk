@@ -3,14 +3,15 @@
 
 class String {}
 
+var str = String();
+
 class Fizzbang
 {
 
     res()
     {
-        var str = String();
 
-        for (var i = 1; i < 100000; i++)
+        for (var i = 1; i < 10000; i++)
             if ((i % 15) == 0)
             {
                 str.fb = "Fizzbang: " + (num -> string i);
@@ -31,8 +32,8 @@ class Fizzbang
 
 
 
-        pout(`${str.fb}, ${str.bang}, ${str.fizz}`);
 
+        pout(`${str.fb}, ${str.bang}, ${str.fizz}`);
         rm(str);
 
     }

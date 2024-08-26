@@ -226,8 +226,6 @@ static void emit_bytes(compiler *c, uint8_t b1, uint8_t b2);
 static void emit_constant(compiler *c, element ar);
 static void emit_return(compiler *c);
 
-static void pi(compiler *c);
-static void euler(compiler *c);
 static void num(compiler *c);
 static void ch(compiler *c);
 static void boolean(compiler *c);
@@ -257,11 +255,15 @@ static bool idcmp(_key a, _key b);
 static void declare_var(compiler *c, _key ar);
 static void add_local(compiler *c, _key *ar);
 
+static void _array(compiler *c);
+static void _access(compiler *c);
+
 static PRule rules[] = {
     [TOKEN_CH_LPAREN]          = {grouping,             call,                      PREC_CALL      },
     [TOKEN_CH_RPAREN]          = {NULL,                 NULL,                      PREC_NONE      },
     [TOKEN_CH_LCURL]           = {NULL,                 NULL,                      PREC_NONE      },
     [TOKEN_CH_RCURL]           = {NULL,                 NULL,                      PREC_NONE      },
+    [TOKEN_CH_LSQUARE]         = {_array,               _access,                   PREC_NONE      },
     [TOKEN_CH_RSQUARE]         = {NULL,                 NULL,                      PREC_NONE      },
     [TOKEN_CH_COMMA]           = {NULL,                 NULL,                      PREC_NONE      },
     [TOKEN_CH_SEMI]            = {NULL,                 NULL,                      PREC_NONE      },
@@ -298,7 +300,6 @@ static PRule rules[] = {
     [TOKEN_ID]                 = {id,                   NULL,                      PREC_NONE      },
     [TOKEN_STR]                = {str,                  NULL,                      PREC_NONE      },
     [TOKEN_FMT_STR]            = {fmt_str,              NULL,                      PREC_NONE      },
-    [TOKEN_ALLOC_STACK]        = {stack_alloc,          NULL,                      PREC_NONE      },
     [TOKEN_TABLE]              = {_table,               NULL,                      PREC_NONE      },
     [TOKEN_CH_TERNARY]         = {NULL,                 ternary_statement,         PREC_NONE      },
     [TOKEN_CH_NULL_COALESCING] = {NULL,                 null_coalescing_statement, PREC_NONE      },
@@ -316,7 +317,6 @@ static PRule rules[] = {
     [TOKEN_SQRT]               = {parse_native_var_arg, NULL,                      PREC_CALL      },
     [TOKEN_PRIME]              = {parse_native_var_arg, NULL,                      PREC_CALL      },
     [TOKEN_FILE]               = {parse_native_var_arg, NULL,                      PREC_CALL      },
-    [TOKEN_ALLOC_STR]          = {parse_native_var_arg, NULL,                      PREC_NONE      },
     [TOKEN_PRINT]              = {NULL,                 NULL,                      PREC_NONE      },
     [TOKEN_RETURN]             = {NULL,                 NULL,                      PREC_NONE      },
     [TOKEN_SUPER]              = {NULL,                 NULL,                      PREC_NONE      },

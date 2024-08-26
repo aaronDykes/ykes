@@ -145,7 +145,10 @@ int disassemble_instruction(chunk *c, int offset)
 		return byte_instruction("OP_SET_LOCAL", c, offset);
 	case OP_SET_LOCAL_PARAM:
 		return byte_instruction("OP_SET_LOCAL_PARAM", c, offset);
-
+	case OP_ALLOC_VECTOR:
+		return simple_instruction("OP_ALLOC_VECTOR", offset);
+	case OP_INIT_VECTOR:
+		return byte_instruction("OP_INIT_VECTOR", c, offset);
 	case OP_RM:
 		return byte_instruction("OP_RM", c, offset);
 	case OP_GET_GLOBAL:

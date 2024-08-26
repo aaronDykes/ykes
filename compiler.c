@@ -12,6 +12,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#define UPPER(x) ((uint8_t)((x >> 8) & 0xFF))
+#define LOWER(x) ((uint8_t)(x & 0xFF))
+
 static void init_compiler(compiler *a, compiler *b, compiler_t type, _key name)
 {
 
@@ -716,8 +719,8 @@ static void elif_statement(compiler *c)
 		statement(c);
 		emit_byte(c, OP_JMPL);
 		emit_bytes(
-		    c, (c->func->ch.cases.count >> 8) & 0xFF,
-		    (c->func->ch.cases.count & 0xFF)
+		    c, UPPER(c->func->ch.cases.count),
+		    LOWER(c->func->ch.cases.count)
 		);
 		patch_jump(c, exit);
 	}
@@ -778,8 +781,8 @@ static void patch_jump(compiler *c, int offset)
 	if (jump >= INT16_MAX)
 		prev_error("ERROR: To great a distance ", &c->parser);
 
-	c->func->ch.ip[offset]     = (uint8_t)((jump >> 8) & 0xFF);
-	c->func->ch.ip[offset + 1] = (uint8_t)(jump & 0xFF);
+	c->func->ch.ip[offset]     = UPPER(jump);
+	c->func->ch.ip[offset + 1] = LOWER(jump);
 }
 
 static void emit_loop(compiler *c, int byte)
@@ -1282,41 +1285,10 @@ static void boolean(compiler *c)
 	else
 		emit_constant(c, Bool(*c->parser.pre.start == 't' ? true : false));
 }
+
 static _key parse_string(compiler *c)
 {
 	return Key((char *)++c->parser.pre.start, c->parser.pre.size - 2);
-}
-
-static void stack_alloc(compiler *c)
-{
-	stack *s = NULL;
-	consume(
-	    TOKEN_CH_LPAREN, "Expect `(` prior to stack allocation", &c->parser
-	);
-
-	if (match(TOKEN_CH_RPAREN, &c->parser))
-	{
-		s = GROW_STACK(NULL, STACK_SIZE);
-		emit_bytes(
-		    c, OP_CONSTANT, add_constant(&c->func->ch, GEN(s, T_STACK))
-		);
-		return;
-	}
-
-	if (match(TOKEN_NUMBER, &c->parser))
-	{
-		s = _stack(atoi(c->parser.pre.start));
-		emit_bytes(
-		    c, OP_CONSTANT, add_constant(&c->func->ch, GEN(s, T_STACK))
-		);
-	}
-	else
-		prev_error(
-		    "ERROR: Invalid expression inside of stack allocation",
-		    &c->parser
-		);
-
-	consume(TOKEN_CH_RPAREN, "Expect `)` after stack allocation", &c->parser);
 }
 
 static void _table(compiler *c)
@@ -1379,6 +1351,38 @@ static int resolve_call(compiler *c, _key *ar)
 		return el.val.Num;
 
 	return -1;
+}
+
+static void _array(compiler *c)
+{
+	int i = 1;
+
+	if (match(TOKEN_CH_RSQUARE, &c->parser))
+	{
+		emit_byte(c, OP_ALLOC_VECTOR);
+		return;
+	}
+	do
+	{
+		expression(c);
+		i++;
+	} while (match(TOKEN_CH_COMMA, &c->parser));
+
+	consume(
+	    TOKEN_CH_RSQUARE, "Expect closing brace after array declaration",
+	    &c->parser
+	);
+
+	emit_byte(c, OP_INIT_VECTOR);
+	emit_bytes(c, UPPER(i), LOWER(i));
+}
+static void _access(compiler *c)
+{
+
+	consume(
+	    TOKEN_CH_RSQUARE, "Expect closing brace prior to array access",
+	    &c->parser
+	);
 }
 
 static int resolve_class(compiler *c, _key *ar)

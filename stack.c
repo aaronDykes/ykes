@@ -5,12 +5,9 @@ static void check_stack_size(stack **s)
 {
 
 	if (!*s || !(*s)->as)
-	{
-		// *s = GROW_STACK(NULL, STACK_SIZE);
 		return;
-	}
 	if ((*s)->count + 1 > (*s)->len)
-		*s = GROW_STACK(*s, (*s)->len * INC);
+		*s = GROW_STACK(s, (*s)->len * INC);
 }
 
 element *pop(stack **s)

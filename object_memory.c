@@ -2,15 +2,15 @@
 #include "object_memory.h"
 
 static void free_entry_list(record entry);
-static void free_instance(instance *ic);
-static void free_stack(stack *stack);
-static void free_upvals(upval **up, uint8_t uargc);
-static void free_closure(closure *closure);
-static void free_upval(upval *up);
-static void free_native(native *nat);
+static void free_instance(instance **ic);
+static void free_stack(stack **stack);
+static void free_upvals(upval ***up, uint8_t uargc);
+static void free_closure(closure **closure);
+static void free_upval(upval **up);
+static void free_native(native **nat);
 static void free_chunk(chunk *c);
-static void free_function(function *func);
-static void free_class(class *c);
+static void free_function(function **func);
+static void free_class(class **c);
 
 class *_class(_key name)
 {
@@ -55,7 +55,7 @@ stack *_stack(size_t size)
 	s->len   = (int)size;
 	return s;
 }
-stack *realloc_stack(stack *st, size_t size)
+stack *realloc_stack(stack **st, size_t size)
 {
 
 	if (size == 0)
@@ -64,24 +64,20 @@ stack *realloc_stack(stack *st, size_t size)
 		st = NULL;
 		return NULL;
 	}
-	stack *s = NULL;
-	s        = _stack(size);
-
 	if (!st)
-		return s;
+		return _stack(size);
 
-	size_t new_size = (size > st->len) ? st->len : size;
+	element *as = NULL;
+	as          = ALLOC(sizeof(element) * size);
 
-	for (size_t i = 0; i < new_size; i++)
-		*(s->as + i) = *(st->as + i);
+	for (size_t i = 0; i < (*st)->count; i++)
+		*(as + i) = *((*st)->as + i);
 
-	s->count = st->count;
-
-	FREE(st->as);
-	st->as = NULL;
-	FREE(st);
-	st = NULL;
-	return s;
+	FREE((*st)->as);
+	(*st)->as = NULL;
+	(*st)->as = as;
+	(*st)->len *= INC;
+	return *st;
 }
 
 upval **upvals(size_t size)
@@ -128,6 +124,13 @@ upval *_upval(element closed, uint8_t index)
 	up->closed = closed;
 	return up;
 }
+void free_vector(vector **v)
+{
+	FREE((*v)->of);
+	(*v)->of = NULL;
+	FREE(*v);
+	v = NULL;
+}
 static void free_entry(record *entry)
 {
 
@@ -148,104 +151,105 @@ static void free_entry_list(record entry)
 		tmp = next;
 	}
 }
-void free_table(table *t)
+void free_table(table **t)
 {
-	if (!t)
+	if (!*t)
 		return;
 
-	if (t->count == 0)
+	if ((*t)->count == 0)
 	{
-		FREE(t->records);
-		t->records = NULL;
+		FREE((*t)->records);
+		(*t)->records = NULL;
+		FREE(*t);
+		t = NULL;
+		return;
+	}
+	if (!(*t)->records)
+	{
 		FREE(t);
 		t = NULL;
 		return;
 	}
-	if (!t->records)
-	{
-		FREE(t);
-		t = NULL;
-		return;
-	}
 
-	for (size_t i = 0; i < t->len; i++)
-		if (t->records[i].key.val)
-			free_entry_list(t->records[i]);
+	for (size_t i = 0; i < (*t)->len; i++)
+		if ((*t)->records[i].key.val)
+			free_entry_list((*t)->records[i]);
 
-	FREE(t->records);
-	t->records = NULL;
-	FREE(t);
+	FREE((*t)->records);
+	(*t)->records = NULL;
+	FREE(*t);
 	t = NULL;
 }
 
-static void free_instance(instance *ic)
+static void free_instance(instance **ic)
 {
-	FREE(ic);
-	free_table(ic->fields);
+	free_table(&(*ic)->fields);
+	FREE(*ic);
 	ic = NULL;
 }
-static void free_stack(stack *stack)
+static void free_stack(stack **stack)
 {
-	if (!stack)
+	if (!*stack)
 		return;
 
-	if (stack->count == 0)
+	if ((*stack)->count == 0)
 	{
-		FREE(stack->as);
-		FREE(stack);
+		FREE((*stack)->as);
+		FREE((*stack));
 		stack = NULL;
 		return;
 	}
 
-	for (size_t i = 0; i < stack->len; i++)
-		FREE_OBJ(stack->as[i]);
+	for (size_t i = 0; i < (*stack)->len; i++)
+		FREE_OBJ(*((*stack)->as + i));
 
-	FREE(stack->as);
-	stack->as = NULL;
-	FREE(stack);
+	FREE((*stack)->as);
+	(*stack)->as = NULL;
+	FREE(*stack);
 	stack = NULL;
 }
-static void free_upval(upval *up)
+static void free_upval(upval **up)
 {
-	if (!up)
+	if (!*up)
 		return;
 	upval *tmp = NULL;
 
-	while (up)
+	while (*up)
 	{
-		tmp = up->next;
+		tmp = (*up)->next;
 		FREE(tmp);
-		up = tmp;
+		*up = tmp;
 	}
 	up  = NULL;
 	tmp = NULL;
 }
 
-static void free_upvals(upval **up, uint8_t uargc)
+static void free_upvals(upval ***up, uint8_t uargc)
 {
-	if (!up)
+	if (!*up)
 		return;
 	for (size_t i = 0; i < uargc; i++)
-		free_upval(up[i]);
+		free_upval(*(up + i));
 
-	FREE(up);
+	FREE(*up);
 	up = NULL;
 }
 
-static void free_closure(closure *closure)
+static void free_closure(closure **closure)
 {
 	if (!closure)
 		return;
 
-	free_upvals(closure->upvals, closure->uargc);
-	FREE(closure);
+	free_upvals(&(*closure)->upvals, (*closure)->uargc);
+	free_function(&(*closure)->func);
+	FREE(*closure);
 	closure = NULL;
 }
-static void free_native(native *nat)
+static void free_native(native **nat)
 {
-	FREE(nat->name.val);
-	nat->name.val = NULL;
-	FREE(nat);
+	FREE((*nat)->name.val);
+	(*nat)->name.val = NULL;
+	FREE(*nat);
 	nat = NULL;
 }
 
@@ -255,34 +259,34 @@ static void free_chunk(chunk *c)
 	FREE(c->ip);
 	FREE(c->lines);
 	FREE(c->cases.bytes);
-	free_stack(c->constants);
+	free_stack(&c->constants);
 	c->ip          = NULL;
 	c->lines       = NULL;
 	c->cases.bytes = NULL;
 	c->constants   = NULL;
+	c              = NULL;
 }
-static void free_function(function *func)
+static void free_function(function **func)
 {
-	if (!func)
+	if (!*func)
 		return;
-	FREE(func->name.val);
-	free_chunk(&func->ch);
-
+	FREE((*func)->name.val);
+	free_chunk(&(*func)->ch);
 	FREE(func);
 	func = NULL;
 }
-static void free_class(class *c)
+static void free_class(class **c)
 {
 
-	FREE(c->name.val);
-	c->name.val = NULL;
-	free_table(c->closures);
+	FREE((*c)->name.val);
+	(*c)->name.val = NULL;
+	free_table(&(*c)->closures);
 	FREE(c);
+	c = NULL;
 }
 
 void free_obj(element el)
 {
-
 	switch (el.type)
 	{
 	case T_STR:
@@ -294,35 +298,33 @@ void free_obj(element el)
 		el.key.val = NULL;
 		break;
 	case T_NATIVE:
-		free_native(NATIVE(el));
+		free_native((native **)&el.obj);
 		break;
 	case T_CLASS:
-		free_class(CLASS(el));
+		free_class((class **)&el.obj);
+		break;
+	case T_VECTOR:
+		free_vector((vector **)&el.obj);
 		break;
 	case T_INSTANCE:
-		free_instance(INSTANCE(el));
+		free_instance((instance **)&el.obj);
 		break;
 	case T_UPVAL:
-		free_upval(UPVAL(el));
+		free_upval((upval **)&el.obj);
 		break;
 	case T_METHOD:
 	case T_CLOSURE:
-		free_closure(CLOSURE(el));
+		free_closure((closure **)&el.obj);
 		break;
 	case T_FUNCTION:
-		free_function(FUNC(el));
+		free_function((function **)&el.obj);
 		break;
 	case T_STACK:
-	{
-
-		stack *s = NULL;
-		s        = STACK(el);
-		free_stack(s);
+		free_stack((stack **)&el.obj);
 		break;
-	}
-	break;
+		break;
 	case T_TABLE:
-		free_table(TABLE(el));
+		free_table((table **)&el.obj);
 		break;
 	default:
 		return;

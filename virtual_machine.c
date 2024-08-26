@@ -1,6 +1,7 @@
 #include "compiler.h"
 #include "error.h"
 #include "native.h"
+#include "vector.h"
 #include "virtual_machine.h"
 #include "vm_util.h"
 
@@ -28,9 +29,9 @@ void initVM(void)
 }
 void freeVM(void)
 {
-	FREE_TABLE(machine.glob);
-	FREE_STACK(machine.stack.main);
-	FREE_STACK(machine.stack.obj);
+	FREE_TABLE(&machine.glob);
+	FREE_STACK(&machine.stack.main);
+	FREE_STACK(&machine.stack.obj);
 
 	machine.glob       = NULL;
 	machine.stack.main = NULL;
@@ -241,6 +242,9 @@ Interpretation run(void)
 #define READ_BYTE() (*ip++)
 #define READ_CONSTANT()                                                        \
 	(*(frame->closure->func->ch.constants->as + READ_BYTE()))
+
+#define UPPER() ((READ_BYTE() << 8) & 0xFF)
+#define LOWER() (READ_BYTE() & 0xFF)
 
 #define POP()    (pop(&machine.stack.main))
 #define POPN(n)  (popn(&machine.stack.main, n))
@@ -468,36 +472,34 @@ Interpretation run(void)
 			machine.count.cargc = 1;
 			break;
 		case OP_JMPF:
-			offset = READ_BYTE(),
-			offset = (offset | READ_BYTE()) * FALSEY();
+			offset = UPPER(), offset = (offset | LOWER()) * FALSEY();
 			ip += offset;
 			break;
 		case OP_JMPT:
-			offset = READ_BYTE(),
-			offset = (offset | READ_BYTE()) * TRUTHY();
+			offset = UPPER(), offset = (offset | LOWER()) * TRUTHY();
 			ip += offset;
 			break;
 		case OP_JMPL:
-			offset = READ_BYTE(), offset |= READ_BYTE();
+			offset = UPPER(), offset |= LOWER();
 			ip     = frame->ip +
 			     *(frame->closure->func->ch.cases.bytes + offset);
 			break;
 		case OP_JMP_NIL:
-			offset = READ_BYTE(), offset |= READ_BYTE();
+			offset = UPPER(), offset |= LOWER();
 			if (null(PEEK()))
 				ip += offset;
 			break;
 		case OP_JMP_NOT_NIL:
-			offset = READ_BYTE(), offset |= READ_BYTE();
+			offset = UPPER(), offset |= LOWER();
 			if (not_null(PEEK()))
 				ip += offset;
 			break;
 		case OP_JMP:
-			offset = READ_BYTE(), offset |= READ_BYTE();
+			offset = UPPER(), offset |= LOWER();
 			ip += offset;
 			break;
 		case OP_LOOP:
-			offset = READ_BYTE(), offset |= READ_BYTE();
+			offset = UPPER(), offset |= LOWER();
 			ip -= offset;
 			break;
 		case OP_GET_LOCAL:
@@ -541,6 +543,28 @@ Interpretation run(void)
 		case OP_RM:
 			FREE_OBJ(*POP());
 			break;
+		case OP_ALLOC_VECTOR:
+			PUSH(GEN(_vector(INIT_SIZE, T_GEN), T_VECTOR));
+			break;
+		case OP_INIT_VECTOR:
+		{
+
+			int size = UPPER();
+			size |= LOWER();
+
+			int i = (COUNT() + 1) - size;
+
+			vector *v = NULL;
+
+			obj_t type = (frame->slots + i)->type;
+			v          = _vector(size, type);
+
+			for (; i < COUNT(); i++)
+				push_value(&v, (frame->slots + i));
+
+			PUSH(GEN(v, T_VECTOR));
+			break;
+		}
 		case OP_ALLOC_TABLE:
 			if (PEEK().type != T_NUM)
 			{

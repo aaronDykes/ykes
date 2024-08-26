@@ -58,16 +58,6 @@ element find_entry(table **t, _key *hash)
 	return Null();
 }
 
-static record new_entry(record t)
-{
-	record el;
-	el.key  = t.key;
-	el.val  = t.val;
-	el.next = NULL;
-	el.next = t.next;
-	return el;
-}
-
 static record Entry(_key key, element val)
 {
 	record el;
@@ -93,30 +83,35 @@ table *copy_table(table *t)
 
 	return ptr;
 }
-table *realloc_table(table *t, size_t size)
+table *realloc_table(table **t, size_t size)
 {
-
-	table *ptr = NULL;
 
 	if (!t && size != 0)
 		return alloc_table(size);
 
-	size_t new_size = (size > t->len) ? t->len : size;
+	if (size == 0)
+	{
+		free_table(t);
+		t = NULL;
+		return NULL;
+	}
 
-	ptr = alloc_table(size);
+	record *ptr = NULL;
 
-	for (size_t i = 0; i < new_size; i++)
-		if (t->records[i].key.val)
+	ptr = ALLOC(size * sizeof(record));
+
+	for (size_t i = 0; i < (*t)->len; i++)
+		if ((*t)->records[i].key.val)
 		{
-			size_t index        = t->records[i].key.hash & (size - 1);
-			ptr->records[index] = new_entry(t->records[i]);
+			size_t index   = (*t)->records[i].key.hash & (size - 1);
+			*(ptr + index) = *((*t)->records + i);
 		}
 
-	FREE(t->records);
-	t->records = NULL;
-	FREE(t);
-	t = NULL;
-	return ptr;
+	FREE((*t)->records);
+	(*t)->records = NULL;
+	(*t)->records = ptr;
+	(*t)->len *= INC;
+	return *t;
 }
 
 void write_table(table *t, _key a, element b)
@@ -128,10 +123,7 @@ void write_table(table *t, _key a, element b)
 	int load_capacity = (int)(t->len * LOAD_FACTOR);
 
 	if (load_capacity < t->count + 1)
-	{
-		size_t size = t->len * INC;
-		t           = GROW_TABLE(t, size);
-	}
+		t = GROW_TABLE(&t, t->len * INC);
 	t->count++;
 
 OVERWRITE:

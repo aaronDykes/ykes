@@ -189,8 +189,6 @@ static int id_type(void)
 {
 	switch (*scan.start)
 	{
-	case 'A':
-		return check_keyword(1, 4, "rray", TOKEN_ALLOC_ARRAY);
 	case 'a':
 		if (scan.current - scan.start > 1)
 		{
@@ -228,8 +226,6 @@ static int id_type(void)
 		}
 	case 'd':
 		return check_keyword(1, 6, "efault", TOKEN_DEFAULT);
-	case 'D':
-		return check_keyword(1, 6, "oubles", TOKEN_ALLOC_DOUBLES);
 	case 'e':
 		switch (scan.start[1])
 		{
@@ -331,19 +327,7 @@ static int id_type(void)
 			}
 
 		return check_keyword(1, 1, "r", TOKEN_FUNC);
-	case 'S':
-		if (scan.current - scan.start > 1)
-			switch (scan.start[1])
-			{
-			case 't':
-				switch (scan.start[2])
-				{
-				case 'a':
-					return check_keyword(
-					    3, 2, "ck", TOKEN_ALLOC_STACK
-					);
-				}
-			}
+
 	case 't':
 		if (scan.current - scan.start > 1)
 			switch (scan.start[1])
@@ -359,18 +343,7 @@ static int id_type(void)
 		return check_keyword(1, 4, "able", TOKEN_TABLE);
 
 	case 'v':
-		if (scan.current - scan.start > 1)
-		{
-			switch (scan.start[1])
-			{
-			case 'a':
-				return check_keyword(2, 1, "r", TOKEN_VAR);
-			case 'e':
-				return check_keyword(2, 4, "ctor", TOKEN_TYPE_VECTOR);
-			}
-		}
-	case 'V':
-		return check_keyword(1, 5, "ector", TOKEN_ALLOC_VECTOR);
+		return check_keyword(1, 2, "ar", TOKEN_VAR);
 	case 'w':
 		return check_keyword(1, 4, "hile", TOKEN_WHILE);
 	}

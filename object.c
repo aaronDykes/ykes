@@ -175,6 +175,17 @@ void print(element ar)
 		printf("<instance: %s>\n", INSTANCE(ar)->classc->name.val);
 		break;
 
+	case T_VECTOR:
+	{
+
+		vector *v = NULL;
+		v         = VECTOR(ar);
+
+		for (int i = 0; i < v->count; i++)
+			print(OBJ(*(v->of + i), v->type));
+
+		break;
+	}
 	case T_CHAR:
 		printf("'%c'\n", ar.val.Char);
 		break;
@@ -185,7 +196,6 @@ void print(element ar)
 		printf("%s\n", (ar.val.Bool) ? "true" : "false");
 		break;
 	case T_STR:
-
 		parse_str(ar.val.String);
 		printf("\n");
 		break;

@@ -9,6 +9,7 @@
 #define NATIVE(el)   ((native *)(el.obj))
 #define CLASS(el)    ((class *)(el.obj))
 #define INSTANCE(el) ((instance *)(el.obj))
+#define VECTOR(el)   ((vector *)(el.obj))
 #define TABLE(el)    ((table *)(el.obj))
 #define STACK(el)    ((stack *)(el.obj))
 #define UPVAL(el)    ((upval *)(el.obj))
@@ -22,6 +23,8 @@ typedef enum
 	OP_CLASS,
 	OP_GET_INSTANCE,
 	OP_ALLOC_TABLE,
+	OP_ALLOC_VECTOR,
+	OP_INIT_VECTOR,
 
 	OP_POP,
 	OP_POPN,
@@ -131,6 +134,7 @@ typedef enum
 	T_FUNCTION,
 	T_VECTOR,
 	T_INCLUDE,
+	T_GEN,
 
 	T_UPVAL,
 	T_METHOD,
@@ -184,7 +188,7 @@ struct vector
 {
 	uint16_t count;
 	uint16_t len;
-	obj_t    type;
+	uint8_t  type;
 	value   *of;
 };
 struct _2d_vector

@@ -1,6 +1,13 @@
 
+{
 
-for (var i = 0; i < 10; i++)
-    pout(i);
+    // var b = 420;
+    var d = 69;
+    var c = 69;
+    var o = 69;
+    var p = 69;
+    var a = [1, d, 3, 4, o, 6, p, 8];
+    pout(a);
+}
 
 
