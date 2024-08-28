@@ -808,7 +808,6 @@ static void default_expression(compiler *c)
 {
 	expression(c);
 	consume(TOKEN_CH_SEMI, "Expect `;` after expression.", &c->parser);
-	emit_byte(c, OP_POP);
 }
 
 static void print_statement(compiler *c)
