@@ -190,6 +190,14 @@ int disassemble_instruction(chunk *c, int offset)
 		return byte_instruction("OP_GET_PROP", c, offset);
 	case OP_SET_PROP:
 		return byte_instruction("OP_SET_PROP", c, offset);
+
+	case OP_THIS:
+		return simple_instruction("OP_THIS", offset);
+	case OP_GET_ACCESS:
+		return simple_instruction("OP_GET_ACCESS", offset);
+	case OP_SET_ACCESS:
+		return simple_instruction("OP_SET_ACCESS", offset);
+
 	default:
 		printf("Unkown opcode: %d\n", offset);
 		return ++offset;

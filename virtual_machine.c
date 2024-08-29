@@ -22,6 +22,7 @@ void initVM(void)
 	machine.current_instance = NULL;
 	machine.init_fields      = NULL;
 	machine.open_upvals      = NULL;
+	machine.caller           = NULL;
 
 	machine.count.argc  = 0;
 	machine.count.frame = 0;
@@ -432,13 +433,61 @@ Interpretation run(void)
 
 			if (obj.type != T_NULL)
 			{
+				if (!machine.init_fields)
+					machine.caller = INSTANCE(inst);
 				PUSH(obj);
 				break;
 			}
 			runtime_error("ERROR: Undefined property '%s'.", key.val);
 			return INTERPRET_RUNTIME_ERR;
 		}
+		case OP_THIS:
+			if (machine.caller != NULL)
+				PUSH(GEN(machine.caller, T_INSTANCE));
+			break;
+		case OP_SET_ACCESS:
+		{
 
+			if ((obj = *POP()).type != T_NUM)
+			{
+				runtime_error(
+				    "Attempting to access array with invalid type"
+				);
+				return INTERPRET_RUNTIME_ERR;
+			}
+			vector  *v  = NULL;
+			element *el = NULL;
+
+			if (NPEEK(1).type != T_VECTOR)
+			{
+				runtime_error(
+				    "Attempting to access invalid data structure"
+				);
+				return INTERPRET_RUNTIME_ERR;
+			}
+
+			el = POP();
+			v  = VECTOR(PEEK());
+
+			_set_index((Long)obj.val.Num, el, &v);
+			break;
+		}
+		case OP_GET_ACCESS:
+			if ((obj = PEEK()).type != T_NUM)
+			{
+				runtime_error(
+				    "Attempting to access array with invalid type"
+				);
+				return INTERPRET_RUNTIME_ERR;
+			}
+			if ((obj = _get_index(POP()->val.Num, VECTOR(PEEK()))).type ==
+			    T_NULL)
+			{
+				runtime_error("Invalid array access");
+				return INTERPRET_RUNTIME_ERR;
+			}
+			PUSH(obj);
+			break;
 		case OP_CALL:
 		{
 			uint8_t argc       = READ_BYTE();
@@ -526,9 +575,10 @@ Interpretation run(void)
 		{
 			class *c            = CLASS(OBJECT());
 			machine.init_fields = copy_table(c->closures);
+			machine.caller      = NULL;
 			PUSH(GEN(c->init, T_CLOSURE));
+			break;
 		}
-		break;
 		case OP_ALLOC_INSTANCE:
 			machine.current_instance = _instance(CLASS(OBJECT()));
 			machine.current_instance->fields =

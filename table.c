@@ -69,6 +69,8 @@ static record Entry(_key key, element val)
 
 table *copy_table(table *t)
 {
+	if (!t)
+		return alloc_table(INIT_SIZE);
 
 	table *ptr = NULL;
 

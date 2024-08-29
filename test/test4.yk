@@ -35,6 +35,7 @@ class Fizzbang
 var fizz = Fizzbang();
 var time = clock();
 fizz.res(100);
+
 pout(clock() - time);
 
 pout(

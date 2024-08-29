@@ -44,6 +44,8 @@ element _to_str(element *a)
 		return lltoa(a->val.Num);
 	case T_CHAR:
 		return char_to_str(a->val.Char);
+		// case T_VECTOR:
+
 	case T_CLASS:
 		return Null();
 	default:

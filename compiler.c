@@ -1378,6 +1378,15 @@ static void _array(compiler *c)
 static void _access(compiler *c)
 {
 
+	expression(c);
+	if (match(TOKEN_OP_ASSIGN, &c->parser))
+	{
+		expression(c);
+		emit_byte(c, OP_SET_ACCESS);
+	}
+	else
+		emit_byte(c, OP_GET_ACCESS);
+
 	consume(
 	    TOKEN_CH_RSQUARE, "Expect closing brace prior to array access",
 	    &c->parser
@@ -1426,6 +1435,7 @@ static void _this(compiler *c)
 		);
 		return;
 	}
+	emit_byte(c, OP_THIS);
 }
 
 static void id(compiler *c)

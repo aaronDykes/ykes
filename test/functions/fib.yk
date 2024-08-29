@@ -9,18 +9,18 @@ class FIB
         return this.fib(n - 2) + this.fib(n - 1);
     }
 
-    print_fib(n)
+    print_fib()
     {
-        for (var i = 1; i < n; i++)
+        for (var i = 1; i < this.n; i++)
           pout(this.fib(i));
     }
 
 
     res()
     {
-        var start = clock();
-        this.print_fib(this.n);
-        pout(clock() - start);
+        this.start = clock();
+        this.print_fib();
+        pout(clock() - this.start);
     }
 
 }

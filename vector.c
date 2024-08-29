@@ -16,24 +16,9 @@ void push_value(vector **v, element *obj)
 
 	*((*v)->of + (*v)->count++) = obj->val;
 }
-void replace_value(vector **v, int index, element *obj)
+static void replace_value_index(value **of, int index, value val)
 {
-	if (index > (*v)->len)
-		exit_error(
-		    "Vector index out of range, current length: %d, provided "
-		    "index: %d",
-		    (*v)->len, index
-		);
-
-	if ((*v)->type == T_GEN)
-		(*v)->type = obj->type;
-
-	else if ((*v)->type != obj->type)
-		exit_error(
-		    "Replacing vector element at index %d with invalid type", index
-		);
-
-	*((*v)->of + index) = obj->val;
+	*((*of) + index) = val;
 }
 void insert_value(vector **v, element *obj, int index)
 {
@@ -56,6 +41,38 @@ void insert_value(vector **v, element *obj, int index)
 		*((*v)->of + i) = *((*v)->of + i + 1);
 
 	*((*v)->of + index) = obj->val;
+}
+
+void _set_index(int index, element *obj, vector **v)
+{
+	if (index > (*v)->len)
+		exit_error(
+		    "Vector index out of range, current length: %d, provided "
+		    "index: %d",
+		    (*v)->len, index
+		);
+
+	if ((*v)->type == T_GEN)
+		(*v)->type = obj->type;
+
+	else if ((*v)->type != obj->type)
+		exit_error(
+		    "Replacing vector element at index %d with invalid type", index
+		);
+
+	replace_value_index(&(*v)->of, index, obj->val);
+}
+element _get_index(int index, vector *v)
+{
+	if (!v)
+		return Null();
+	if (index > v->count)
+	{
+		error("Array index: %d, out of bounds", index);
+		return Null();
+	}
+
+	return OBJ(*(v->of + index), v->type);
 }
 
 element pop_value(vector **v)

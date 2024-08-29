@@ -13,12 +13,15 @@ b.c = 'R';
 b.d = 'O';
 b.e = 'N';
 
-a = [];
+b.tab = Struct();
+b.tab.aaron = "Aaron";
+b.tab.dykes = "Dykes";
+
 a = [1, 2, 3, 4];
 
 
 
-pout(`${b.a}, ${b.b}, ${b.c}, ${b.d}, ${b.e}, ${b.z}`);
+pout(`${b.a}, ${b.b}, ${b.c}, ${b.d}, ${b.e}, ${b.z}, ${b.tab.aaron}, ${b.tab.dykes}` , a);
 
 rm(b);
 

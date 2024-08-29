@@ -52,6 +52,7 @@ struct vm
 	instance *current_instance;
 	table    *init_fields;
 	upval    *open_upvals;
+	instance *caller;
 	table    *glob;
 };
 
