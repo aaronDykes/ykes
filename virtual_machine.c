@@ -448,7 +448,7 @@ Interpretation run(void)
 		case OP_SET_ACCESS:
 		{
 
-			if ((obj = NPEEK(1)).type != T_NUM)
+			if (NPEEK(1).type != T_NUM)
 			{
 				runtime_error(
 				    "Attempting to access array with invalid type"
@@ -457,8 +457,10 @@ Interpretation run(void)
 			}
 			vector  *v  = NULL;
 			element *el = NULL;
+			el          = POP();
+			obj         = *POP();
 
-			if (NPEEK(2).type != T_VECTOR)
+			if (PEEK().type != T_VECTOR)
 			{
 				runtime_error(
 				    "Attempting to access invalid data structure"
@@ -466,8 +468,6 @@ Interpretation run(void)
 				return INTERPRET_RUNTIME_ERR;
 			}
 
-			el = POP();
-			POP();
 			v = VECTOR((*POP()));
 
 			_set_index((Long)obj.val.Num, el, &v);
