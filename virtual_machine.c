@@ -431,10 +431,11 @@ Interpretation run(void)
 			          ? find_entry(&machine.init_fields, &key)
 			          : find_entry(&INSTANCE(inst)->fields, &key);
 
+			if (!machine.init_fields)
+				machine.caller = INSTANCE(inst);
+
 			if (obj.type != T_NULL)
 			{
-				if (!machine.init_fields)
-					machine.caller = INSTANCE(inst);
 				PUSH(obj);
 				break;
 			}
