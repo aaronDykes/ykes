@@ -1,8 +1,11 @@
+class String {}
+
 class Prime
 {
 
     init(n)
     {
+        this.inst = String();
         this.n = n;
     }
     
@@ -31,9 +34,6 @@ class Prime
         this.print_prime(this.n);
         pout(clock() - this.start);
     }
-
-
-
 }
 
 

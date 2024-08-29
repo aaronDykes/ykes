@@ -7,22 +7,25 @@
 
 #define COUNT() (machine.stack.main->count)
 
+#define IFIELD_COUNT() (machine.stack.init_field->count)
+#define IFIELD()       (machine.stack.init_field->fields + IFIELD_COUNT() - 1)
+
 void initVM(void)
 {
 
 	initialize_global_mem();
 
-	machine.stack.main = NULL;
-	machine.stack.obj  = NULL;
-	machine.glob       = NULL;
+	machine.stack.main       = NULL;
+	machine.stack.obj        = NULL;
+	machine.stack.init_field = NULL;
+
+	machine.glob = NULL;
+	// machine.init_fields = NULL;
+	machine.open_upvals = NULL;
+	machine.caller      = NULL;
 
 	machine.stack.main = GROW_STACK(NULL, STACK_SIZE);
 	machine.glob       = GROW_TABLE(NULL, STACK_SIZE);
-
-	machine.current_instance = NULL;
-	machine.init_fields      = NULL;
-	machine.open_upvals      = NULL;
-	machine.caller           = NULL;
 
 	machine.count.argc  = 0;
 	machine.count.frame = 0;
@@ -33,6 +36,7 @@ void freeVM(void)
 	FREE_TABLE(&machine.glob);
 	FREE_STACK(&machine.stack.main);
 	FREE_STACK(&machine.stack.obj);
+	free_field_stack(&machine.stack.init_field);
 
 	machine.glob       = NULL;
 	machine.stack.main = NULL;
@@ -139,6 +143,13 @@ interpret_path(const char *src, const char *path, const char *name)
 
 	close_upvalues();
 	return run();
+}
+
+static uint8_t ifield_init(void)
+{
+	if (IFIELD_COUNT() > 0)
+		return IFIELD()->init;
+	return 0;
 }
 
 static bool call_value(element el, uint8_t argc)
@@ -257,6 +268,8 @@ Interpretation run(void)
 
 #define FALSEY() (!POP()->val.Bool)
 #define TRUTHY() (POP()->val.Bool)
+
+#define ITAB() (pop_itab(&machine.stack.init_field))
 
 #define LOCAL()   (*(frame->slots + READ_BYTE()))
 #define NLOCAL(n) (*(frame->slots + n))
@@ -391,13 +404,41 @@ Interpretation run(void)
 		case OP_NOOP:
 			PUSH(Null());
 			break;
+
+		case OP_CLASS:
+		{
+			class *c = CLASS(OBJECT());
+			push_itab(
+			    &machine.stack.init_field, 1, copy_table(c->closures)
+			);
+			PUSH(GEN(c->init, T_CLOSURE));
+			break;
+		}
+		case OP_ALLOC_INSTANCE:
+		{
+
+			instance *inst = NULL;
+			inst           = _instance(CLASS(OBJECT()));
+			uint8_t init   = READ_BYTE();
+
+			inst->fields = (init) ? ITAB().fields
+			                      : copy_table(inst->classc->closures);
+
+			PUSH(GEN(inst, T_INSTANCE));
+			break;
+		}
+		case OP_THIS:
+			if (machine.caller != NULL)
+				PUSH(GEN(machine.caller, T_INSTANCE));
+			break;
 		case OP_SET_PROP:
 		{
 
-			obj          = *POP();
-			element inst = *POP();
+			obj            = *POP();
+			element inst   = *POP();
+			uint8_t ifield = ifield_init();
 
-			if (inst.type != T_INSTANCE && !machine.init_fields)
+			if (inst.type != T_INSTANCE && !ifield)
 			{
 				runtime_error(
 				    "ERROR: Can only set properties of an instance."
@@ -406,8 +447,7 @@ Interpretation run(void)
 			}
 
 			write_table(
-			    machine.init_fields ? machine.init_fields
-							: INSTANCE(inst)->fields,
+			    ifield ? IFIELD()->fields : INSTANCE(inst)->fields,
 			    READ_CONSTANT().key, obj
 			);
 			PUSH(obj);
@@ -416,8 +456,10 @@ Interpretation run(void)
 		case OP_GET_PROP:
 		{
 
-			element inst = *POP();
-			if (inst.type != T_INSTANCE && !machine.init_fields)
+			element inst   = *POP();
+			uint8_t ifield = ifield_init();
+
+			if (inst.type != T_INSTANCE && !ifield)
 			{
 				runtime_error(
 				    "ERROR: Only instances contain properties."
@@ -427,12 +469,13 @@ Interpretation run(void)
 
 			key = READ_CONSTANT().key;
 
-			obj = (machine.init_fields)
-			          ? find_entry(&machine.init_fields, &key)
-			          : find_entry(&INSTANCE(inst)->fields, &key);
-
-			if (!machine.init_fields)
+			if (ifield)
+				obj = find_entry(&IFIELD()->fields, &key);
+			else
+			{
+				obj = find_entry(&INSTANCE(inst)->fields, &key);
 				machine.caller = INSTANCE(inst);
+			}
 
 			if (obj.type != T_NULL)
 			{
@@ -442,10 +485,6 @@ Interpretation run(void)
 			runtime_error("ERROR: Undefined property '%s'.", key.val);
 			return INTERPRET_RUNTIME_ERR;
 		}
-		case OP_THIS:
-			if (machine.caller != NULL)
-				PUSH(GEN(machine.caller, T_INSTANCE));
-			break;
 		case OP_SET_ACCESS:
 		{
 
@@ -573,25 +612,6 @@ Interpretation run(void)
 			SET_OBJ(argc, READ_CONSTANT());
 			break;
 
-		case OP_CLASS:
-		{
-			class *c            = CLASS(OBJECT());
-			machine.init_fields = copy_table(c->closures);
-			machine.caller      = NULL;
-			PUSH(GEN(c->init, T_CLOSURE));
-			break;
-		}
-		case OP_ALLOC_INSTANCE:
-			machine.current_instance = _instance(CLASS(OBJECT()));
-			machine.current_instance->fields =
-			    (machine.init_fields)
-				  ? machine.init_fields
-				  : copy_table(
-					  machine.current_instance->classc->closures
-				    );
-			machine.init_fields = NULL;
-			PUSH(GEN(machine.current_instance, T_INSTANCE));
-			break;
 		case OP_RM:
 			FREE_OBJ(*POP());
 			break;
@@ -620,9 +640,8 @@ Interpretation run(void)
 		case OP_ALLOC_TABLE:
 			if (PEEK().type != T_NUM)
 			{
-				runtime_error(
-				    "ERROR: table argument must be a numeric value."
-				);
+				runtime_error("ERROR: table argument must be "
+				              "a numeric value.");
 				return INTERPRET_RUNTIME_ERR;
 			}
 			PUSH(GEN(GROW_TABLE(NULL, POP()->val.Num), T_TABLE));
@@ -646,7 +665,8 @@ Interpretation run(void)
 			if (GET(key).type != T_NULL)
 			{
 				error(
-				    "Duplicate global variable identifier: %s\n",
+				    "Duplicate global variable "
+				    "identifier: %s\n",
 				    key.val
 				);
 				return INTERPRET_RUNTIME_ERR;

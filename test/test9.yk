@@ -1,0 +1,36 @@
+
+
+class Nested
+{
+
+      init()
+      {
+            this.n  = 69;
+            this.aaron = "Aaron";
+            this.Dykes = "Dykes";
+      }
+      res()
+      {
+            pout(`${this.n}, ${this.aaron}, ${this.Dykes}`);
+      }
+}
+
+class Test
+{
+      init()
+      {
+            this.nest = Nested();
+            this.aaron = "Aaron";
+            this.Dykes = "Dykes";
+      }
+      res()
+      {
+            this.nest.res();
+            pout(`${this.aaron}, ${this.Dykes}`);
+
+      }
+}
+
+var t = Test();
+
+t.res();

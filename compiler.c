@@ -1457,13 +1457,18 @@ static void id(compiler *c)
 
 	if ((arg = resolve_class(c, &ar)) != -1)
 	{
+		uint8_t init = 0;
+
 		if (c->base->stack.class[arg] -> init)
 		{
 			match(TOKEN_CH_LPAREN, &c->parser);
 			emit_bytes(c, OP_CLASS, (uint8_t)arg);
 			call(c);
+			init = 1;
 		}
+
 		emit_bytes(c, OP_ALLOC_INSTANCE, (uint8_t)arg);
+		emit_byte(c, init);
 
 		if (match(TOKEN_CH_LPAREN, &c->parser))
 			call_instance(c);

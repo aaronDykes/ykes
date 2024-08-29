@@ -41,6 +41,7 @@ typedef enum
 
 	OP_GET_METHOD,
 	OP_ALLOC_INSTANCE,
+	OP_RST_CALLER,
 	OP_GET_OBJ,
 	OP_SET_OBJ,
 
@@ -159,6 +160,8 @@ typedef struct buffer         buffer;
 typedef struct native         native;
 typedef struct element        element;
 typedef struct stack          stack;
+typedef struct init_table     init_table;
+typedef struct field_stack    field_stack;
 
 typedef struct class class;
 typedef struct table    table;
@@ -305,4 +308,18 @@ struct table
 	uint16_t len;
 	record  *records;
 };
+
+struct init_table
+{
+	uint8_t init;
+	table  *fields;
+};
+
+struct field_stack
+{
+	uint8_t     count;
+	uint8_t     len;
+	init_table *fields;
+};
+
 #endif

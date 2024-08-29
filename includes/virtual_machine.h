@@ -38,8 +38,9 @@ struct state
 
 struct vm_stack
 {
-	stack *main;
-	stack *obj;
+	stack       *main;
+	stack       *obj;
+	field_stack *init_field;
 };
 
 struct vm
@@ -49,8 +50,6 @@ struct vm
 	CallFrame frames[FRAMES_MAX];
 	vm_stack  stack;
 
-	instance *current_instance;
-	table    *init_fields;
 	upval    *open_upvals;
 	instance *caller;
 	table    *glob;
