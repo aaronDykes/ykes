@@ -1379,6 +1379,12 @@ static void _access(compiler *c)
 {
 
 	expression(c);
+
+	consume(
+	    TOKEN_CH_RSQUARE, "Expect closing brace prior to array access",
+	    &c->parser
+	);
+
 	if (match(TOKEN_OP_ASSIGN, &c->parser))
 	{
 		expression(c);
@@ -1386,11 +1392,6 @@ static void _access(compiler *c)
 	}
 	else
 		emit_byte(c, OP_GET_ACCESS);
-
-	consume(
-	    TOKEN_CH_RSQUARE, "Expect closing brace prior to array access",
-	    &c->parser
-	);
 }
 
 static int resolve_class(compiler *c, _key *ar)

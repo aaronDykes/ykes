@@ -154,6 +154,47 @@ static void parse_str(const char *str)
 	// printf("\"");
 }
 
+static void println(element ar)
+{
+	switch (ar.type)
+	{
+	case T_NATIVE:
+		printf("<native: %s>", NATIVE(ar)->name.val);
+		break;
+	case T_CLOSURE:
+		printf("<fn: %s>", CLOSURE(ar)->func->name.val);
+		break;
+	case T_CLASS:
+		printf("<class: %s>", CLASS(ar)->name.val);
+		break;
+	case T_KEY:
+		printf("<id: %s>", ar.key.val);
+		break;
+	case T_INSTANCE:
+		printf("<instance: %s>", INSTANCE(ar)->classc->name.val);
+		break;
+
+	case T_CHAR:
+		printf("'%c'", ar.val.Char);
+		break;
+	case T_NUM:
+		printf("%f", ar.val.Num);
+		break;
+	case T_BOOL:
+		printf("%s", (ar.val.Bool) ? "true" : "false");
+		break;
+	case T_STR:
+		parse_str(ar.val.String);
+		break;
+	case T_NULL:
+		printf("[ null ]");
+		break;
+
+	default:
+		return;
+	}
+}
+
 void print(element ar)
 {
 
@@ -180,10 +221,13 @@ void print(element ar)
 
 		vector *v = NULL;
 		v         = VECTOR(ar);
+		printf("[ ");
 
 		for (int i = 0; i < v->count; i++)
-			print(OBJ(*(v->of + i), v->type));
-
+		{
+			println(OBJ(*(v->of + i), v->type));
+			printf(i == v->count - 1 ? " ]\n" : ", ");
+		}
 		break;
 	}
 	case T_CHAR:
