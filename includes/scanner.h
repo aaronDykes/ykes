@@ -9,6 +9,7 @@ struct token
 {
 	token_t     type;
 	int         line;
+	int         col;
 	int         size;
 	const char *start;
 };
@@ -16,6 +17,7 @@ struct token
 struct scanner
 {
 	int         line;
+	int         col;
 	const char *start;
 	const char *current;
 };

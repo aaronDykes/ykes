@@ -6,6 +6,7 @@ void init_scanner(const char *src)
 	scan.start   = src;
 	scan.current = src;
 	scan.line    = 1;
+	scan.col     = 1;
 }
 void re_init_scanner(const char *src, int line)
 {
@@ -365,6 +366,7 @@ static char next(void)
 }
 static char advance(void)
 {
+	scan.col++;
 	return *scan.current++;
 }
 static char peek(int n)
@@ -375,6 +377,7 @@ static char peek(int n)
 static void skip(void)
 {
 	scan.current++;
+	scan.col++;
 }
 static void nskip(int n)
 {
@@ -423,6 +426,7 @@ static void skip_line_comment(void)
 
 	if (!end())
 		scan.line++;
+	scan.col = 1;
 
 	skip();
 }
@@ -430,12 +434,19 @@ static void skip_multi_line_comment(void)
 {
 	skip();
 	for (; !end(); skip())
+	{
+
 		if (*scan.current == '/' && scan.current[1] == '*')
 			skip_multi_line_comment();
 		else if (*scan.current == '\n')
+		{
 			scan.line++;
+			scan.col = 1;
+		}
 		else if (*scan.current == '*' && scan.current[1] == '/')
 			break;
+	}
+
 	nskip(2);
 }
 static token skip_comment(void)
@@ -460,6 +471,7 @@ static void skip_whitespace(void)
 		{
 		case '\n':
 			scan.line++;
+			scan.col = 1;
 			break;
 
 		case '/':

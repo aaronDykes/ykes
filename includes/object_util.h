@@ -156,6 +156,7 @@ typedef struct function       function;
 typedef struct closure        closure;
 typedef struct upval          upval;
 typedef struct generic_vector generic_vector;
+typedef struct repl_buffer    repl_buffer;
 typedef struct buffer         buffer;
 typedef struct native         native;
 typedef struct element        element;
@@ -210,6 +211,12 @@ struct _3d_vector
 	value ***of;
 };
 
+struct repl_buffer
+{
+	char    *bytes;
+	uint16_t count;
+	uint16_t len;
+};
 struct buffer
 {
 	char   *bytes;

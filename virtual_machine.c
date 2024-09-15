@@ -23,17 +23,20 @@ void initVM(void)
 	// machine.init_fields = NULL;
 	machine.open_upvals = NULL;
 	machine.caller      = NULL;
+	machine.repl_native = NULL;
 
 	machine.stack.main = GROW_STACK(NULL, STACK_SIZE);
 	machine.glob       = GROW_TABLE(NULL, STACK_SIZE);
 
-	machine.count.argc  = 0;
-	machine.count.frame = 0;
-	machine.count.cargc = 0;
+	machine.count.argc   = 0;
+	machine.count.frame  = 0;
+	machine.count.cargc  = 0;
+	machine.count.native = 0;
 }
 void freeVM(void)
 {
 	FREE_TABLE(&machine.glob);
+	FREE_TABLE(&machine.repl_native);
 	FREE_STACK(&machine.stack.main);
 	FREE_STACK(&machine.stack.obj);
 	free_field_stack(&machine.stack.init_field);
@@ -103,21 +106,41 @@ static bool call(closure *c, uint8_t argc)
 	return true;
 }
 
+void init_natives(void)
+{
+
+	machine.stack.obj = GROW_STACK(NULL, 3);
+	define_natives(&machine.stack.obj);
+	machine.repl_native = GROW_TABLE(NULL, INIT_SIZE);
+
+	write_table(
+	    machine.repl_native, Key("clock", 5),
+	    NumType(machine.count.native++, T_NATIVE)
+	);
+	write_table(
+	    machine.repl_native, Key("square", 6),
+	    NumType(machine.count.native++, T_NATIVE)
+	);
+	write_table(
+	    machine.repl_native, Key("file", 4),
+	    NumType(machine.count.native++, T_NATIVE)
+	);
+}
 Interpretation interpret(const char *src)
 {
 
 	function *func = NULL;
 
-	if (!(func = compile(src)))
+	if (!(func = compile(src, &machine.repl_native)))
 		return INTERPRET_RUNTIME_ERR;
 
 	closure *clos = _closure(func);
 	call(clos, 0);
 	machine.frames[machine.count.frame - 1].slots = machine.stack.main->as;
 
-	machine.stack.obj = GROW_STACK(NULL, func->objc);
+	machine.stack.obj =
+	    GROW_STACK(&machine.stack.obj, machine.count.native + func->objc);
 
-	define_natives(&machine.stack.obj);
 	push(&machine.stack.main, GEN(clos, T_CLOSURE));
 
 	close_upvalues();

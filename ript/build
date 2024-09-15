@@ -1,0 +1,11 @@
+#!/bin/zsh
+
+. ~/.zshrc
+
+
+ykes="../"
+
+cd $ykes 
+mace
+mk
+

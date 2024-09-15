@@ -1,0 +1,11 @@
+#!/bin/zsh
+
+. ~/.zshrc
+
+
+./build
+c
+cd $ykes
+
+./ykes
+

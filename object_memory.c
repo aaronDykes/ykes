@@ -67,6 +67,9 @@ stack *realloc_stack(stack **st, size_t size)
 	if (!st)
 		return _stack(size);
 
+	if (size == (*st)->len)
+		return *st;
+
 	element *as = NULL;
 	as          = ALLOC(sizeof(element) * size);
 
@@ -189,8 +192,13 @@ static void free_instance(instance **ic)
 }
 static void free_stack(stack **stack)
 {
-	if (!*stack)
+	if (!stack)
 		return;
+	if (!*stack)
+	{
+		stack = NULL;
+		return;
+	}
 
 	if ((*stack)->count == 0)
 	{

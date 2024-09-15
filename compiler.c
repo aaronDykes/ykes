@@ -1163,12 +1163,12 @@ static void error_at(Token toke, parser *parser, const char *err)
 	parser->flag = 1;
 
 	fprintf(
-	    stderr, "[file: %s, line: %d] Error", parser->current_file,
-	    toke->line - 1
+	    stderr, "[file: %s, line: %d:%d] Error", parser->current_file,
+	    toke->line, toke->col
 	);
 
 	if (toke->type == TOKEN_EOF)
-		fprintf(stderr, " at end");
+		fprintf(stderr, " reached end of file");
 	else if (toke->type != TOKEN_ERR)
 		fprintf(stderr, " at '%.*s'", toke->size, toke->start);
 
@@ -1624,35 +1624,37 @@ static function *end_compile(compiler *a)
 	return f;
 }
 
-function *compile(const char *src)
+function *compile(const char *src, table **lookup)
 {
 	compiler c;
 
 	init_scanner(src);
 	init_compiler(&c, NULL, COMPILER_TYPE_SCRIPT, Key("SCRIPT", 6));
 
-	c.base         = &c;
-	c.base->lookup = NULL;
-	c.base->lookup = GROW_TABLE(NULL, STACK_SIZE);
-	c.hash.init    = hash_key("init");
-	c.hash.len     = hash_key("len");
-	c.hash.push    = hash_key("push");
-	c.hash.pop     = hash_key("pop");
+	c.base            = &c;
+	c.base->lookup    = NULL;
+	c.base->lookup    = *lookup;
+	c.base->count.obj = 3;
+	c.hash.init       = hash_key("init");
+	c.hash.len        = hash_key("len");
+	c.hash.push       = hash_key("push");
+	c.hash.pop        = hash_key("pop");
 
 	c.parser.flag         = false;
 	c.parser.current_file = NULL;
 
-	write_table(
-	    c.base->lookup, Key("clock", 5),
-	    NumType(c.base->count.obj++, T_NATIVE)
-	);
-	write_table(
-	    c.base->lookup, Key("square", 6),
-	    NumType(c.base->count.obj++, T_NATIVE)
-	);
-	write_table(
-	    c.base->lookup, Key("file", 4), NumType(c.base->count.obj++, T_NATIVE)
-	);
+	// write_table(
+	//     c.base->lookup, Key("clock", 5),
+	//     NumType(c.base->count.obj++, T_NATIVE)
+	// );
+	// write_table(
+	//     c.base->lookup, Key("square", 6),
+	//     NumType(c.base->count.obj++, T_NATIVE)
+	// );
+	// write_table(
+	//     c.base->lookup, Key("file", 4), NumType(c.base->count.obj++,
+	//     T_NATIVE)
+	// );
 
 	advance_compiler(&c.parser);
 

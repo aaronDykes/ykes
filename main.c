@@ -1,3 +1,4 @@
+#include "object_string.h"
 #include "virtual_machine.h"
 #include <fcntl.h>
 #include <pwd.h>
@@ -31,22 +32,42 @@ static void repl(void)
 {
 
 	initVM();
-	char ar[1024] = {0};
+	repl_buffer b;
 	// arena ar = GROW_ARENA(NULL, 1024 * sizeof(char), ARENA_STR);
 
+	init_natives();
 	for (;;)
 	{
 		printf("$ ");
 
-		if (!fgets(ar, 1024, stdin))
-		{
-			printf("\n");
-			break;
-		}
-		if (strcmp(ar, "end\n") == 0)
-			break;
+		char ch = 0;
+		b       = _repl_buff(INIT_SIZE);
 
-		interpret(ar);
+		while (ch = getchar())
+		{
+			switch (ch)
+			{
+			case '\n':
+				write_repl_buffer(&b, '\0');
+				goto INTERP;
+			default:
+				write_repl_buffer(&b, ch);
+			}
+		};
+		// if (!fgets(b.bytes, 1024, stdin))
+		// {
+		// 	printf("\n");
+		// 	break;
+		// }
+
+	INTERP:
+		if (strcmp(b.bytes, "end") == 0)
+			break;
+		if (b.count == 2 && *b.bytes == 'q' && !*(b.bytes + 1))
+			break;
+		interpret(b.bytes);
+		free_repl_buffer(&b);
+		// interpret(b.bytes);
 	}
 	freeVM();
 }

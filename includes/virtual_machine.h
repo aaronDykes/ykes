@@ -34,6 +34,7 @@ struct state
 	uint16_t frame;
 	uint8_t  argc;
 	uint8_t  cargc;
+	uint8_t  native;
 };
 
 struct vm_stack
@@ -53,11 +54,13 @@ struct vm
 	upval    *open_upvals;
 	instance *caller;
 	table    *glob;
+	table    *repl_native;
 };
 
 static vm machine;
 
 void initVM(void);
+void init_natives(void);
 void freeVM(void);
 
 Interpretation run(void);
