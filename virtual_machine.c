@@ -620,7 +620,6 @@ Interpretation run(void)
 			break;
 		case OP_INIT_VECTOR:
 		{
-
 			int size = UPPER();
 			size |= LOWER();
 
