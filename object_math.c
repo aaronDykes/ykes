@@ -334,3 +334,18 @@ element _sqr(element *a)
 
 	return Num(sqrt(a->val.Num));
 }
+
+element _len(element *a)
+{
+
+	switch (a->type)
+	{
+	case T_STR:
+		return Num(a->val.len);
+	case T_VECTOR:
+		return Num(VECTOR((*a))->count);
+	default:
+		error("Invalid square root operation. Expected type number");
+		exit(1);
+	}
+}

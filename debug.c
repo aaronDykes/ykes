@@ -199,9 +199,11 @@ int disassemble_instruction(chunk *c, int offset)
 		return simple_instruction("OP_SET_ACCESS", offset);
 
 	case OP_DELETE_VAL:
-		return byte_instruction("OP_DELETE_VAL", c, offset);
+		return simple_instruction("OP_DELETE_VAL", offset);
 	case OP_INSERT_VAL:
-		return byte_instruction("OP_INSERT_VAL", c, offset);
+		return simple_instruction("OP_INSERT_VAL", offset);
+	case OP_LEN:
+		return simple_instruction("OP_LEN", offset);
 
 	default:
 		printf("Unkown opcode: %d\n", offset);

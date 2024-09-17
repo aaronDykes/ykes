@@ -1404,7 +1404,7 @@ static int resolve_class(compiler *c, _key *ar)
 	return -1;
 }
 
-static void array_delete(compiler *c, int arg)
+static void array_delete(compiler *c)
 {
 	consume(
 	    TOKEN_CH_LPAREN, "Expected an open `(` prior to calling array delete",
@@ -1420,7 +1420,7 @@ static void array_delete(compiler *c, int arg)
 	emit_byte(c, OP_DELETE_VAL);
 }
 
-static void array_insert(compiler *c, int arg)
+static void array_insert(compiler *c)
 {
 	consume(
 	    TOKEN_CH_LPAREN, "Expected an open `(` prior to calling array insert",
@@ -1456,9 +1456,11 @@ static void dot(compiler *c)
 	c->array.index = arg;
 
 	if (ar.hash == c->base->hash.delete)
-		array_delete(c, arg);
+		array_delete(c);
 	else if (ar.hash == c->base->hash.insert)
-		array_insert(c, arg);
+		array_insert(c);
+	else if (ar.hash == c->base->hash.len)
+		emit_byte(c, OP_LEN);
 
 	else if (match(TOKEN_OP_ASSIGN, &c->parser))
 	{

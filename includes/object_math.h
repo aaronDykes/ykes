@@ -22,5 +22,6 @@ element _to_str(element *a);
 element _inc(element *b);
 element _dec(element *b);
 element _sqr(element *a);
+element _len(element *a);
 
 #endif

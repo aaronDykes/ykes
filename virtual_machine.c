@@ -641,7 +641,9 @@ Interpretation run(void)
 			argc = READ_BYTE();
 			SET_OBJ(argc, READ_CONSTANT());
 			break;
-
+		case OP_LEN:
+			PUSH(_len(POP()));
+			break;
 		case OP_RM:
 			FREE_OBJ(*POP());
 			break;

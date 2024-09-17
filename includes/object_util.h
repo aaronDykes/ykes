@@ -34,6 +34,7 @@ typedef enum
 	OP_POPN,
 	OP_RM,
 	OP_CLOSE_UPVAL,
+	OP_LEN,
 
 	OP_GET_PROP,
 	OP_SET_PROP,
@@ -161,7 +162,7 @@ union value
 
 	struct
 	{
-		uint16_t len;
+		uint32_t len;
 		char    *String;
 	};
 
