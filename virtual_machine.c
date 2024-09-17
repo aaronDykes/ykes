@@ -35,8 +35,11 @@ void initVM(void)
 }
 void freeVM(void)
 {
-	FREE(machine.repl_native->records);
-	FREE(machine.repl_native);
+	if (machine.repl_native)
+	{
+		FREE(machine.repl_native->records);
+		FREE(machine.repl_native);
+	}
 
 	// FREE_TABLE(&machine.repl_native);
 	FREE_TABLE(&machine.glob);
@@ -650,17 +653,36 @@ Interpretation run(void)
 			int size = UPPER();
 			size |= LOWER();
 
-			int i = (COUNT() + 1) - size;
+			int i = COUNT() - size;
 
 			vector *v = NULL;
 
 			obj_t type = (frame->slots + i)->type;
 			v          = _vector(size, type);
 
-			for (; i < COUNT(); i++)
+			for (; i < COUNT() - 1; i++)
 				push_value(&v, (frame->slots + i));
 
 			PUSH(GEN(v, T_VECTOR));
+			break;
+		}
+		case OP_DELETE_VAL:
+		{
+
+			int     index = POP()->val.Num;
+			vector *v     = NULL;
+			v             = VECTOR((*POP()));
+			delete_index(&v, index);
+			break;
+		}
+		case OP_INSERT_VAL:
+		{
+
+			vector  *v     = NULL;
+			element *o     = POP();
+			int      index = POP()->val.Num;
+			v              = VECTOR((*POP()));
+			insert_value(&v, o, (Long)index);
 			break;
 		}
 		case OP_ALLOC_TABLE:

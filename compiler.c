@@ -1404,6 +1404,45 @@ static int resolve_class(compiler *c, _key *ar)
 	return -1;
 }
 
+static void array_delete(compiler *c, int arg)
+{
+	consume(
+	    TOKEN_CH_LPAREN, "Expected an open `(` prior to calling array delete",
+	    &c->parser
+	);
+
+	advance_compiler(&c->parser);
+	num(c);
+	consume(
+	    TOKEN_CH_RPAREN,
+	    "Expected a closing `)` following call to array delete", &c->parser
+	);
+	emit_byte(c, OP_DELETE_VAL);
+}
+
+static void array_insert(compiler *c, int arg)
+{
+	consume(
+	    TOKEN_CH_LPAREN, "Expected an open `(` prior to calling array insert",
+	    &c->parser
+	);
+	advance_compiler(&c->parser);
+	num(c);
+
+	consume(
+	    TOKEN_CH_COMMA, "Expected a comma between array insertion args",
+	    &c->parser
+	);
+
+	expression(c);
+
+	consume(
+	    TOKEN_CH_RPAREN,
+	    "Expected a closing `)` following call to array insert", &c->parser
+	);
+	emit_byte(c, OP_INSERT_VAL);
+}
+
 static void dot(compiler *c)
 {
 	match(TOKEN_ID, &c->parser);
@@ -1416,7 +1455,12 @@ static void dot(compiler *c)
 	c->array.set   = OP_SET_PROP;
 	c->array.index = arg;
 
-	if (match(TOKEN_OP_ASSIGN, &c->parser))
+	if (ar.hash == c->base->hash.delete)
+		array_delete(c, arg);
+	else if (ar.hash == c->base->hash.insert)
+		array_insert(c, arg);
+
+	else if (match(TOKEN_OP_ASSIGN, &c->parser))
 	{
 		expression(c);
 		emit_bytes(c, OP_SET_PROP, arg);
@@ -1643,19 +1687,6 @@ function *compile(const char *src, table **lookup)
 	c.parser.flag         = false;
 	c.parser.current_file = NULL;
 
-	// write_table(
-	//     c.base->lookup, Key("clock", 5),
-	//     NumType(c.base->count.obj++, T_NATIVE)
-	// );
-	// write_table(
-	//     c.base->lookup, Key("square", 6),
-	//     NumType(c.base->count.obj++, T_NATIVE)
-	// );
-	// write_table(
-	//     c.base->lookup, Key("file", 4), NumType(c.base->count.obj++,
-	//     T_NATIVE)
-	// );
-
 	advance_compiler(&c.parser);
 
 	while (!match(TOKEN_EOF, &c.parser))
@@ -1685,10 +1716,12 @@ function *compile_path(const char *src, const char *path, const char *name)
 	c.base->lookup = NULL;
 	c.base->lookup = GROW_TABLE(NULL, INIT_SIZE);
 
-	c.hash.init = hash_key("init");
-	c.hash.len  = hash_key("len");
-	c.hash.push = hash_key("push");
-	c.hash.pop  = hash_key("pop");
+	c.hash.init   = hash_key("init");
+	c.hash.len    = hash_key("len");
+	c.hash.push   = hash_key("push");
+	c.hash.pop    = hash_key("pop");
+	c.hash.insert = hash_key("insert");
+	c.hash.delete = hash_key("delete");
 
 	c.parser.flag         = false;
 	c.parser.current_file = name;

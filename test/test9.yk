@@ -1,36 +1,20 @@
 
-
-class Nested
+sr func()
 {
 
-      init()
-      {
-            this.n  = 69;
-            this.aaron = "Aaron";
-            this.Dykes = "Dykes";
-      }
-      res()
-      {
-            pout(`${this.n}, ${this.aaron}, ${this.Dykes}`);
-      }
+      var a = [1, 2, 3, 4, 5, 6, 7, 8];
+
+
+      a.insert(4, 69);
+      a.delete(0);
+      // a.replace(8, 69);
+      // a.replace_all(8, 69);
+
+
+
+      pout(a);
 }
 
-class Test
-{
-      init()
-      {
-            this.nest = Nested();
-            this.aaron = "Aaron";
-            this.Dykes = "Dykes";
-      }
-      res()
-      {
-            this.nest.res();
-            pout(`${this.aaron}, ${this.Dykes}`);
 
-      }
-}
 
-var t = Test();
-
-t.res();
+func();

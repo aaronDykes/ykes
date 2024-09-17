@@ -17,9 +17,6 @@ typedef struct stack          stack;
 typedef struct init_table     init_table;
 typedef struct field_stack    field_stack;
 
-typedef enum opcode_t opcode_t;
-typedef enum cast_t   cast_t;
-typedef enum obj_t    obj_t;
 typedef struct class class;
 typedef struct table    table;
 typedef struct record   record;

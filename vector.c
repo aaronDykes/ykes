@@ -37,10 +37,38 @@ void insert_value(vector **v, element *obj, int index)
 		    "Inserting vector element at index %d with invalid type", index
 		);
 
-	for (int i = index + 1; i < (*v)->len - 1; i++)
+	int    size = (*v)->len + 1;
+	value *tmp  = NULL;
+
+	tmp = ALLOC(size);
+
+	for (int i = 0; i < index; i++)
+		*(tmp + i) = *((*v)->of + i);
+
+	*(tmp + index) = obj->val;
+
+	for (int i = index; i < (*v)->len; i++)
+		*(tmp + i + 1) = *((*v)->of + i);
+
+	FREE((*v)->of);
+	(*v)->of = NULL;
+	(*v)->of = tmp;
+	(*v)->count++;
+	(*v)->len++;
+}
+void delete_index(vector **v, Long index)
+{
+	if (index > (*v)->len)
+		exit_error(
+		    "Vector index out of range, current length: %d, provided "
+		    "index: %d",
+		    (*v)->len, index
+		);
+
+	for (int i = index; i < (*v)->len - 1; i++)
 		*((*v)->of + i) = *((*v)->of + i + 1);
 
-	*((*v)->of + index) = obj->val;
+	--(*v)->count;
 }
 
 void _set_index(int index, element *obj, vector **v)

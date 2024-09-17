@@ -101,6 +101,9 @@ struct hash_ref
 	int len;
 	int push;
 	int pop;
+	int reverse;
+	int delete;
+	int insert;
 };
 
 struct meta
@@ -258,6 +261,8 @@ static void add_local(compiler *c, _key *ar);
 static void _array(compiler *c);
 static void _access(compiler *c);
 
+static void array_function(compiler *c);
+
 static PRule rules[] = {
     [TOKEN_CH_LPAREN]          = {grouping,             call,                      PREC_CALL      },
     [TOKEN_CH_RPAREN]          = {NULL,                 NULL,                      PREC_NONE      },
@@ -322,7 +327,7 @@ static PRule rules[] = {
     [TOKEN_SUPER]              = {NULL,                 NULL,                      PREC_NONE      },
     [TOKEN_THIS]               = {_this,                NULL,                      PREC_NONE      },
     [TOKEN_VAR]                = {NULL,                 NULL,                      PREC_NONE      },
-    [TOKEN_TYPE_ARRAY]         = {NULL,                 NULL,                      PREC_NONE      },
+    [TOKEN_TYPE_ARRAY]         = {NULL,                 NULL,                      PREC_CALL      },
     [TOKEN_STORAGE_TYPE_NUM]   = {cast,                 NULL,                      PREC_CALL      },
     [TOKEN_STORAGE_TYPE_STR]   = {cast,                 NULL,                      PREC_CALL      },
     [TOKEN_STORAGE_TYPE_CHAR]  = {cast,                 NULL,                      PREC_CALL      },

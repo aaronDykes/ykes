@@ -15,7 +15,7 @@
 #define STACK(el)    ((stack *)(el.obj))
 #define UPVAL(el)    ((upval *)(el.obj))
 
-enum opcode_t
+typedef enum
 {
 	OP_CONSTANT,
 	OP_CLOSURE,
@@ -39,6 +39,9 @@ enum opcode_t
 	OP_SET_PROP,
 	OP_SET_FIELD,
 	OP_GET_FIELD,
+
+	OP_DELETE_VAL,
+	OP_INSERT_VAL,
 
 	OP_GET_METHOD,
 	OP_ALLOC_INSTANCE,
@@ -107,9 +110,9 @@ enum opcode_t
 
 	OP_NOOP,
 	OP_RETURN,
-};
+} opcode_t;
 
-enum cast_t
+typedef enum
 {
 	CAST_NUM_CHAR,
 	CAST_NUM_STR,
@@ -120,9 +123,9 @@ enum cast_t
 	CAST_STR_NUM,
 	CAST_STR_BOOL,
 	CAST_STR_CHAR,
-};
+} cast_t;
 
-enum obj_t
+typedef enum
 {
 
 	T_NUM,
@@ -145,7 +148,7 @@ enum obj_t
 	T_STACK,
 	T_TABLE,
 	T_NULL
-};
+} obj_t;
 
 struct _key
 {

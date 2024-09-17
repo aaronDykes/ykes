@@ -1,8 +1,8 @@
 
 
+sr func()
 {
 
-    // var b = 420;
     var d = 69;
     var c = 69;
     var o = 69;
@@ -11,9 +11,13 @@
 
     a[1] = d;
     a[6] = a[1];
+    a[3] = a[6];
+
 
 
     pout(a);
 }
 
 
+
+func();

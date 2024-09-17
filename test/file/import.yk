@@ -1,0 +1,9 @@
+import "functions/prime.yk";
+import "functions/fib.yk";
+
+
+var p = Prime(100000);
+var f = FIB(35);
+
+p.res();
+f.res();
