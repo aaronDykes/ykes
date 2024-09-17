@@ -1,5 +1,5 @@
-#ifndef OBJECT_TYPE_H
-#define OBJECT_TYPE_H
+#ifndef _OBJECT_TYPE_H
+#define _OBJECT_TYPE_H
 
 typedef struct vector         vector;
 typedef struct _2d_vector     _2d_vector;
