@@ -188,37 +188,6 @@ element string_le(element *s, element *c)
 	return Bool(strcmp(s->val.String, c->val.String) <= 0);
 }
 
-repl_buffer _repl_buff(size_t size)
-{
-	repl_buffer b;
-	b.bytes = NULL;
-	b.count = 0;
-	b.len   = size;
-	b.bytes = ALLOC(size);
-	return b;
-}
-void write_repl_buffer(repl_buffer *buf, char byte)
-{
-	if (!buf->bytes)
-		return;
-
-	if (buf->count + 1 > buf->len)
-	{
-
-		buf->bytes = REALLOC(buf->bytes, buf->len, buf->len * INC);
-		buf->len *= INC;
-	}
-
-	*(buf->bytes + buf->count++) = byte;
-}
-void free_repl_buffer(repl_buffer *buf)
-{
-	if (!buf->bytes)
-		return;
-	FREE(buf->bytes);
-	buf->bytes = NULL;
-}
-
 buffer _buffer(size_t size)
 {
 	buffer b;
@@ -236,8 +205,8 @@ void write_buffer(buffer *buf, char byte)
 	if (buf->count + 1 > buf->len)
 	{
 
-		buf->bytes = REALLOC(buf->bytes, buf->len, buf->len + MIN_SIZE);
-		buf->len += MIN_SIZE;
+		buf->bytes = REALLOC(buf->bytes, buf->len, buf->len * INC);
+		buf->len *= INC;
 	}
 
 	*(buf->bytes + buf->count++) = byte;

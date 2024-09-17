@@ -35,15 +35,19 @@ void initVM(void)
 }
 void freeVM(void)
 {
+	FREE(machine.repl_native->records);
+	FREE(machine.repl_native);
+
+	// FREE_TABLE(&machine.repl_native);
 	FREE_TABLE(&machine.glob);
-	FREE_TABLE(&machine.repl_native);
 	FREE_STACK(&machine.stack.main);
 	FREE_STACK(&machine.stack.obj);
 	free_field_stack(&machine.stack.init_field);
 
-	machine.glob       = NULL;
-	machine.stack.main = NULL;
-	machine.stack.obj  = NULL;
+	machine.glob        = NULL;
+	machine.repl_native = NULL;
+	machine.stack.main  = NULL;
+	machine.stack.obj   = NULL;
 
 #ifdef GLOBAL_MEM_ARENA
 	destroy_global_memory();
@@ -108,7 +112,6 @@ static bool call(closure *c, uint8_t argc)
 
 void init_natives(void)
 {
-
 	machine.stack.obj = GROW_STACK(NULL, 3);
 	define_natives(&machine.stack.obj);
 	machine.repl_native = GROW_TABLE(NULL, INIT_SIZE);
@@ -126,6 +129,7 @@ void init_natives(void)
 	    NumType(machine.count.native++, T_NATIVE)
 	);
 }
+
 Interpretation interpret(const char *src)
 {
 
@@ -146,6 +150,7 @@ Interpretation interpret(const char *src)
 	close_upvalues();
 	return run();
 }
+
 Interpretation
 interpret_path(const char *src, const char *path, const char *name)
 {
@@ -190,8 +195,7 @@ static bool call_value(element el, uint8_t argc)
 		push(&machine.stack.main, res);
 		return true;
 	}
-	// case T_INSTANCE:
-	// return true;
+
 	default:
 		break;
 	}

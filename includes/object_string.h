@@ -16,10 +16,6 @@ element string_ge(element *s, element *c);
 element string_lt(element *s, element *c);
 element string_le(element *s, element *c);
 
-repl_buffer _repl_buff(size_t size);
-void        write_repl_buffer(repl_buffer *buf, char byte);
-void        free_repl_buffer(repl_buffer *buf);
-
 buffer _buffer(size_t size);
 void   write_buffer(buffer *buf, char byte);
 void   free_buffer(buffer *buf);

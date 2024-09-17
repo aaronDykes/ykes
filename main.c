@@ -32,7 +32,7 @@ static void repl(void)
 {
 
 	initVM();
-	repl_buffer b;
+	buffer b;
 	// arena ar = GROW_ARENA(NULL, 1024 * sizeof(char), ARENA_STR);
 
 	init_natives();
@@ -41,34 +41,22 @@ static void repl(void)
 		printf("$ ");
 
 		char ch = 0;
-		b       = _repl_buff(INIT_SIZE);
+		b       = _buffer(INIT_SIZE);
 
-		while (ch = getchar())
-		{
-			switch (ch)
-			{
-			case '\n':
-				write_repl_buffer(&b, '\0');
-				goto INTERP;
-			default:
-				write_repl_buffer(&b, ch);
-			}
-		};
-		// if (!fgets(b.bytes, 1024, stdin))
-		// {
-		// 	printf("\n");
-		// 	break;
-		// }
+		while ((ch = getchar()) != '\n')
+			write_buffer(&b, ch);
 
-	INTERP:
+		write_buffer(&b, '\0');
+
 		if (strcmp(b.bytes, "end") == 0)
 			break;
-		if (b.count == 2 && *b.bytes == 'q' && !*(b.bytes + 1))
+		if (b.count == 2 && *b.bytes == 'q')
 			break;
+
 		interpret(b.bytes);
-		free_repl_buffer(&b);
-		// interpret(b.bytes);
+		b.count = 0;
 	}
+	free_buffer(&b);
 	freeVM();
 }
 

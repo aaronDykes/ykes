@@ -1,5 +1,6 @@
 #ifndef _OBJECT_UTIL_H
 #define _OBJECT_UTIL_H
+#include <object_type.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -14,7 +15,7 @@
 #define STACK(el)    ((stack *)(el.obj))
 #define UPVAL(el)    ((upval *)(el.obj))
 
-typedef enum
+enum opcode_t
 {
 	OP_CONSTANT,
 	OP_CLOSURE,
@@ -106,10 +107,9 @@ typedef enum
 
 	OP_NOOP,
 	OP_RETURN,
+};
 
-} opcode_t;
-
-typedef enum
+enum cast_t
 {
 	CAST_NUM_CHAR,
 	CAST_NUM_STR,
@@ -120,9 +120,9 @@ typedef enum
 	CAST_STR_NUM,
 	CAST_STR_BOOL,
 	CAST_STR_CHAR,
-} cast_t;
+};
 
-typedef enum
+enum obj_t
 {
 
 	T_NUM,
@@ -145,31 +145,7 @@ typedef enum
 	T_STACK,
 	T_TABLE,
 	T_NULL
-} obj_t;
-
-typedef struct vector         vector;
-typedef struct _2d_vector     _2d_vector;
-typedef struct _3d_vector     _3d_vector;
-typedef union value           value;
-typedef struct chunk          chunk;
-typedef struct function       function;
-typedef struct closure        closure;
-typedef struct upval          upval;
-typedef struct generic_vector generic_vector;
-typedef struct repl_buffer    repl_buffer;
-typedef struct buffer         buffer;
-typedef struct native         native;
-typedef struct element        element;
-typedef struct stack          stack;
-typedef struct init_table     init_table;
-typedef struct field_stack    field_stack;
-
-typedef struct class class;
-typedef struct table    table;
-typedef struct record   record;
-typedef struct instance instance;
-typedef element (*NativeFn)(int argc, element *argv);
-typedef struct _key _key;
+};
 
 struct _key
 {
@@ -211,17 +187,11 @@ struct _3d_vector
 	value ***of;
 };
 
-struct repl_buffer
-{
-	char    *bytes;
-	uint16_t count;
-	uint16_t len;
-};
 struct buffer
 {
-	char   *bytes;
-	uint8_t count;
-	uint8_t len;
+	char    *bytes;
+	uint32_t count;
+	uint32_t len;
 };
 
 struct generic_vector
@@ -233,8 +203,8 @@ struct generic_vector
 
 struct chunk
 {
-	uint16_t       count;
-	uint16_t       len;
+	uint32_t       count;
+	uint32_t       len;
 	uint8_t       *ip;
 	uint16_t      *lines;
 	generic_vector cases;
