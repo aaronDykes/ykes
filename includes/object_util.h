@@ -5,15 +5,17 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define CLOSURE(el)  ((closure *)(el.obj))
-#define FUNC(el)     ((function *)(el.obj))
-#define NATIVE(el)   ((native *)(el.obj))
-#define CLASS(el)    ((class *)(el.obj))
-#define INSTANCE(el) ((instance *)(el.obj))
-#define VECTOR(el)   ((vector *)(el.obj))
-#define TABLE(el)    ((table *)(el.obj))
-#define STACK(el)    ((stack *)(el.obj))
-#define UPVAL(el)    ((upval *)(el.obj))
+#define CLOSURE(el)    ((closure *)(el.obj))
+#define FUNC(el)       ((function *)(el.obj))
+#define NATIVE(el)     ((native *)(el.obj))
+#define CLASS(el)      ((class *)(el.obj))
+#define INSTANCE(el)   ((instance *)(el.obj))
+#define VECTOR(el)     ((vector *)(el.obj))
+#define _2D_VECTOR(el) ((_2d_vector *)(el.obj))
+#define _3D_VECTOR(el) ((_3d_vector *)(el.obj))
+#define TABLE(el)      ((table *)(el.obj))
+#define STACK(el)      ((stack *)(el.obj))
+#define UPVAL(el)      ((upval *)(el.obj))
 
 typedef enum
 {
@@ -25,6 +27,7 @@ typedef enum
 	OP_GET_INSTANCE,
 	OP_ALLOC_TABLE,
 	OP_ALLOC_VECTOR,
+	OP_ALLOC_2D_VECTOR,
 	OP_INIT_VECTOR,
 	OP_THIS,
 	OP_GET_ACCESS,
@@ -173,22 +176,24 @@ union value
 
 struct vector
 {
-	uint16_t count;
-	uint16_t len;
+	uint32_t count;
+	uint32_t len;
 	uint8_t  type;
 	value   *of;
 };
 struct _2d_vector
 {
-	uint16_t count;
-	uint16_t len;
-	value  **of;
+	uint32_t count;
+	uint32_t len;
+	uint8_t  type;
+	vector **of;
 };
 struct _3d_vector
 {
-	uint16_t count;
-	uint16_t len;
-	value ***of;
+	uint32_t  count;
+	uint32_t  len;
+	uint8_t   type;
+	vector ***of;
 };
 
 struct buffer

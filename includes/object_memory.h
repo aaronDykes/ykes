@@ -18,13 +18,15 @@
 stack *_stack(size_t size);
 stack *realloc_stack(stack **stack, size_t size);
 
-vector   *_vector(size_t size, obj_t type);
-upval   **upvals(size_t size);
-closure  *_closure(function *func);
-upval    *_upval(element closed, uint8_t index);
-native   *_native(NativeFn native, _key ar);
-class    *_class(_key name);
-instance *_instance(class *c);
+vector     *_vector(size_t size, obj_t type);
+_2d_vector *_2d_vector_(size_t size, obj_t type);
+_3d_vector *_3d_vector_(size_t size, obj_t type);
+upval     **upvals(size_t size);
+closure    *_closure(function *func);
+upval      *_upval(element closed, uint8_t index);
+native     *_native(NativeFn native, _key ar);
+class      *_class(_key name);
+instance   *_instance(class *c);
 
 void free_vector(vector **v);
 void free_table(table **t);

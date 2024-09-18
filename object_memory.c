@@ -33,6 +33,36 @@ vector *_vector(size_t size, obj_t type)
 	v->of     = ALLOC(size * sizeof(value));
 	return v;
 }
+_2d_vector *_2d_vector_(size_t size, obj_t type)
+{
+	_2d_vector *v = NULL;
+	v             = ALLOC(sizeof(_2d_vector));
+	v->count      = 0;
+	v->len        = size;
+	v->type       = type;
+	v->of         = NULL;
+	v->of         = ALLOC(size * sizeof(vector *));
+
+	for (size_t i = 0; i < size; i++)
+		*(v->of + i) = NULL;
+
+	return v;
+}
+_3d_vector *_3d_vector_(size_t size, obj_t type)
+{
+	_3d_vector *v = NULL;
+	v             = ALLOC(sizeof(_3d_vector));
+	v->count      = 0;
+	v->len        = size;
+	v->type       = type;
+	v->of         = NULL;
+	v->of         = ALLOC(size * sizeof(vector **));
+
+	for (size_t i = 0; i < size; i++)
+		*(v->of + i) = NULL;
+
+	return v;
+}
 
 instance *_instance(class *classc)
 {

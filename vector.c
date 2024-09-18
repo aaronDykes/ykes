@@ -133,3 +133,45 @@ vector *_realloc_vector(vector **v, size_t size)
 
 	return *v;
 }
+_2d_vector *_realloc_2d_vector(_2d_vector **v, size_t size)
+{
+	if (!*v && size == 0)
+		return NULL;
+	if (!*v && size != 0)
+		return _2d_vector_(size, T_GEN);
+
+	vector **of = ALLOC(sizeof(vector *) * size);
+
+	for (size_t i = 0; i < (*v)->count; i++)
+		*(of + i) = *((*v)->of + i);
+
+	FREE((*v)->of);
+	(*v)->of = NULL;
+	(*v)->of = of;
+	(*v)->len *= INC;
+
+	v = NULL;
+
+	return *v;
+}
+_3d_vector *_realloc_3d_vector(_3d_vector **v, size_t size)
+{
+	if (!*v && size == 0)
+		return NULL;
+	if (!*v && size != 0)
+		return _3d_vector_(size, T_GEN);
+
+	vector ***of = ALLOC(sizeof(vector **) * size);
+
+	for (size_t i = 0; i < (*v)->count; i++)
+		*(of + i) = *((*v)->of + i);
+
+	FREE((*v)->of);
+	(*v)->of = NULL;
+	(*v)->of = of;
+	(*v)->len *= INC;
+
+	v = NULL;
+
+	return *v;
+}

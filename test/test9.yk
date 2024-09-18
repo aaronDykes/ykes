@@ -1,4 +1,6 @@
 
+
+
 sr func()
 {
 
@@ -6,19 +8,30 @@ sr func()
 
 
       a.insert(4, 69);
+      a.insert(5, 420);
       a.delete(0);
 
 
-      pout(a.len);
-      // a.replace(8, 69);
-      // a.replace_all(8, 69);
 
+
+
+
+      // each (var i : b) /* */
 
 
       pout(a);
 
+      var b = [
+            [],
+            [],
+            []
+      ]
+
+
       for (var i = 0; i < a.len; i++)
             pout(a[i]);
+
+      pout(`length of vector a: ${a.len}`);
 }
 
 
