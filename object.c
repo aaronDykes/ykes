@@ -174,6 +174,19 @@ static void println(element ar)
 		printf("<instance: %s>", INSTANCE(ar)->classc->name.val);
 		break;
 
+	case T_VECTOR:
+	{
+		vector *v = NULL;
+		v         = VECTOR(ar);
+		printf("[ ");
+
+		for (int i = 0; i < v->count; i++)
+		{
+			println(OBJ(*(v->of + i), v->type));
+			printf(i == v->count - 1 ? " ]" : ", ");
+		}
+		break;
+	}
 	case T_CHAR:
 		printf("'%c'", ar.val.Char);
 		break;
@@ -228,6 +241,25 @@ void print(element ar)
 			println(OBJ(*(v->of + i), v->type));
 			printf(i == v->count - 1 ? " ]\n" : ", ");
 		}
+		break;
+	}
+	case T_VECTOR_2D:
+	{
+
+		_2d_vector *v = NULL;
+		v             = _2D_VECTOR(ar);
+		printf("[\n");
+
+		for (int i = 0; i < v->count; i++)
+		{
+			printf("\t");
+			println(GEN(*(v->of + i), T_VECTOR));
+
+			if (i != v->count - 1)
+				printf(", \n");
+		}
+		printf("\n]\n");
+
 		break;
 	}
 	case T_CHAR:

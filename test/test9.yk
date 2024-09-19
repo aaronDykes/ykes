@@ -15,17 +15,7 @@ sr func()
 
 
 
-
-      // each (var i : b) /* */
-
-
       pout(a);
-
-      var b = [
-            [],
-            [],
-            []
-      ]
 
 
       for (var i = 0; i < a.len; i++)

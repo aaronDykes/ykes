@@ -16,6 +16,20 @@ void push_value(vector **v, element *obj)
 
 	*((*v)->of + (*v)->count++) = obj->val;
 }
+void push_vector(_2d_vector **v, element *obj)
+{
+
+	if ((*v)->len < (*v)->count + 1)
+		*v = _realloc_2d_vector(v, (*v)->len * INC);
+
+	if ((*v)->type == T_GEN)
+		(*v)->type = VECTOR((*obj))->type;
+
+	else if ((*v)->type != VECTOR((*obj))->type)
+		exit_error("Pushing invalid vector type");
+
+	*((*v)->of + (*v)->count++) = VECTOR((*obj));
+}
 static void replace_value_index(value **of, int index, value val)
 {
 	*((*of) + index) = val;

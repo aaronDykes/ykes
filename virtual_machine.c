@@ -655,7 +655,7 @@ Interpretation run(void)
 			int size = UPPER();
 			size |= LOWER();
 
-			int i = COUNT() - size;
+			int i = COUNT() - size - 1;
 
 			vector *v = NULL;
 
@@ -665,7 +665,34 @@ Interpretation run(void)
 			for (; i < COUNT() - 1; i++)
 				push_value(&v, (frame->slots + i));
 
+			POPN(size);
 			PUSH(GEN(v, T_VECTOR));
+			break;
+		}
+		case OP_INIT_2D_VECTOR:
+		{
+			int size = UPPER();
+			size |= LOWER();
+
+			int i = COUNT() - size;
+
+			_2d_vector *v = NULL;
+
+			if ((frame->slots + i)->type != T_VECTOR)
+			{
+				runtime_error(
+				    "Pushing invalid object to 2 dimensional vector"
+				);
+				return INTERPRET_RUNTIME_ERR;
+			}
+			obj_t type = VECTOR((*(frame->slots + i)))->type;
+			v          = _2d_vector_(size, type);
+
+			for (; i < COUNT() - 1; i++)
+				push_vector(&v, (frame->slots + i));
+
+			POPN(size);
+			PUSH(GEN(v, T_VECTOR_2D));
 			break;
 		}
 		case OP_DELETE_VAL:

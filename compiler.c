@@ -1352,9 +1352,57 @@ static int resolve_call(compiler *c, _key *ar)
 	return -1;
 }
 
+static void nested_array(compiler *c)
+{
+
+	int i = 0;
+
+	match(TOKEN_CH_LSQUARE, &c->parser);
+
+	if (match(TOKEN_CH_RSQUARE, &c->parser))
+	{
+		emit_byte(c, OP_ALLOC_VECTOR);
+		return;
+	}
+	do
+	{
+		expression(c);
+		i++;
+	} while (match(TOKEN_CH_COMMA, &c->parser));
+
+	consume(
+	    TOKEN_CH_RSQUARE, "Expect closing brace after array declaration",
+	    &c->parser
+	);
+
+	emit_byte(c, OP_INIT_VECTOR);
+	emit_bytes(c, UPPER(i), LOWER(i));
+}
+
 static void _array(compiler *c)
 {
 	int i = 1;
+	int j = 1;
+
+	if (match(TOKEN_CH_LSQUARE, &c->parser))
+	{
+		do
+		{
+			nested_array(c);
+			j++;
+
+		} while (match(TOKEN_CH_COMMA, &c->parser));
+
+		emit_byte(c, OP_INIT_2D_VECTOR);
+		emit_bytes(c, UPPER(j), LOWER(j));
+
+		// match(TOKEN_CH_RSQUARE, &c->parser);
+		consume(
+		    TOKEN_CH_RSQUARE,
+		    "Expect closing brace after array declaration", &c->parser
+		);
+		return;
+	}
 
 	if (match(TOKEN_CH_RSQUARE, &c->parser))
 	{

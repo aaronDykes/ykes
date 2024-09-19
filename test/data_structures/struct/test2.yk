@@ -16,6 +16,7 @@ b.e = 'N';
 b.tab = Struct();
 b.tab.aaron = "Aaron";
 b.tab.dykes = "Dykes";
+b.tab.dykes = "Dykes";
 
 a = [1, 2, 3, 4];
 
