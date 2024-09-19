@@ -551,8 +551,7 @@ Interpretation run(void)
 				);
 				return INTERPRET_RUNTIME_ERR;
 			}
-			if ((obj = _get_index(POP()->val.Num, VECTOR((*POP()))))
-			        .type == T_NULL)
+			if ((obj = _get_index(POP()->val.Num, POP())).type == T_NULL)
 			{
 				runtime_error("Invalid array access");
 				return INTERPRET_RUNTIME_ERR;

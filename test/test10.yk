@@ -13,6 +13,11 @@ sr func()
       pout(a);
 
 
+      pout(a[0]);
+      pout(a[1]);
+      pout(a[2]);
+
+
 }
 
 

@@ -104,17 +104,52 @@ void _set_index(int index, element *obj, vector **v)
 
 	replace_value_index(&(*v)->of, index, obj->val);
 }
-element _get_index(int index, vector *v)
+static element get_vector_index(int index, vector *v)
 {
-	if (!v)
-		return Null();
-	if (index > v->count)
+
+	if (index > v->len)
 	{
 		error("Array index: %d, out of bounds", index);
 		return Null();
 	}
 
 	return OBJ(*(v->of + index), v->type);
+}
+static element get_2d_vector_index(int index, _2d_vector *v)
+{
+	if (index > v->len)
+	{
+		error("Array index: %d, out of bounds", index);
+		return Null();
+	}
+
+	return GEN(*(v->of + index), T_VECTOR);
+}
+
+static element get_string_index(int index, value v)
+{
+	if (index > v.len)
+	{
+		error("String index: %d, out of bounds", index);
+		return Null();
+	}
+	return Char(*(v.String + index));
+}
+
+element _get_index(int index, element *obj)
+{
+	switch (obj->type)
+	{
+	case T_VECTOR:
+		return get_vector_index(index, VECTOR((*obj)));
+	case T_VECTOR_2D:
+		return get_2d_vector_index(index, _2D_VECTOR((*obj)));
+	case T_STR:
+		return get_string_index(index, obj->val);
+	default:
+		error("Attempting to access invalid object");
+		return Null();
+	}
 }
 
 element pop_value(vector **v)
