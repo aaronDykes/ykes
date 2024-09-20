@@ -531,6 +531,10 @@ Interpretation run(void)
 			obj           = *POP();
 			vect          = POP();
 
+			vector     *v  = NULL;
+			_2d_vector *v2 = NULL;
+			value      *av = NULL;
+
 			_set_index((Long)obj.val.Num, el, &vect);
 			break;
 		}
@@ -688,9 +692,9 @@ Interpretation run(void)
 		case OP_DELETE_VAL:
 		{
 
-			int     index = POP()->val.Num;
-			vector *v     = NULL;
-			v             = VECTOR((*POP()));
+			int      index = POP()->val.Num;
+			element *v     = NULL;
+			v              = POP();
 			delete_index(&v, index);
 			break;
 		}

@@ -157,7 +157,7 @@ void _insert(element **vect, element *obj, int index)
 	}
 }
 
-void delete_index(vector **v, Long index)
+static void delete_value_index(vector **v, Long index)
 {
 	if (index > (*v)->len)
 		exit_error(
@@ -172,12 +172,57 @@ void delete_index(vector **v, Long index)
 	--(*v)->count;
 }
 
+static void Delete_vector_index(vector ***v, Long index)
+{
+	for (int i = index; i < (**v)->len - 1; i++)
+		*((**v)->of + i) = *((**v)->of + i + 1);
+}
+static void delete_vector_index(_2d_vector **v, Long index)
+{
+	if (index > (*v)->len)
+		exit_error(
+		    "Vector index out of range, current length: %d, provided "
+		    "index: %d",
+		    (*v)->len, index
+		);
+
+	Delete_vector_index(&(*v)->of, index);
+
+	--(*v)->count;
+}
+static void delete_string_index(char **String, Long index)
+{
+}
+
+void delete_index(element **obj, Long index)
+{
+
+	vector     *v  = NULL;
+	_2d_vector *v2 = NULL;
+
+	switch ((*obj)->type)
+	{
+	case T_VECTOR:
+		v = VECTOR((**obj));
+		delete_value_index(&v, index);
+		break;
+	case T_VECTOR_2D:
+		v2 = _2D_VECTOR((**obj));
+		delete_vector_index(&v2, index);
+		break;
+	case T_STR:
+
+	default:
+	}
+}
+
 static void replace_value_index(value **of, int index, value value)
 {
 	*((*of) + index) = value;
 }
 static void replace_vector_index(vector ***of, int index, vector *vector)
 {
+	*((*of) + index) = NULL;
 	*((*of) + index) = vector;
 }
 static void replace_string_index(char **String, int index, char Char)
@@ -187,7 +232,6 @@ static void replace_string_index(char **String, int index, char Char)
 
 static void set_vector_index(int index, element *obj, vector **v)
 {
-
 	if (index > (*v)->len)
 		exit_error(
 		    "Vector index out of range, current length: %d, provided "
@@ -243,14 +287,14 @@ void _set_index(int index, element *obj, element **vect)
 	_2d_vector *v2 = NULL;
 	value      *av = NULL;
 
-	switch (obj->type)
+	switch ((*vect)->type)
 	{
 	case T_VECTOR:
 		v = VECTOR((**vect));
 		set_vector_index(index, obj, &v);
 		break;
 	case T_VECTOR_2D:
-		v2 = _2D_VECTOR((*obj));
+		v2 = _2D_VECTOR((**vect));
 		set_2d_vector_index(index, VECTOR((*obj)), &v2);
 		break;
 	case T_STR:

@@ -178,23 +178,23 @@ union value
 
 struct vector
 {
-	int     count;
-	int     len;
-	uint8_t type;
-	value  *of;
+	int    count;
+	int    len;
+	obj_t  type;
+	value *of;
 };
 struct _2d_vector
 {
 	int      count;
 	int      len;
-	uint8_t  type;
+	obj_t    type;
 	vector **of;
 };
 struct _3d_vector
 {
 	int       count;
 	int       len;
-	uint8_t   type;
+	obj_t     type;
 	vector ***of;
 };
 
