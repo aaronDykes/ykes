@@ -30,6 +30,7 @@ typedef enum
 	OP_ALLOC_2D_VECTOR,
 	OP_INIT_VECTOR,
 	OP_INIT_2D_VECTOR,
+	OP_INIT_3D_VECTOR,
 	OP_THIS,
 	OP_GET_ACCESS,
 	OP_SET_ACCESS,
@@ -149,6 +150,7 @@ typedef enum
 	T_FUNCTION,
 	T_VECTOR,
 	T_VECTOR_2D,
+	T_VECTOR_3D,
 	T_INCLUDE,
 	T_GEN,
 
@@ -195,10 +197,10 @@ struct _2d_vector
 };
 struct _3d_vector
 {
-	int       count;
-	int       len;
-	obj_t     type;
-	vector ***of;
+	int          count;
+	int          len;
+	obj_t        type;
+	_2d_vector **of;
 };
 
 struct buffer

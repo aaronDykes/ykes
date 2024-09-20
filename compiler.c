@@ -1378,29 +1378,79 @@ static void nested_array(compiler *c)
 	emit_byte(c, OP_INIT_VECTOR);
 	emit_bytes(c, UPPER(i), LOWER(i));
 }
+static void nested_2d_array(compiler *c)
+{
+	int j = 1;
+
+	do
+	{
+		nested_array(c);
+		j++;
+
+	} while (match(TOKEN_CH_COMMA, &c->parser));
+
+	consume(
+	    TOKEN_CH_RSQUARE, "Expect closing brace after array declaration",
+	    &c->parser
+	);
+
+	emit_byte(c, OP_INIT_2D_VECTOR);
+	emit_bytes(c, UPPER(j), LOWER(j));
+}
+
+static void _3d_array(compiler *c)
+{
+	int k = 1;
+	do
+	{
+		match(TOKEN_CH_LSQUARE, &c->parser);
+		k++;
+		nested_2d_array(c);
+
+	} while (match(TOKEN_CH_COMMA, &c->parser));
+	consume(
+	    TOKEN_CH_RSQUARE, "Expect closing brace after array declaration",
+	    &c->parser
+	);
+	emit_byte(c, OP_INIT_3D_VECTOR);
+	emit_bytes(c, UPPER(k), LOWER(k));
+}
+
+static void _2d_array(compiler *c)
+{
+	int j = 1;
+
+	do
+	{
+		nested_array(c);
+		j++;
+
+	} while (match(TOKEN_CH_COMMA, &c->parser));
+
+	emit_byte(c, OP_INIT_2D_VECTOR);
+	emit_bytes(c, UPPER(j), LOWER(j));
+
+	// match(TOKEN_CH_RSQUARE, &c->parser);
+	consume(
+	    TOKEN_CH_RSQUARE, "Expect closing brace after array declaration",
+	    &c->parser
+	);
+}
 
 static void _array(compiler *c)
 {
 	int i = 0;
-	int j = 1;
 
 	if (match(TOKEN_CH_LSQUARE, &c->parser))
 	{
-		do
+
+		if (match(TOKEN_CH_LSQUARE, &c->parser))
 		{
-			nested_array(c);
-			j++;
 
-		} while (match(TOKEN_CH_COMMA, &c->parser));
-
-		emit_byte(c, OP_INIT_2D_VECTOR);
-		emit_bytes(c, UPPER(j), LOWER(j));
-
-		// match(TOKEN_CH_RSQUARE, &c->parser);
-		consume(
-		    TOKEN_CH_RSQUARE,
-		    "Expect closing brace after array declaration", &c->parser
-		);
+			_3d_array(c);
+			return;
+		}
+		_2d_array(c);
 		return;
 	}
 

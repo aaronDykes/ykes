@@ -130,9 +130,24 @@ element vector_to_str(vector *a)
 		}
 		return str;
 	case T_CHAR:
-		break;
+		str = char_to_str(a->of->Char);
+		for (int i = 1; i < a->count; i++)
+		{
+			append_str_to_str(&str, &space);
+			s = char_to_str((a->of + i)->Char);
+			append_str_to_str(&str, &s);
+		}
+		return str;
 	case T_STR:
-		break;
+		str = OBJ(*a->of, T_STR);
+
+		for (int i = 1; i < a->count; i++)
+		{
+			append_str_to_str(&str, &space);
+			s = OBJ(*(a->of + i), T_STR);
+			append_str_to_str(&str, &s);
+		}
+		return str;
 	default:
 		return Null();
 	}

@@ -56,7 +56,7 @@ _3d_vector *_3d_vector_(size_t size, obj_t type)
 	v->len        = size;
 	v->type       = type;
 	v->of         = NULL;
-	v->of         = ALLOC(size * sizeof(vector **));
+	v->of         = ALLOC(size * sizeof(_2d_vector *));
 
 	for (size_t i = 0; i < size; i++)
 		*(v->of + i) = NULL;

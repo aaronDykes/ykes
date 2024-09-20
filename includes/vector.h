@@ -4,6 +4,7 @@
 
 void push_value(vector **v, element *obj);
 void push_vector(_2d_vector **v, element *obj);
+void push_2d_vector(_3d_vector **v, element *obj);
 
 void    _insert(element **v, element *obj, int index);
 void    delete_index(element **v, Long index);

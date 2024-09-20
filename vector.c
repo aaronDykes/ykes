@@ -29,6 +29,19 @@ void push_vector(_2d_vector **v, element *obj)
 
 	*((*v)->of + (*v)->count++) = VECTOR((*obj));
 }
+void push_2d_vector(_3d_vector **v, element *obj)
+{
+	if ((*v)->len < (*v)->count + 1)
+		*v = _realloc_3d_vector(v, (*v)->len * INC);
+
+	if ((*v)->type == T_GEN)
+		(*v)->type = _2D_VECTOR((*obj))->type;
+
+	else if ((*v)->type != _2D_VECTOR((*obj))->type)
+		exit_error("Pushing invalid vector type");
+
+	*((*v)->of + (*v)->count++) = _2D_VECTOR((*obj));
+}
 
 void push_obj(element **vect, element *obj)
 {
@@ -465,7 +478,7 @@ _3d_vector *_realloc_3d_vector(_3d_vector **v, size_t size)
 	if (!*v && size != 0)
 		return _3d_vector_(size, T_GEN);
 
-	vector ***of = ALLOC(sizeof(vector **) * size);
+	_2d_vector **of = ALLOC(sizeof(_2d_vector *) * size);
 
 	for (int i = 0; i < (*v)->count; i++)
 		*(of + i) = *((*v)->of + i);
