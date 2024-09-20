@@ -93,7 +93,6 @@ element str_to_char(element *a)
 	free_obj(*a);
 	return Char(ch);
 }
-
 static element realloc_string(value ar, size_t size)
 {
 	ar.String = REALLOC(ar.String, ar.len, size);
@@ -108,6 +107,35 @@ static element append_str_to_str(element *s, element *str)
 	// s->val.String[new] = '\0';
 	FREE(str->val.String);
 	return *s;
+}
+
+element vector_to_str(vector *a)
+{
+
+	element str;
+	element s;
+	element space       = String(", ", 3);
+	space.val.String[2] = '\0';
+
+	switch (a->type)
+	{
+	case T_NUM:
+		str = lltoa((Long)a->of->Num);
+
+		for (int i = 1; i < a->count; i++)
+		{
+			append_str_to_str(&str, &space);
+			s = lltoa((Long)(a->of + i)->Num);
+			append_str_to_str(&str, &s);
+		}
+		return str;
+	case T_CHAR:
+		break;
+	case T_STR:
+		break;
+	default:
+		return Null();
+	}
 }
 
 element append(element *s, element *ar)

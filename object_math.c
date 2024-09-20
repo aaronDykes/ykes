@@ -48,6 +48,10 @@ element _to_str(element *a)
 
 	case T_CLASS:
 		return Null();
+	case T_VECTOR:
+		return vector_to_str(VECTOR((*a)));
+	case T_VECTOR_2D:
+		break;
 	default:
 		error("Invalid string conversion");
 		exit(1);

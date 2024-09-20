@@ -259,7 +259,6 @@ void print(element ar)
 				printf(", \n");
 		}
 		printf("\n]\n");
-
 		break;
 	}
 	case T_CHAR:
