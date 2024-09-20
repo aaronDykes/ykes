@@ -1491,8 +1491,41 @@ static void array_insert(compiler *c)
 	emit_byte(c, OP_INSERT_VAL);
 }
 
+static void array_push(compiler *c)
+{
+
+	consume(
+	    TOKEN_CH_LPAREN, "Expected an open `(` prior to calling array push",
+	    &c->parser
+	);
+
+	expression(c);
+
+	consume(
+	    TOKEN_CH_RPAREN,
+	    "Expected a closing `)` following call to array push", &c->parser
+	);
+	emit_byte(c, OP_PUSH_VAL);
+}
+
+static void array_pop(compiler *c)
+{
+
+	consume(
+	    TOKEN_CH_LPAREN, "Expected an open `(` prior to calling array push",
+	    &c->parser
+	);
+
+	consume(
+	    TOKEN_CH_RPAREN,
+	    "Expected a closing `)` following call to array push", &c->parser
+	);
+	emit_byte(c, OP_POP_VAL);
+}
+
 static void dot(compiler *c)
 {
+
 	match(TOKEN_ID, &c->parser);
 
 	_key ar = parse_id(c);
@@ -1507,6 +1540,10 @@ static void dot(compiler *c)
 		array_delete(c);
 	else if (ar.hash == c->base->hash.insert)
 		array_insert(c);
+	else if (ar.hash == c->base->hash.push)
+		array_push(c);
+	else if (ar.hash == c->base->hash.pop)
+		array_pop(c);
 	else if (ar.hash == c->base->hash.len)
 		emit_byte(c, OP_LEN);
 

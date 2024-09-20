@@ -517,7 +517,6 @@ Interpretation run(void)
 		}
 		case OP_SET_ACCESS:
 		{
-
 			if (NPEEK(1).type != T_NUM)
 			{
 				runtime_error(
@@ -530,10 +529,6 @@ Interpretation run(void)
 			el            = POP();
 			obj           = *POP();
 			vect          = POP();
-
-			vector     *v  = NULL;
-			_2d_vector *v2 = NULL;
-			value      *av = NULL;
 
 			_set_index((Long)obj.val.Num, el, &vect);
 			break;
@@ -706,6 +701,19 @@ Interpretation run(void)
 			// v              = VECTOR((*POP()));
 			element *vect = POP();
 			_insert(&vect, o, (Long)index);
+			break;
+		}
+		case OP_PUSH_VAL:
+		{
+			element *o    = POP();
+			element *vect = POP();
+			push_obj(&vect, o);
+			break;
+		}
+		case OP_POP_VAL:
+		{
+			element *vect = POP();
+			pop_obj(&vect);
 			break;
 		}
 		case OP_ALLOC_TABLE:

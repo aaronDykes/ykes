@@ -18,7 +18,6 @@ void push_value(vector **v, element *obj)
 }
 void push_vector(_2d_vector **v, element *obj)
 {
-
 	if ((*v)->len < (*v)->count + 1)
 		*v = _realloc_2d_vector(v, (*v)->len * INC);
 
@@ -29,6 +28,28 @@ void push_vector(_2d_vector **v, element *obj)
 		exit_error("Pushing invalid vector type");
 
 	*((*v)->of + (*v)->count++) = VECTOR((*obj));
+}
+
+void push_obj(element **vect, element *obj)
+{
+
+	vector     *v  = NULL;
+	_2d_vector *v2 = NULL;
+
+	switch ((*vect)->type)
+	{
+	case T_VECTOR:
+		v = VECTOR((**vect));
+		push_value(&v, obj);
+		break;
+	case T_VECTOR_2D:
+		v2 = _2D_VECTOR((**vect));
+		push_vector(&v2, obj);
+		break;
+	default:
+		error("Pushing to invalid object type");
+		exit(1);
+	}
 }
 
 static void insert_value(vector **v, element *obj, int index)
@@ -172,11 +193,6 @@ static void delete_value_index(vector **v, Long index)
 	--(*v)->count;
 }
 
-static void Delete_vector_index(vector ***v, Long index)
-{
-	for (int i = index; i < (**v)->len - 1; i++)
-		*((**v)->of + i) = *((**v)->of + i + 1);
-}
 static void delete_vector_index(_2d_vector **v, Long index)
 {
 	if (index > (*v)->len)
@@ -186,12 +202,22 @@ static void delete_vector_index(_2d_vector **v, Long index)
 		    (*v)->len, index
 		);
 
-	Delete_vector_index(&(*v)->of, index);
+	for (int i = index; i < (*v)->len - 1; i++)
+		*((*v)->of + i) = *((*v)->of + i + 1);
 
 	--(*v)->count;
 }
-static void delete_string_index(char **String, Long index)
+static void delete_string_index(value **String, Long index)
 {
+	if (index > (*String)->len)
+		exit_error(
+		    "Vector index out of range, current length: %d, provided "
+		    "index: %d",
+		    (*String)->len, index
+		);
+
+	for (int i = index; i < (*String)->len - 1; i++)
+		*((*String)->String + i) = *((*String)->String + i + 1);
 }
 
 void delete_index(element **obj, Long index)
@@ -199,6 +225,7 @@ void delete_index(element **obj, Long index)
 
 	vector     *v  = NULL;
 	_2d_vector *v2 = NULL;
+	value      *av = NULL;
 
 	switch ((*obj)->type)
 	{
@@ -211,8 +238,12 @@ void delete_index(element **obj, Long index)
 		delete_vector_index(&v2, index);
 		break;
 	case T_STR:
-
+		av = &(*obj)->val;
+		delete_string_index(&av, index);
+		break;
 	default:
+		error("Attempting to access invalid object");
+		exit(1);
 	}
 }
 
@@ -354,12 +385,34 @@ element _get_index(int index, element *obj)
 	}
 }
 
-element pop_value(vector **v)
+static element pop_value(vector **v)
 {
-	return OBJ(
-	    ((*v)->count == 1) ? *(*v)->of : *((*v)->of + --(*v)->count),
-	    (*v)->type
-	);
+	return ((*v)->count == 0) ? Null()
+	                          : OBJ(*((*v)->of + --(*v)->count), (*v)->type);
+}
+static element pop_vector(_2d_vector **v)
+{
+	return ((*v)->count == 0) ? Null()
+	                          : GEN(*((*v)->of + --(*v)->count), T_VECTOR);
+}
+
+element pop_obj(element **vect)
+{
+	vector     *v  = NULL;
+	_2d_vector *v2 = NULL;
+
+	switch ((*vect)->type)
+	{
+	case T_VECTOR:
+		v = VECTOR((**vect));
+		return pop_value(&v);
+	case T_VECTOR_2D:
+		v2 = _2D_VECTOR((**vect));
+		return pop_vector(&v2);
+	default:
+		error("Unable to pop value from invalid object");
+		exit(1);
+	}
 }
 
 vector *_realloc_vector(vector **v, size_t size)
