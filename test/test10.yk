@@ -10,16 +10,13 @@ sr func()
             [4, 5, 6]
       ];
 
+
+
+
+      a.insert(3, [4, 6, 10]);
+
       pout(a);
 
-
-      pout(a[0]);
-      pout(a[1]);
-      pout(a[2]);
-
-
 }
-
-
 
 func();

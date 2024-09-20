@@ -167,8 +167,8 @@ union value
 
 	struct
 	{
-		uint32_t len;
-		char    *String;
+		int   len;
+		char *String;
 	};
 
 	double Num;
@@ -178,31 +178,31 @@ union value
 
 struct vector
 {
-	uint32_t count;
-	uint32_t len;
-	uint8_t  type;
-	value   *of;
+	int     count;
+	int     len;
+	uint8_t type;
+	value  *of;
 };
 struct _2d_vector
 {
-	uint32_t count;
-	uint32_t len;
+	int      count;
+	int      len;
 	uint8_t  type;
 	vector **of;
 };
 struct _3d_vector
 {
-	uint32_t  count;
-	uint32_t  len;
+	int       count;
+	int       len;
 	uint8_t   type;
 	vector ***of;
 };
 
 struct buffer
 {
-	char    *bytes;
-	uint32_t count;
-	uint32_t len;
+	char *bytes;
+	int   count;
+	int   len;
 };
 
 struct generic_vector
@@ -214,8 +214,8 @@ struct generic_vector
 
 struct chunk
 {
-	uint32_t       count;
-	uint32_t       len;
+	int            count;
+	int            len;
 	uint8_t       *ip;
 	uint16_t      *lines;
 	generic_vector cases;

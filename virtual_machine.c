@@ -525,22 +525,13 @@ Interpretation run(void)
 				);
 				return INTERPRET_RUNTIME_ERR;
 			}
-			vector  *v  = NULL;
-			element *el = NULL;
-			el          = POP();
-			obj         = *POP();
+			element *el   = NULL;
+			element *vect = NULL;
+			el            = POP();
+			obj           = *POP();
+			vect          = POP();
 
-			if (PEEK().type != T_VECTOR)
-			{
-				runtime_error(
-				    "Attempting to access invalid data structure"
-				);
-				return INTERPRET_RUNTIME_ERR;
-			}
-
-			v = VECTOR((*POP()));
-
-			_set_index((Long)obj.val.Num, el, &v);
+			_set_index((Long)obj.val.Num, el, &vect);
 			break;
 		}
 		case OP_GET_ACCESS:
@@ -706,11 +697,11 @@ Interpretation run(void)
 		case OP_INSERT_VAL:
 		{
 
-			vector  *v     = NULL;
 			element *o     = POP();
 			int      index = POP()->val.Num;
-			v              = VECTOR((*POP()));
-			insert_value(&v, o, (Long)index);
+			// v              = VECTOR((*POP()));
+			element *vect = POP();
+			_insert(&vect, o, (Long)index);
 			break;
 		}
 		case OP_ALLOC_TABLE:

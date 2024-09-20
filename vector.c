@@ -30,11 +30,8 @@ void push_vector(_2d_vector **v, element *obj)
 
 	*((*v)->of + (*v)->count++) = VECTOR((*obj));
 }
-static void replace_value_index(value **of, int index, value val)
-{
-	*((*of) + index) = val;
-}
-void insert_value(vector **v, element *obj, int index)
+
+static void insert_value(vector **v, element *obj, int index)
 {
 	if (index > (*v)->len)
 		exit_error(
@@ -54,7 +51,7 @@ void insert_value(vector **v, element *obj, int index)
 	int    size = (*v)->len + 1;
 	value *tmp  = NULL;
 
-	tmp = ALLOC(size);
+	tmp = ALLOC(size * sizeof(value));
 
 	for (int i = 0; i < index; i++)
 		*(tmp + i) = *((*v)->of + i);
@@ -70,6 +67,96 @@ void insert_value(vector **v, element *obj, int index)
 	(*v)->count++;
 	(*v)->len++;
 }
+static void insert_vector(_2d_vector **v, vector *obj, int index)
+{
+	if (index > (*v)->len)
+		exit_error(
+		    "Vector index out of range, current length: %d, provided "
+		    "index: %d",
+		    (*v)->len, index
+		);
+
+	if ((*v)->type == T_GEN)
+		(*v)->type = obj->type;
+
+	else if ((*v)->type != obj->type)
+		exit_error(
+		    "Inserting vector element at index %d with invalid type", index
+		);
+
+	int      size = (*v)->len + 1;
+	vector **tmp  = NULL;
+
+	tmp = ALLOC(size * sizeof(vector));
+
+	for (int i = 0; i < index; i++)
+		*(tmp + i) = *((*v)->of + i);
+
+	*(tmp + index) = obj;
+
+	for (int i = index; i < (*v)->len; i++)
+		*(tmp + i + 1) = *((*v)->of + i);
+
+	FREE((*v)->of);
+	(*v)->of = NULL;
+	(*v)->of = tmp;
+	(*v)->count++;
+	(*v)->len++;
+}
+static void insert_char(value **v, char Char, int index)
+{
+	if (index > (*v)->len)
+		exit_error(
+		    "Vector index out of range, current length: %d, provided "
+		    "index: %d",
+		    (*v)->len, index
+		);
+
+	int   size = (*v)->len + 1;
+	char *tmp  = NULL;
+
+	tmp = ALLOC(size);
+
+	for (int i = 0; i < index; i++)
+		*(tmp + i) = *((*v)->String + i);
+
+	*(tmp + index) = Char;
+
+	for (int i = index; i < (*v)->len; i++)
+		*(tmp + i + 1) = *((*v)->String + i);
+
+	FREE((*v)->String);
+	(*v)->String = NULL;
+	(*v)->String = tmp;
+	(*v)->len++;
+}
+
+void _insert(element **vect, element *obj, int index)
+{
+	vector     *v  = NULL;
+	_2d_vector *v2 = NULL;
+	value      *va = NULL;
+
+	switch ((*vect)->type)
+	{
+	case T_VECTOR:
+		v = VECTOR((**vect));
+		insert_value(&v, obj, index);
+		break;
+	case T_VECTOR_2D:
+		v2 = _2D_VECTOR((**vect));
+		insert_vector(&v2, VECTOR((*obj)), index);
+		break;
+	case T_STR:
+		va = &(*vect)->val;
+		insert_char(&va, obj->val.Char, index);
+		break;
+	default:
+		error("Invalid data structure insertion");
+		exit(1);
+	}
+}
+
 void delete_index(vector **v, Long index)
 {
 	if (index > (*v)->len)
@@ -85,8 +172,22 @@ void delete_index(vector **v, Long index)
 	--(*v)->count;
 }
 
-void _set_index(int index, element *obj, vector **v)
+static void replace_value_index(value **of, int index, value value)
 {
+	*((*of) + index) = value;
+}
+static void replace_vector_index(vector ***of, int index, vector *vector)
+{
+	*((*of) + index) = vector;
+}
+static void replace_string_index(char **String, int index, char Char)
+{
+	*((*String) + index) = Char;
+}
+
+static void set_vector_index(int index, element *obj, vector **v)
+{
+
 	if (index > (*v)->len)
 		exit_error(
 		    "Vector index out of range, current length: %d, provided "
@@ -103,6 +204,63 @@ void _set_index(int index, element *obj, vector **v)
 		);
 
 	replace_value_index(&(*v)->of, index, obj->val);
+}
+static void set_2d_vector_index(int index, vector *obj, _2d_vector **v)
+{
+	if (index > (*v)->len)
+		exit_error(
+		    "Vector index out of range, current length: %d, provided "
+		    "index: %d",
+		    (*v)->len, index
+		);
+
+	if ((*v)->type == T_GEN)
+		(*v)->type = obj->type;
+
+	else if ((*v)->type != obj->type)
+		exit_error(
+		    "Replacing vector element at index %d with invalid type", index
+		);
+
+	replace_vector_index(&(*v)->of, index, obj);
+}
+
+static void set_string_index(int index, char Char, value **v)
+{
+	if (index > (*v)->len)
+		exit_error(
+		    "Vector index out of range, current length: %d, provided "
+		    "index: %d",
+		    (*v)->len, index
+		);
+
+	replace_string_index(&(*v)->String, index, Char);
+}
+
+void _set_index(int index, element *obj, element **vect)
+{
+	vector     *v  = NULL;
+	_2d_vector *v2 = NULL;
+	value      *av = NULL;
+
+	switch (obj->type)
+	{
+	case T_VECTOR:
+		v = VECTOR((**vect));
+		set_vector_index(index, obj, &v);
+		break;
+	case T_VECTOR_2D:
+		v2 = _2D_VECTOR((*obj));
+		set_2d_vector_index(index, VECTOR((*obj)), &v2);
+		break;
+	case T_STR:
+		av = &(*vect)->val;
+		set_string_index(index, obj->val.Char, &av);
+		break;
+	default:
+		error("Attempting to access invalid object");
+		exit(1);
+	}
 }
 static element get_vector_index(int index, vector *v)
 {
@@ -170,7 +328,7 @@ vector *_realloc_vector(vector **v, size_t size)
 	value *of = NULL;
 	of        = ALLOC(sizeof(value) * size);
 
-	for (size_t i = 0; i < (*v)->count; i++)
+	for (int i = 0; i < (*v)->count; i++)
 		*(of + i) = *((*v)->of + i);
 
 	FREE((*v)->of);
@@ -191,7 +349,7 @@ _2d_vector *_realloc_2d_vector(_2d_vector **v, size_t size)
 
 	vector **of = ALLOC(sizeof(vector *) * size);
 
-	for (size_t i = 0; i < (*v)->count; i++)
+	for (int i = 0; i < (*v)->count; i++)
 		*(of + i) = *((*v)->of + i);
 
 	FREE((*v)->of);
@@ -212,7 +370,7 @@ _3d_vector *_realloc_3d_vector(_3d_vector **v, size_t size)
 
 	vector ***of = ALLOC(sizeof(vector **) * size);
 
-	for (size_t i = 0; i < (*v)->count; i++)
+	for (int i = 0; i < (*v)->count; i++)
 		*(of + i) = *((*v)->of + i);
 
 	FREE((*v)->of);
