@@ -344,8 +344,10 @@ element _len(element *a)
 		return Num(a->val.len);
 	case T_VECTOR:
 		return Num(VECTOR((*a))->count);
+	case T_VECTOR_2D:
+		return Num(_2D_VECTOR((*a))->count);
 	default:
-		error("Invalid square root operation. Expected type number");
+		error("Unable to get length of invalid object");
 		exit(1);
 	}
 }
