@@ -13,7 +13,7 @@ sr func()
 
 
 
-      a.insert(3, [4, 6, 10]);
+      a.insert(1, [4, 6, 10]);
 
       pout(a);
 

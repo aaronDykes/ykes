@@ -645,7 +645,7 @@ Interpretation run(void)
 			int size = UPPER();
 			size |= LOWER();
 
-			int i = COUNT() - size - 1;
+			int i = (COUNT() - size) - 1;
 
 			vector *v = NULL;
 

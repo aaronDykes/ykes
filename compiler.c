@@ -1381,7 +1381,7 @@ static void nested_array(compiler *c)
 
 static void _array(compiler *c)
 {
-	int i = 1;
+	int i = 0;
 	int j = 1;
 
 	if (match(TOKEN_CH_LSQUARE, &c->parser))

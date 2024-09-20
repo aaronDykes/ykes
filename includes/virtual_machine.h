@@ -35,6 +35,7 @@ struct state
 	uint8_t  argc;
 	uint8_t  cargc;
 	uint8_t  native;
+	int      insertion;
 };
 
 struct vm_stack
