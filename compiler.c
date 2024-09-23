@@ -1337,7 +1337,6 @@ static void parse_native_var_arg(compiler *c)
 	consume(TOKEN_CH_LPAREN, "Expect `(` prior to function call", &c->parser);
 	call(c);
 }
-
 static _key parse_id(compiler *c)
 {
 	return Key(c->parser.pre.start, c->parser.pre.size);
@@ -1356,7 +1355,6 @@ static int resolve_call(compiler *c, _key *ar)
 
 static void nested_array(compiler *c)
 {
-
 	int i = 0;
 
 	match(TOKEN_CH_LSQUARE, &c->parser);
@@ -1382,7 +1380,7 @@ static void nested_array(compiler *c)
 }
 static void _2d_array(compiler *c)
 {
-	int j = 1;
+	int j = 0;
 
 	do
 	{
@@ -1402,7 +1400,7 @@ static void _2d_array(compiler *c)
 }
 static void nested_2d_array(compiler *c)
 {
-	int j = 1;
+	int j = 0;
 
 	do
 	{
