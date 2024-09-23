@@ -19,7 +19,8 @@ sr func()
 
 
       for (var i = 0; i < a.len; i++)
-            pout(`vector${i}: ${a[i]}`);
+            for (var j = 0; j < a[i].len; j++)
+                  pout(a[i][j]);
 }
 
 func();

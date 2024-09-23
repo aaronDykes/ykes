@@ -837,11 +837,13 @@ static void end_scope(compiler *c)
 {
 
 	c->count.scope--;
-	if (c->count.local > 0 &&
-	    (c->stack.local[c->count.local - 1].depth > c->count.scope))
-		emit_bytes(
-		    c, OP_POPN, add_constant(&c->func->ch, Num(c->count.local))
-		);
+	int count = -1;
+	while (c->count.local > 0 &&
+	       (c->stack.local[--c->count.local].depth > c->count.scope))
+		// emit_byte(c, OP_POP);
+		count++;
+
+	emit_bytes(c, OP_POPN, count);
 }
 
 static void parse_block(compiler *c)
@@ -1378,6 +1380,26 @@ static void nested_array(compiler *c)
 	emit_byte(c, OP_INIT_VECTOR);
 	emit_bytes(c, UPPER(i), LOWER(i));
 }
+static void _2d_array(compiler *c)
+{
+	int j = 1;
+
+	do
+	{
+		nested_array(c);
+		j++;
+
+	} while (match(TOKEN_CH_COMMA, &c->parser));
+
+	emit_byte(c, OP_INIT_2D_VECTOR);
+	emit_bytes(c, UPPER(j), LOWER(j));
+
+	// match(TOKEN_CH_RSQUARE, &c->parser);
+	consume(
+	    TOKEN_CH_RSQUARE, "Expect closing brace after array declaration",
+	    &c->parser
+	);
+}
 static void nested_2d_array(compiler *c)
 {
 	int j = 1;
@@ -1400,7 +1422,7 @@ static void nested_2d_array(compiler *c)
 
 static void _3d_array(compiler *c)
 {
-	int k = 1;
+	int k = 0;
 	do
 	{
 		match(TOKEN_CH_LSQUARE, &c->parser);
@@ -1414,27 +1436,6 @@ static void _3d_array(compiler *c)
 	);
 	emit_byte(c, OP_INIT_3D_VECTOR);
 	emit_bytes(c, UPPER(k), LOWER(k));
-}
-
-static void _2d_array(compiler *c)
-{
-	int j = 1;
-
-	do
-	{
-		nested_array(c);
-		j++;
-
-	} while (match(TOKEN_CH_COMMA, &c->parser));
-
-	emit_byte(c, OP_INIT_2D_VECTOR);
-	emit_bytes(c, UPPER(j), LOWER(j));
-
-	// match(TOKEN_CH_RSQUARE, &c->parser);
-	consume(
-	    TOKEN_CH_RSQUARE, "Expect closing brace after array declaration",
-	    &c->parser
-	);
 }
 
 static void _array(compiler *c)

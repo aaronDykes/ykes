@@ -680,7 +680,7 @@ Interpretation run(void)
 			for (; i < COUNT() - 1; i++)
 				push_vector(&v, (frame->slots + i));
 
-			POPN(size);
+			POPN(size - 1);
 			PUSH(GEN(v, T_VECTOR_2D));
 			break;
 		}
@@ -689,15 +689,15 @@ Interpretation run(void)
 			int size = UPPER();
 			size |= LOWER();
 
-			int i = COUNT() - size;
+			int i = COUNT() - size - 1;
 
-			_3d_vector *v = NULL;
+			_3d_vector *v  = NULL;
+			element    *el = (frame->slots + i);
 
-			if ((frame->slots + i)->type != T_VECTOR)
+			if ((frame->slots + i)->type != T_VECTOR_2D)
 			{
-				runtime_error(
-				    "Pushing invalid object to 2 dimensional vector"
-				);
+				runtime_error("Pushing invalid object to 3d vector. "
+				              "Expected 2d vector");
 				return INTERPRET_RUNTIME_ERR;
 			}
 			obj_t type = _2D_VECTOR((*(frame->slots + i)))->type;
@@ -707,7 +707,7 @@ Interpretation run(void)
 				push_2d_vector(&v, (frame->slots + i));
 
 			POPN(size);
-			PUSH(GEN(v, T_VECTOR_2D));
+			PUSH(GEN(v, T_VECTOR_3D));
 			break;
 		}
 		case OP_DELETE_VAL:

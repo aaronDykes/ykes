@@ -192,7 +192,7 @@ static void println(element ar)
 
 		_2d_vector *v = NULL;
 		v             = _2D_VECTOR(ar);
-		printf("[\n");
+		printf("\t[\n");
 
 		for (int i = 0; i < v->count; i++)
 		{
@@ -202,7 +202,7 @@ static void println(element ar)
 			if (i != v->count - 1)
 				printf(", \n");
 		}
-		printf("\n]");
+		printf("\n\t]");
 		break;
 	}
 	case T_CHAR:
@@ -290,8 +290,7 @@ void print(element ar)
 		for (int i = 0; i < v->count; i++)
 		{
 			println(GEN(*(v->of + i), T_VECTOR_2D));
-			if (i != v->count - 1)
-				printf(",\n");
+			printf(i != v->count - 1 ? ",\n" : "\n");
 		}
 		printf("]\n");
 
