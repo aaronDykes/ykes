@@ -839,11 +839,14 @@ static void end_scope(compiler *c)
 	c->count.scope--;
 	int count = -1;
 	while (c->count.local > 0 &&
-	       (c->stack.local[--c->count.local].depth > c->count.scope))
-		// emit_byte(c, OP_POP);
+	       (c->stack.local[c->count.local - 1].depth > c->count.scope))
+	{
 		count++;
+		c->count.local--;
+	}
 
-	emit_bytes(c, OP_POPN, count);
+	if (count >= 1)
+		emit_bytes(c, OP_POPN, count);
 }
 
 static void parse_block(compiler *c)
@@ -1641,7 +1644,7 @@ static void id(compiler *c)
 	{
 		uint8_t init = 0;
 
-		if (c->base->stack.class[arg] -> init)
+		if (c->base->stack.class[arg]->init)
 		{
 			match(TOKEN_CH_LPAREN, &c->parser);
 			emit_bytes(c, OP_CLASS, (uint8_t)arg);
@@ -1746,7 +1749,6 @@ static int add_upvalue(compiler *c, int index, bool islocal)
 
 	c->stack.upvalue[c->count.upvalue].islocal = islocal;
 	c->stack.upvalue[c->count.upvalue].index   = (uint8_t)index;
-	c->count.upvalue++;
 	return c->count.upvalue++;
 }
 
