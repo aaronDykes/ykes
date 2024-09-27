@@ -22,7 +22,10 @@ sr func()
             for (var j = 0; j < a[i].len; j++)
                   pout(a[i][j]);
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> ykes_0.0.1
       pout(a);
 }
 

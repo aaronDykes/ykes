@@ -841,8 +841,8 @@ static void end_scope(compiler *c)
 	while (c->count.local > 0 &&
 	       (c->stack.local[c->count.local - 1].depth > c->count.scope))
 	{
-		c->count.local--;
 		count++;
+		c->count.local--;
 	}
 
 	if (count >= 1)
