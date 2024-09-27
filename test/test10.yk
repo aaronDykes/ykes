@@ -21,6 +21,9 @@ sr func()
       for (var i = 0; i < a.len; i++)
             for (var j = 0; j < a[i].len; j++)
                   pout(a[i][j]);
+
+
+      pout(a);
 }
 
 func();
