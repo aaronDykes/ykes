@@ -845,7 +845,9 @@ static void end_scope(compiler *c)
 		c->count.local--;
 	}
 
-	if (count >= 1)
+	if (count == 0)
+		emit_byte(c, OP_POP);
+	else if (count >= 1)
 		emit_bytes(c, OP_POPN, count);
 }
 

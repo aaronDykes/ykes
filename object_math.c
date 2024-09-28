@@ -350,6 +350,8 @@ element _len(element *a)
 		return Num(VECTOR((*a))->count);
 	case T_VECTOR_2D:
 		return Num(_2D_VECTOR((*a))->count);
+	case T_VECTOR_3D:
+		return Num(_3D_VECTOR((*a))->count);
 	default:
 		error("Unable to get length of invalid object");
 		exit(1);
