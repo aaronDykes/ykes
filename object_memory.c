@@ -30,7 +30,9 @@ vector *_vector(size_t size, obj_t type)
 	v->len    = size;
 	v->type   = type;
 	v->of     = NULL;
-	v->of     = ALLOC(size * sizeof(value));
+	if (size == 0)
+		size++;
+	v->of = ALLOC(size * sizeof(value));
 	return v;
 }
 _2d_vector *_2d_vector_(size_t size, obj_t type)
@@ -41,7 +43,11 @@ _2d_vector *_2d_vector_(size_t size, obj_t type)
 	v->len        = size;
 	v->type       = type;
 	v->of         = NULL;
-	v->of         = ALLOC(size * sizeof(vector *));
+
+	if (size == 0)
+		size++;
+
+	v->of = ALLOC(size * sizeof(vector *));
 
 	for (size_t i = 0; i < size; i++)
 		*(v->of + i) = NULL;
@@ -57,6 +63,9 @@ _3d_vector *_3d_vector_(size_t size, obj_t type)
 	v->type       = type;
 	v->of         = NULL;
 	v->of         = ALLOC(size * sizeof(_2d_vector *));
+
+	if (size == 0)
+		++size;
 
 	for (size_t i = 0; i < size; i++)
 		*(v->of + i) = NULL;

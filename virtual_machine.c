@@ -663,7 +663,7 @@ Interpretation run(void)
 			int size = UPPER();
 			size |= LOWER();
 
-			int i = COUNT() - size;
+			int i = COUNT() - size - 1;
 
 			_2d_vector *v = NULL;
 
@@ -680,7 +680,7 @@ Interpretation run(void)
 			for (; i < COUNT() - 1; i++)
 				push_vector(&v, (frame->slots + i));
 
-			POPN(size - 1);
+			POPN(size);
 			PUSH(GEN(v, T_VECTOR_2D));
 			break;
 		}

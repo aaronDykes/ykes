@@ -8,7 +8,7 @@ void push_2d_vector(_3d_vector **v, element *obj);
 
 void    _insert(element **v, element *obj, int index);
 void    delete_index(element **v, Long index);
-void    push_obj(element **vect, element *obj);
+void    push_obj(element **v, element *obj);
 element pop_obj(element **v);
 
 void    _set_index(int index, element *obj, element **vect);

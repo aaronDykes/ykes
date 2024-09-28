@@ -1385,7 +1385,7 @@ static void nested_array(compiler *c)
 }
 static void _2d_array(compiler *c)
 {
-	int j = 1;
+	int j = 0;
 
 	do
 	{
@@ -1405,7 +1405,7 @@ static void _2d_array(compiler *c)
 }
 static void nested_2d_array(compiler *c)
 {
-	int j = 1;
+	int j = 0;
 
 	do
 	{

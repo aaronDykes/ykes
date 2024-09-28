@@ -446,8 +446,6 @@ vector *_realloc_vector(vector **v, size_t size)
 	(*v)->of = of;
 	(*v)->len *= INC;
 
-	v = NULL;
-
 	return *v;
 }
 _2d_vector *_realloc_2d_vector(_2d_vector **v, size_t size)
@@ -467,8 +465,6 @@ _2d_vector *_realloc_2d_vector(_2d_vector **v, size_t size)
 	(*v)->of = of;
 	(*v)->len *= INC;
 
-	v = NULL;
-
 	return *v;
 }
 _3d_vector *_realloc_3d_vector(_3d_vector **v, size_t size)
@@ -487,8 +483,6 @@ _3d_vector *_realloc_3d_vector(_3d_vector **v, size_t size)
 	(*v)->of = NULL;
 	(*v)->of = of;
 	(*v)->len *= INC;
-
-	v = NULL;
 
 	return *v;
 }
