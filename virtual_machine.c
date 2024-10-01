@@ -691,8 +691,7 @@ Interpretation run(void)
 
 			int i = COUNT() - size - 1;
 
-			_3d_vector *v  = NULL;
-			element    *el = (frame->slots + i);
+			_3d_vector *v = NULL;
 
 			if ((frame->slots + i)->type != T_VECTOR_2D)
 			{

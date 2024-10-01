@@ -137,6 +137,43 @@ static void insert_vector(_2d_vector **v, vector *obj, int index)
 	(*v)->count++;
 	(*v)->len++;
 }
+static void insert_2d_vector(_3d_vector **v, _2d_vector *obj, int index)
+{
+	if (index > (*v)->len)
+		exit_error(
+		    "Vector index out of range, current length: %d, provided "
+		    "index: %d",
+		    (*v)->len, index
+		);
+
+	if ((*v)->type == T_GEN)
+		(*v)->type = obj->type;
+
+	else if ((*v)->type != obj->type)
+		exit_error(
+		    "Inserting vector element at index %d with invalid type", index
+		);
+
+	int          size = (*v)->len + 1;
+	_2d_vector **tmp  = NULL;
+
+	tmp = ALLOC(size * sizeof(_2d_vector));
+
+	for (int i = 0; i < index; i++)
+		*(tmp + i) = *((*v)->of + i);
+
+	*(tmp + index) = obj;
+
+	for (int i = index; i < (*v)->len; i++)
+		*(tmp + i + 1) = *((*v)->of + i);
+
+	FREE((*v)->of);
+	(*v)->of = NULL;
+	(*v)->of = tmp;
+	(*v)->count++;
+	(*v)->len++;
+}
+
 static void insert_char(value **v, char Char, int index)
 {
 	if (index > (*v)->len)
@@ -169,6 +206,7 @@ void _insert(element **vect, element *obj, int index)
 {
 	vector     *v  = NULL;
 	_2d_vector *v2 = NULL;
+	_3d_vector *v3 = NULL;
 	value      *va = NULL;
 
 	switch ((*vect)->type)
@@ -180,6 +218,10 @@ void _insert(element **vect, element *obj, int index)
 	case T_VECTOR_2D:
 		v2 = _2D_VECTOR((**vect));
 		insert_vector(&v2, VECTOR((*obj)), index);
+		break;
+	case T_VECTOR_3D:
+		v3 = _3D_VECTOR((**vect));
+		insert_2d_vector(&v3, _2D_VECTOR((*obj)), index);
 		break;
 	case T_STR:
 		va = &(*vect)->val;
@@ -220,6 +262,21 @@ static void delete_vector_index(_2d_vector **v, Long index)
 
 	--(*v)->count;
 }
+static void delete_2d_vector_index(_3d_vector **v, Long index)
+{
+	if (index > (*v)->len)
+		exit_error(
+		    "Vector index out of range, current length: %d, provided "
+		    "index: %d",
+		    (*v)->len, index
+		);
+
+	for (int i = index; i < (*v)->len - 1; i++)
+		*((*v)->of + i) = *((*v)->of + i + 1);
+
+	--(*v)->count;
+}
+
 static void delete_string_index(value **String, Long index)
 {
 	if (index > (*String)->len)
@@ -238,6 +295,7 @@ void delete_index(element **obj, Long index)
 
 	vector     *v  = NULL;
 	_2d_vector *v2 = NULL;
+	_3d_vector *v3 = NULL;
 	value      *av = NULL;
 
 	switch ((*obj)->type)
@@ -249,6 +307,10 @@ void delete_index(element **obj, Long index)
 	case T_VECTOR_2D:
 		v2 = _2D_VECTOR((**obj));
 		delete_vector_index(&v2, index);
+		break;
+	case T_VECTOR_3D:
+		v3 = _3D_VECTOR((**obj));
+		delete_2d_vector_index(&v3, index);
 		break;
 	case T_STR:
 		av = &(*obj)->val;

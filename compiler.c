@@ -1646,7 +1646,7 @@ static void id(compiler *c)
 	{
 		uint8_t init = 0;
 
-		if (c->base->stack.class[arg]->init)
+		if (c->base->stack.class[arg] -> init)
 		{
 			match(TOKEN_CH_LPAREN, &c->parser);
 			emit_bytes(c, OP_CLASS, (uint8_t)arg);
