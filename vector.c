@@ -507,9 +507,12 @@ element pop_obj(element **vect)
 
 vector *_realloc_vector(vector **v, size_t size)
 {
-	if (!*v && size == 0)
+	if (size == 0)
+	{
+		free_vector(v);
 		return NULL;
-	if (!*v && size != 0)
+	}
+	if (!*v)
 		return _vector(size, T_GEN);
 
 	value *of = NULL;
@@ -527,12 +530,18 @@ vector *_realloc_vector(vector **v, size_t size)
 }
 _2d_vector *_realloc_2d_vector(_2d_vector **v, size_t size)
 {
-	if (!*v && size == 0)
+	if (size == 0)
+	{
+		free_2d_vector(v);
 		return NULL;
-	if (!*v && size != 0)
+	}
+	if (!*v)
 		return _2d_vector_(size, T_GEN);
 
 	vector **of = ALLOC(sizeof(vector *) * size);
+
+	for (int i = 0; i < size; i++)
+		*(of + i) = NULL;
 
 	for (int i = 0; i < (*v)->count; i++)
 		*(of + i) = *((*v)->of + i);
@@ -546,12 +555,18 @@ _2d_vector *_realloc_2d_vector(_2d_vector **v, size_t size)
 }
 _3d_vector *_realloc_3d_vector(_3d_vector **v, size_t size)
 {
-	if (!*v && size == 0)
+	if (size == 0)
+	{
+		free_3d_vector(v);
 		return NULL;
-	if (!*v && size != 0)
+	}
+	if (!*v)
 		return _3d_vector_(size, T_GEN);
 
 	_2d_vector **of = ALLOC(sizeof(_2d_vector *) * size);
+
+	for (int i = 0; i < size; i++)
+		*(of + i) = NULL;
 
 	for (int i = 0; i < (*v)->count; i++)
 		*(of + i) = *((*v)->of + i);

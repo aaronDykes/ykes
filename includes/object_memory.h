@@ -31,6 +31,8 @@ class    *_class(_key name);
 instance *_instance(class *c);
 
 void free_vector(vector **v);
+void free_2d_vector(_2d_vector **v);
+void free_3d_vector(_3d_vector **v);
 void free_table(table **t);
 void free_obj(element el);
 

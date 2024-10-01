@@ -166,8 +166,47 @@ upval *_upval(element closed, uint8_t index)
 	up->closed = closed;
 	return up;
 }
+
+void free_3d_vector(_3d_vector **v)
+{
+	if (!*v)
+		return;
+
+	_2d_vector *vect = NULL;
+
+	for (int i = 0; i < (*v)->len; i++)
+	{
+		vect = *((*v)->of + i);
+		free_2d_vector(&vect);
+	}
+
+	FREE((*v)->of);
+	(*v)->of = NULL;
+	FREE(*v);
+	v = NULL;
+}
+void free_2d_vector(_2d_vector **v)
+{
+	if (!*v)
+		return;
+
+	vector *vect = NULL;
+	for (int i = 0; i < (*v)->len; i++)
+	{
+		vect = *((*v)->of + i);
+		free_vector(&vect);
+	}
+
+	FREE((*v)->of);
+	(*v)->of = NULL;
+	FREE(*v);
+	v = NULL;
+}
 void free_vector(vector **v)
 {
+	if (!*v)
+		return;
+
 	FREE((*v)->of);
 	(*v)->of = NULL;
 	FREE(*v);

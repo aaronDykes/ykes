@@ -1465,6 +1465,7 @@ static void _array(compiler *c)
 		emit_byte(c, OP_ALLOC_VECTOR);
 		return;
 	}
+
 	do
 	{
 		expression(c);
