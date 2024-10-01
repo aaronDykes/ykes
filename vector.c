@@ -48,6 +48,7 @@ void push_obj(element **vect, element *obj)
 
 	vector     *v  = NULL;
 	_2d_vector *v2 = NULL;
+	_3d_vector *v3 = NULL;
 
 	switch ((*vect)->type)
 	{
@@ -59,7 +60,12 @@ void push_obj(element **vect, element *obj)
 		v2 = _2D_VECTOR((**vect));
 		push_vector(&v2, obj);
 		break;
+	case T_VECTOR_3D:
+		v3 = _3D_VECTOR((**vect));
+		push_2d_vector(&v3, obj);
+		break;
 	default:
+
 		error("Pushing to invalid object type");
 		exit(1);
 	}
@@ -470,11 +476,17 @@ static element pop_vector(_2d_vector **v)
 	return ((*v)->count == 0) ? Null()
 	                          : GEN(*((*v)->of + --(*v)->count), T_VECTOR);
 }
+static element pop_2d_vector(_3d_vector **v)
+{
+	return ((*v)->count == 0) ? Null()
+	                          : GEN(*((*v)->of + --(*v)->count), T_VECTOR_2D);
+}
 
 element pop_obj(element **vect)
 {
 	vector     *v  = NULL;
 	_2d_vector *v2 = NULL;
+	_3d_vector *v3 = NULL;
 
 	switch ((*vect)->type)
 	{
@@ -484,6 +496,9 @@ element pop_obj(element **vect)
 	case T_VECTOR_2D:
 		v2 = _2D_VECTOR((**vect));
 		return pop_vector(&v2);
+	case T_VECTOR_3D:
+		v3 = _3D_VECTOR((**vect));
+		return pop_2d_vector(&v3);
 	default:
 		error("Unable to pop value from invalid object");
 		exit(1);
