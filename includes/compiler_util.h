@@ -261,8 +261,6 @@ static void add_local(compiler *c, _key *ar);
 static void _array(compiler *c);
 static void _access(compiler *c);
 
-static void array_function(compiler *c);
-
 static PRule rules[] = {
     [TOKEN_CH_LPAREN]          = {grouping,             call,                      PREC_CALL      },
     [TOKEN_CH_RPAREN]          = {NULL,                 NULL,                      PREC_NONE      },

@@ -573,7 +573,6 @@ Interpretation run(void)
 
 			machine.count.argc  = argc;
 			machine.count.cargc = 1;
-
 			break;
 		}
 		case OP_INSTANCE:

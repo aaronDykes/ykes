@@ -4,6 +4,7 @@
 #include "error.h"
 #include "object_string.h"
 #include "table.h"
+#include "vector.h"
 #ifdef DEBUG_TRACE_EXECUTION
 #include "debug.h"
 #endif
@@ -1359,93 +1360,155 @@ static int resolve_call(compiler *c, _key *ar)
 	return -1;
 }
 
-static void nested_array(compiler *c)
+static vector *char_vector(compiler *c)
+{
+	vector *v = NULL;
+
+	v = _vector(MIN_SIZE, T_CHAR);
+
+	do
+	{
+		advance_compiler(&c->parser);
+		element e = Char(*++c->parser.pre.start);
+		push_value(&v, &e);
+	} while (match(TOKEN_CH_COMMA, &c->parser));
+
+	return v;
+}
+static vector *str_vector(compiler *c)
+{
+	vector *v = NULL;
+
+	v = _vector(MIN_SIZE, T_STR);
+
+	do
+	{
+		advance_compiler(&c->parser);
+		element e =
+		    String((char *)++c->parser.pre.start, c->parser.pre.size - 2);
+		push_value(&v, &e);
+	} while (match(TOKEN_CH_COMMA, &c->parser));
+
+	// emit_constant(c, GEN(v, T_VECTOR));
+	return v;
+}
+static vector *num_vector(compiler *c)
+{
+	vector *v = NULL;
+
+	v = _vector(MIN_SIZE, T_NUM);
+
+	do
+	{
+		advance_compiler(&c->parser);
+		element e = Num(strtod(c->parser.pre.start, NULL));
+		push_value(&v, &e);
+	} while (match(TOKEN_CH_COMMA, &c->parser));
+
+	return v;
+	// emit_constant(c, GEN(v, T_VECTOR));
+}
+
+static vector *nested_array(compiler *c)
 {
 
-	int i = 0;
+	vector *v = NULL;
 
 	match(TOKEN_CH_LSQUARE, &c->parser);
 
 	if (match(TOKEN_CH_RSQUARE, &c->parser))
+		return _vector(MIN_SIZE, T_GEN);
+
+	switch (c->parser.cur.type)
 	{
-		emit_byte(c, OP_ALLOC_VECTOR);
-		return;
+
+	case TOKEN_CHAR:
+		v = char_vector(c);
+		break;
+	case TOKEN_STR:
+		v = str_vector(c);
+		break;
+	case TOKEN_NUMBER:
+		v = num_vector(c);
+		break;
+	default:
+		current_err("Invalid vector type", &c->parser);
+		return NULL;
 	}
-	do
-	{
-		expression(c);
-		i++;
-	} while (match(TOKEN_CH_COMMA, &c->parser));
 
 	consume(
 	    TOKEN_CH_RSQUARE, "Expect closing brace after array declaration",
 	    &c->parser
 	);
-
-	emit_byte(c, OP_INIT_VECTOR);
-	emit_bytes(c, UPPER(i), LOWER(i));
+	return v;
 }
 static void _2d_array(compiler *c)
 {
-	int j = 0;
+
+	_2d_vector *v = NULL;
+
+	v = _2d_vector_(MIN_SIZE, T_GEN);
 
 	do
 	{
-		nested_array(c);
-		j++;
+		element e = GEN(nested_array(c), T_VECTOR);
+		push_vector(&v, &e);
 
 	} while (match(TOKEN_CH_COMMA, &c->parser));
-
-	emit_byte(c, OP_INIT_2D_VECTOR);
-	emit_bytes(c, UPPER(j), LOWER(j));
 
 	// match(TOKEN_CH_RSQUARE, &c->parser);
 	consume(
 	    TOKEN_CH_RSQUARE, "Expect closing brace after array declaration",
 	    &c->parser
 	);
+
+	emit_constant(c, GEN(v, T_VECTOR_2D));
 }
-static void nested_2d_array(compiler *c)
+static _2d_vector *nested_2d_array(compiler *c)
 {
-	int j = 0;
+	_2d_vector *v = NULL;
+
+	v = _2d_vector_(MIN_SIZE, T_GEN);
 
 	do
 	{
-		nested_array(c);
-		j++;
+		element e = GEN(nested_array(c), T_VECTOR);
+		push_vector(&v, &e);
 
 	} while (match(TOKEN_CH_COMMA, &c->parser));
 
+	// match(TOKEN_CH_RSQUARE, &c->parser);
 	consume(
 	    TOKEN_CH_RSQUARE, "Expect closing brace after array declaration",
 	    &c->parser
 	);
 
-	emit_byte(c, OP_INIT_2D_VECTOR);
-	emit_bytes(c, UPPER(j), LOWER(j));
+	return v;
 }
 
 static void _3d_array(compiler *c)
 {
-	int k = 0;
+	_3d_vector *v = NULL;
+
+	v = _3d_vector_(MIN_SIZE, T_GEN);
+
 	do
 	{
 		match(TOKEN_CH_LSQUARE, &c->parser);
-		k++;
-		nested_2d_array(c);
+		element e = GEN(nested_2d_array(c), T_VECTOR_2D);
+		push_2d_vector(&v, &e);
 
 	} while (match(TOKEN_CH_COMMA, &c->parser));
 	consume(
 	    TOKEN_CH_RSQUARE, "Expect closing brace after array declaration",
 	    &c->parser
 	);
-	emit_byte(c, OP_INIT_3D_VECTOR);
-	emit_bytes(c, UPPER(k), LOWER(k));
+
+	emit_constant(c, GEN(v, T_VECTOR_3D));
 }
 
 static void _array(compiler *c)
 {
-	int i = 0;
 
 	if (match(TOKEN_CH_LSQUARE, &c->parser))
 	{
@@ -1460,24 +1523,7 @@ static void _array(compiler *c)
 		return;
 	}
 
-	if (match(TOKEN_CH_RSQUARE, &c->parser))
-	{
-		emit_byte(c, OP_ALLOC_VECTOR);
-		return;
-	}
-	do
-	{
-		expression(c);
-		i++;
-	} while (match(TOKEN_CH_COMMA, &c->parser));
-
-	consume(
-	    TOKEN_CH_RSQUARE, "Expect closing brace after array declaration",
-	    &c->parser
-	);
-
-	emit_byte(c, OP_INIT_VECTOR);
-	emit_bytes(c, UPPER(i), LOWER(i));
+	emit_constant(c, GEN(nested_array(c), T_VECTOR));
 }
 static void _access(compiler *c)
 {
