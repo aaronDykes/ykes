@@ -582,7 +582,7 @@ _2d_vector *_realloc_2d_vector(_2d_vector **v, size_t size)
 
 	vector **of = ALLOC(sizeof(vector *) * size);
 
-	for (int i = 0; i < size; i++)
+	for (size_t i = 0; i < size; i++)
 		*(of + i) = NULL;
 
 	for (int i = 0; i < (*v)->count; i++)
@@ -607,7 +607,7 @@ _3d_vector *_realloc_3d_vector(_3d_vector **v, size_t size)
 
 	_2d_vector **of = ALLOC(sizeof(_2d_vector *) * size);
 
-	for (int i = 0; i < size; i++)
+	for (size_t i = 0; i < size; i++)
 		*(of + i) = NULL;
 
 	for (int i = 0; i < (*v)->count; i++)

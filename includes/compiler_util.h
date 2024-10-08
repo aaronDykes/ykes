@@ -259,6 +259,8 @@ static void declare_var(compiler *c, _key ar);
 static void add_local(compiler *c, _key *ar);
 
 static void _array(compiler *c);
+
+static void _array_key(compiler *c);
 static void _access(compiler *c);
 
 static PRule rules[] = {
@@ -325,7 +327,7 @@ static PRule rules[] = {
     [TOKEN_SUPER]              = {NULL,                 NULL,                      PREC_NONE      },
     [TOKEN_THIS]               = {_this,                NULL,                      PREC_NONE      },
     [TOKEN_VAR]                = {NULL,                 NULL,                      PREC_NONE      },
-    [TOKEN_TYPE_ARRAY]         = {NULL,                 NULL,                      PREC_CALL      },
+    [TOKEN_TYPE_ARRAY]         = {_array_key,           NULL,                      PREC_CALL      },
     [TOKEN_STORAGE_TYPE_NUM]   = {cast,                 NULL,                      PREC_CALL      },
     [TOKEN_STORAGE_TYPE_STR]   = {cast,                 NULL,                      PREC_CALL      },
     [TOKEN_STORAGE_TYPE_CHAR]  = {cast,                 NULL,                      PREC_CALL      },

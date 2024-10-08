@@ -1455,7 +1455,8 @@ static void _2d_array(compiler *c)
 
 	} while (match(TOKEN_CH_COMMA, &c->parser));
 
-	// match(TOKEN_CH_RSQUARE, &c->parser);
+	match(TOKEN_CH_COMMA, &c->parser);
+
 	consume(
 	    TOKEN_CH_RSQUARE, "Expect closing brace after array declaration",
 	    &c->parser
@@ -1476,7 +1477,6 @@ static _2d_vector *nested_2d_array(compiler *c)
 
 	} while (match(TOKEN_CH_COMMA, &c->parser));
 
-	// match(TOKEN_CH_RSQUARE, &c->parser);
 	consume(
 	    TOKEN_CH_RSQUARE, "Expect closing brace after array declaration",
 	    &c->parser
@@ -1498,6 +1498,7 @@ static void _3d_array(compiler *c)
 		push_2d_vector(&v, &e);
 
 	} while (match(TOKEN_CH_COMMA, &c->parser));
+
 	consume(
 	    TOKEN_CH_RSQUARE, "Expect closing brace after array declaration",
 	    &c->parser
@@ -1524,6 +1525,11 @@ static void _array(compiler *c)
 
 	emit_constant(c, GEN(nested_array(c), T_VECTOR));
 }
+
+static void _array_key(compiler *c)
+{
+}
+
 static void _access(compiler *c)
 {
 

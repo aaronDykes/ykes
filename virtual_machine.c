@@ -1,9 +1,9 @@
-#include "compiler.h"
-#include "error.h"
-#include "native.h"
-#include "vector.h"
-#include "virtual_machine.h"
-#include "vm_util.h"
+#include <compiler.h>
+#include <error.h>
+#include <native.h>
+#include <vector.h>
+#include <virtual_machine.h>
+#include <vm_util.h>
 
 #define COUNT() (machine.stack.main->count)
 
