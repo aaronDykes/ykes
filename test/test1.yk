@@ -17,16 +17,19 @@ sr func()
             
       ];
 
-      pout(a[0]);
+      // pout(a[0]);
 
-      // a.insert(1, [[1, 2, 3, 420], [5, 6, 69, 169]]);
-      // a.push([[1, 2, 3, 420], [5, 6, 69, 169]]);
-     // a.delete(2);
-      // a.delete(2);
-
-
+      a.insert(1, [[1, 2, 3, 420], [5, 6, 69, 169]]);
+      a.push([[1, 2, 3, 420], [5, 6, 69, 169]]);
+      a.delete(0);
 
       pout(a);
+
+      for (var i = 0; i < a.len; i++)
+            for (var j =  0; j < a[i].len; j++)
+                  for (var k = 0; k < a[i][j].len; k++)
+                        pout(a[i][j][k]);
+
 
 
 }
