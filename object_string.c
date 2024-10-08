@@ -104,7 +104,6 @@ static element append_str_to_str(element *s, element *str)
 	int new = s->val.len + str->val.len;
 	*s      = realloc_string(s->val, new * sizeof(char));
 	strcat(s->val.String, str->val.String);
-	// s->val.String[new] = '\0';
 	FREE(str->val.String);
 	return *s;
 }

@@ -337,6 +337,12 @@ static void replace_vector_index(vector ***of, int index, vector *vector)
 	*((*of) + index) = NULL;
 	*((*of) + index) = vector;
 }
+static void
+replace_2d_vector_index(_2d_vector ***of, int index, _2d_vector *vector)
+{
+	*((*of) + index) = NULL;
+	*((*of) + index) = vector;
+}
 static void replace_string_index(char **String, int index, char Char)
 {
 	*((*String) + index) = Char;
@@ -380,6 +386,25 @@ static void set_2d_vector_index(int index, vector *obj, _2d_vector **v)
 
 	replace_vector_index(&(*v)->of, index, obj);
 }
+static void set_3d_vector_index(int index, _2d_vector *obj, _3d_vector **v)
+{
+	if (index > (*v)->len)
+		exit_error(
+		    "Vector index out of range, current length: %d, provided "
+		    "index: %d",
+		    (*v)->len, index
+		);
+
+	if ((*v)->type == T_GEN)
+		(*v)->type = obj->type;
+
+	else if ((*v)->type != obj->type)
+		exit_error(
+		    "Replacing vector element at index %d with invalid type", index
+		);
+
+	replace_2d_vector_index(&(*v)->of, index, obj);
+}
 
 static void set_string_index(int index, char Char, value **v)
 {
@@ -397,6 +422,7 @@ void _set_index(int index, element *obj, element **vect)
 {
 	vector     *v  = NULL;
 	_2d_vector *v2 = NULL;
+	_3d_vector *v3 = NULL;
 	value      *av = NULL;
 
 	switch ((*vect)->type)
@@ -408,6 +434,10 @@ void _set_index(int index, element *obj, element **vect)
 	case T_VECTOR_2D:
 		v2 = _2D_VECTOR((**vect));
 		set_2d_vector_index(index, VECTOR((*obj)), &v2);
+		break;
+	case T_VECTOR_3D:
+		v3 = _3D_VECTOR((**vect));
+		set_3d_vector_index(index, _2D_VECTOR((*obj)), &v3);
 		break;
 	case T_STR:
 		av = &(*vect)->val;
@@ -439,6 +469,16 @@ static element get_2d_vector_index(int index, _2d_vector *v)
 
 	return GEN(*(v->of + index), T_VECTOR);
 }
+static element get_3d_vector_index(int index, _3d_vector *v)
+{
+	if (index > v->len)
+	{
+		error("Array index: %d, out of bounds", index);
+		return Null();
+	}
+
+	return GEN(*(v->of + index), T_VECTOR_2D);
+}
 
 static element get_string_index(int index, value v)
 {
@@ -458,6 +498,8 @@ element _get_index(int index, element *obj)
 		return get_vector_index(index, VECTOR((*obj)));
 	case T_VECTOR_2D:
 		return get_2d_vector_index(index, _2D_VECTOR((*obj)));
+	case T_VECTOR_3D:
+		return get_3d_vector_index(index, _3D_VECTOR((*obj)));
 	case T_STR:
 		return get_string_index(index, obj->val);
 	default:

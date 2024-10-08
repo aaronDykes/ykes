@@ -1406,7 +1406,6 @@ static vector *num_vector(compiler *c)
 	} while (match(TOKEN_CH_COMMA, &c->parser));
 
 	return v;
-	// emit_constant(c, GEN(v, T_VECTOR));
 }
 
 static vector *nested_array(compiler *c)
@@ -1414,10 +1413,10 @@ static vector *nested_array(compiler *c)
 
 	vector *v = NULL;
 
-	match(TOKEN_CH_LSQUARE, &c->parser);
-
 	if (match(TOKEN_CH_RSQUARE, &c->parser))
 		return _vector(MIN_SIZE, T_GEN);
+
+	match(TOKEN_CH_LSQUARE, &c->parser);
 
 	switch (c->parser.cur.type)
 	{
