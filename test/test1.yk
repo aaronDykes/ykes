@@ -21,8 +21,6 @@ class Tables
         t["Table"] = tab; 
 
         pout(
-            t["Table"][69.999],
-            t["Table"]['a'],
             t["Table"]["Aaron"],
             t["Table"]["Dykes"],
             t["Table"]["Table"]["nest"],

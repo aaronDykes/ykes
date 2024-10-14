@@ -1307,7 +1307,7 @@ static void _table(compiler *c)
 
 	if (match(TOKEN_CH_RPAREN, &c->parser))
 	{
-		t = GROW_TABLE(NULL, STACK_SIZE);
+		t = GROW_TABLE(NULL, MIN_SIZE);
 		emit_bytes(
 		    c, OP_CONSTANT, add_constant(&c->func->ch, GEN(t, T_TABLE))
 		);
@@ -1315,7 +1315,8 @@ static void _table(compiler *c)
 	}
 	else
 	{
-		expression(c);
+		advance_compiler(&c->parser);
+		num(c);
 		emit_byte(c, OP_ALLOC_TABLE);
 		consume(
 		    TOKEN_CH_RPAREN, "Expect `)` after table declaration",
@@ -1697,7 +1698,7 @@ static void id(compiler *c)
 	{
 		uint8_t init = 0;
 
-		if (c->base->stack.class[arg] -> init)
+		if (c->base->stack.class[arg]->init)
 		{
 			match(TOKEN_CH_LPAREN, &c->parser);
 			emit_bytes(c, OP_CLASS, (uint8_t)arg);

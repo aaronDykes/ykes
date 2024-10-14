@@ -236,7 +236,6 @@ static void str(compiler *c);
 static void fmt_str(compiler *c);
 
 static _key parse_string(compiler *c);
-static void stack_alloc(compiler *c);
 
 static void _table(compiler *c);
 

@@ -1,5 +1,6 @@
 
 #include "error.h"
+#include "table.h"
 #include "vector.h"
 
 void push_value(vector **v, element *obj)
@@ -350,6 +351,9 @@ static void replace_string_index(char **String, int index, char Char)
 
 static void set_vector_index(int index, element *obj, vector **v)
 {
+	if (index < 0)
+		index += (*v)->count;
+
 	if (index > (*v)->len)
 		exit_error(
 		    "Vector index out of range, current length: %d, provided "
@@ -369,6 +373,9 @@ static void set_vector_index(int index, element *obj, vector **v)
 }
 static void set_2d_vector_index(int index, vector *obj, _2d_vector **v)
 {
+	if (index < 0)
+		index += (*v)->count;
+
 	if (index > (*v)->len)
 		exit_error(
 		    "Vector index out of range, current length: %d, provided "
@@ -388,6 +395,9 @@ static void set_2d_vector_index(int index, vector *obj, _2d_vector **v)
 }
 static void set_3d_vector_index(int index, _2d_vector *obj, _3d_vector **v)
 {
+	if (index < 0)
+		index += (*v)->count;
+
 	if (index > (*v)->len)
 		exit_error(
 		    "Vector index out of range, current length: %d, provided "
@@ -408,6 +418,9 @@ static void set_3d_vector_index(int index, _2d_vector *obj, _3d_vector **v)
 
 static void set_string_index(int index, char Char, value **v)
 {
+
+	if (index < 0)
+		index += (*v)->len;
 	if (index > (*v)->len)
 		exit_error(
 		    "Vector index out of range, current length: %d, provided "
@@ -418,12 +431,17 @@ static void set_string_index(int index, char Char, value **v)
 	replace_string_index(&(*v)->String, index, Char);
 }
 
-void _set_index(int index, element *obj, element **vect)
+void _set_index(element i, element *obj, element **vect)
 {
-	vector     *v  = NULL;
-	_2d_vector *v2 = NULL;
-	_3d_vector *v3 = NULL;
-	value      *av = NULL;
+	vector     *v     = NULL;
+	_2d_vector *v2    = NULL;
+	_3d_vector *v3    = NULL;
+	table      *t     = NULL;
+	value      *av    = NULL;
+	int         index = i.val.Num;
+
+	if (i.type == T_STR)
+		i = KEY(Key(i.val.String, i.val.len));
 
 	switch ((*vect)->type)
 	{
@@ -439,6 +457,10 @@ void _set_index(int index, element *obj, element **vect)
 		v3 = _3D_VECTOR((**vect));
 		set_3d_vector_index(index, _2D_VECTOR((*obj)), &v3);
 		break;
+	case T_TABLE:
+		t = TABLE((**vect));
+		write_table(t, i.key, *obj);
+		break;
 	case T_STR:
 		av = &(*vect)->val;
 		set_string_index(index, obj->val.Char, &av);
@@ -451,6 +473,9 @@ void _set_index(int index, element *obj, element **vect)
 static element get_vector_index(int index, vector *v)
 {
 
+	if (index < 0)
+		index += v->count;
+
 	if (index > v->len)
 	{
 		error("Array index: %d, out of bounds", index);
@@ -461,6 +486,9 @@ static element get_vector_index(int index, vector *v)
 }
 static element get_2d_vector_index(int index, _2d_vector *v)
 {
+
+	if (index < 0)
+		index += v->count;
 	if (index > v->len)
 	{
 		error("Array index: %d, out of bounds", index);
@@ -471,6 +499,9 @@ static element get_2d_vector_index(int index, _2d_vector *v)
 }
 static element get_3d_vector_index(int index, _3d_vector *v)
 {
+
+	if (index < 0)
+		index += v->count;
 	if (index > v->len)
 	{
 		error("Array index: %d, out of bounds", index);
@@ -482,6 +513,10 @@ static element get_3d_vector_index(int index, _3d_vector *v)
 
 static element get_string_index(int index, value v)
 {
+
+	if (index < 0)
+		index += v.len;
+
 	if (index > v.len)
 	{
 		error("String index: %d, out of bounds", index);
@@ -490,8 +525,15 @@ static element get_string_index(int index, value v)
 	return Char(*(v.String + index));
 }
 
-element _get_index(int index, element *obj)
+element _get_index(element *i, element *obj)
 {
+
+	int    index = i->val.Num;
+	table *t     = NULL;
+
+	if (i->type == T_STR)
+		*i = KEY(Key(i->val.String, i->val.len));
+
 	switch (obj->type)
 	{
 	case T_VECTOR:
@@ -500,6 +542,9 @@ element _get_index(int index, element *obj)
 		return get_2d_vector_index(index, _2D_VECTOR((*obj)));
 	case T_VECTOR_3D:
 		return get_3d_vector_index(index, _3D_VECTOR((*obj)));
+	case T_TABLE:
+		t = TABLE((*obj));
+		return find_entry(&t, &i->key);
 	case T_STR:
 		return get_string_index(index, obj->val);
 	default:

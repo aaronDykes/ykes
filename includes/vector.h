@@ -11,8 +11,8 @@ void    delete_index(element **v, Long index);
 void    push_obj(element **v, element *obj);
 element pop_obj(element **v);
 
-void    _set_index(int index, element *obj, element **vect);
-element _get_index(int index, element *obj);
+void    _set_index(element index, element *obj, element **vect);
+element _get_index(element *index, element *obj);
 
 vector     *_realloc_vector(vector **v, size_t size);
 _2d_vector *_realloc_2d_vector(_2d_vector **v, size_t size);

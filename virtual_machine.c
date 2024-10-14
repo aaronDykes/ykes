@@ -19,14 +19,14 @@ void initVM(void)
 	machine.stack.obj        = NULL;
 	machine.stack.init_field = NULL;
 
-	machine.glob = NULL;
-	// machine.init_fields = NULL;
+	machine.glob        = NULL;
 	machine.open_upvals = NULL;
 	machine.caller      = NULL;
 	machine.repl_native = NULL;
 
-	machine.stack.main = GROW_STACK(NULL, STACK_SIZE);
-	machine.glob       = GROW_TABLE(NULL, STACK_SIZE);
+	machine.stack.main       = GROW_STACK(NULL, STACK_SIZE);
+	machine.stack.init_field = _fstack();
+	machine.glob             = GROW_TABLE(NULL, STACK_SIZE);
 
 	machine.count.argc   = 0;
 	machine.count.frame  = 0;
@@ -41,7 +41,6 @@ void freeVM(void)
 		FREE(machine.repl_native);
 	}
 
-	// FREE_TABLE(&machine.repl_native);
 	FREE_TABLE(&machine.glob);
 	FREE_STACK(&machine.stack.main);
 	FREE_STACK(&machine.stack.obj);
@@ -517,31 +516,18 @@ Interpretation run(void)
 		}
 		case OP_SET_ACCESS:
 		{
-			if (NPEEK(1).type != T_NUM)
-			{
-				runtime_error(
-				    "Attempting to access array with invalid type"
-				);
-				return INTERPRET_RUNTIME_ERR;
-			}
 			element *el   = NULL;
 			element *vect = NULL;
 			el            = POP();
 			obj           = *POP();
 			vect          = POP();
 
-			_set_index((Long)obj.val.Num, el, &vect);
+			_set_index(obj, el, &vect);
 			break;
 		}
 		case OP_GET_ACCESS:
-			if ((obj = PEEK()).type != T_NUM)
-			{
-				runtime_error(
-				    "Attempting to access array with invalid type"
-				);
-				return INTERPRET_RUNTIME_ERR;
-			}
-			if ((obj = _get_index(POP()->val.Num, POP())).type == T_NULL)
+
+			if ((obj = _get_index(POP(), POP())).type == T_NULL)
 			{
 				runtime_error("Invalid array access");
 				return INTERPRET_RUNTIME_ERR;
