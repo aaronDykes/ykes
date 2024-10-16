@@ -12,10 +12,11 @@ static void free_chunk(chunk *c);
 static void free_function(function **func);
 static void free_class(class **c);
 
-class *_class(_key name)
+class *_class(_key *name)
 {
 	class *c    = NULL;
 	c           = ALLOC(sizeof(class));
+	c->name     = NULL;
 	c->name     = name;
 	c->init     = NULL;
 	c->closures = NULL;
@@ -132,11 +133,12 @@ upval **upvals(size_t size)
 
 	return up;
 }
-native *_native(NativeFn func, _key ar)
+native *_native(NativeFn func, _key *ar)
 {
 	native *nat = NULL;
 	nat         = ALLOC(sizeof(native));
 	nat->fn     = func;
+	nat->name   = NULL;
 	nat->name   = ar;
 	return nat;
 }
@@ -215,8 +217,8 @@ void free_vector(vector **v)
 static void free_entry(record *entry)
 {
 
-	free_obj(entry->val);
-	FREE(entry->key.val);
+	free_obj(&entry->val);
+	free_key(&entry->key);
 }
 static void free_entry_list(record entry)
 {
@@ -253,7 +255,7 @@ void free_table(table **t)
 	}
 
 	for (size_t i = 0; i < (*t)->len; i++)
-		if ((*t)->records[i].key.val)
+		if ((*t)->records[i].key->val)
 			free_entry_list((*t)->records[i]);
 
 	FREE((*t)->records);
@@ -287,7 +289,7 @@ static void free_stack(stack **stack)
 	}
 
 	for (size_t i = 0; i < (*stack)->len; i++)
-		FREE_OBJ(*((*stack)->as + i));
+		FREE_OBJ(((*stack)->as + i));
 
 	FREE((*stack)->as);
 	(*stack)->as = NULL;
@@ -333,8 +335,7 @@ static void free_closure(closure **closure)
 }
 static void free_native(native **nat)
 {
-	FREE((*nat)->name.val);
-	(*nat)->name.val = NULL;
+	free_key(&(*nat)->name);
 	FREE(*nat);
 	nat = NULL;
 }
@@ -356,7 +357,7 @@ static void free_function(function **func)
 {
 	if (!*func)
 		return;
-	FREE((*func)->name.val);
+	free_key(&(*func)->name);
 	free_chunk(&(*func)->ch);
 	FREE(func);
 	func = NULL;
@@ -364,53 +365,85 @@ static void free_function(function **func)
 static void free_class(class **c)
 {
 
-	FREE((*c)->name.val);
-	(*c)->name.val = NULL;
+	free_key(&(*c)->name);
 	free_table(&(*c)->closures);
 	FREE(c);
 	c = NULL;
 }
 
-void free_obj(element el)
+void free_str(_string **s)
 {
-	switch (el.type)
+	if (!*s)
+		return;
+
+	if ((*s)->String)
+		FREE((*s)->String);
+
+	(*s)->String = NULL;
+	FREE(*s);
+	s = NULL;
+}
+void free_key(_key **s)
+{
+	if (!*s)
+		return;
+
+	if ((*s)->val)
+		FREE((*s)->val);
+
+	(*s)->val = NULL;
+	FREE(*s);
+	s = NULL;
+}
+
+void free_obj(element *el)
+{
+	switch (el->type)
 	{
 	case T_STR:
-		FREE(el.val.String);
-		el.val.String = NULL;
+	{
+
+		_string *s = NULL;
+		s          = STR((*el));
+		free_str(&s);
 		break;
+	}
 	case T_KEY:
-		FREE(el.key.val);
-		el.key.val = NULL;
+	{
+
+		_key *k = NULL;
+		k       = KEY((*el));
+		free_key(&k);
 		break;
+	}
 	case T_NATIVE:
-		free_native((native **)&el.obj);
+		free_native((native **)&el->obj);
 		break;
 	case T_CLASS:
-		free_class((class **)&el.obj);
+		free_class((class **)&el->obj);
 		break;
 	case T_VECTOR:
-		free_vector((vector **)&el.obj);
+		free_vector((vector **)&el->obj);
 		break;
 	case T_INSTANCE:
-		free_instance((instance **)&el.obj);
+		free_instance((instance **)&el->obj);
 		break;
 	case T_UPVAL:
-		free_upval((upval **)&el.obj);
+		free_upval((upval **)&el->obj);
 		break;
 	case T_METHOD:
 	case T_CLOSURE:
-		free_closure((closure **)&el.obj);
+		free_closure((closure **)&el->obj);
 		break;
 	case T_FUNCTION:
-		free_function((function **)&el.obj);
+		free_function((function **)&el->obj);
 		break;
 	case T_STACK:
-		free_stack((stack **)&el.obj);
+		free_stack((stack **)&el->obj);
 		break;
 		break;
 	case T_TABLE:
-		free_table((table **)&el.obj);
+		free_table((table **)&el->obj);
 		break;
 	default:
 		return;

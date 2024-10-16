@@ -26,14 +26,16 @@ upval  **upvals(size_t size);
 upval   *_upval(element closed, uint8_t index);
 closure *_closure(function *func);
 
-native   *_native(NativeFn native, _key ar);
-class    *_class(_key name);
+native   *_native(NativeFn native, _key *ar);
+class    *_class(_key *name);
 instance *_instance(class *c);
 
+void free_key(_key **s);
+void free_str(_string **s);
 void free_vector(vector **v);
 void free_2d_vector(_2d_vector **v);
 void free_3d_vector(_3d_vector **v);
 void free_table(table **t);
-void free_obj(element el);
+void free_obj(element *el);
 
 #endif

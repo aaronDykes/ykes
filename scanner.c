@@ -340,7 +340,6 @@ static int id_type(void)
 			case 'r':
 				return check_keyword(2, 2, "ue", TOKEN_TRUE);
 			}
-
 	case 'v':
 		return check_keyword(1, 2, "ar", TOKEN_VAR);
 	case 'w':

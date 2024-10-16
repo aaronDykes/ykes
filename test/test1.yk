@@ -2,16 +2,15 @@ class Tables
 {
     tables()
     {
-        var tab = table();
-
-        var nest = table();
-        var another_nest = table();
+        var tab             = table();
+        var nest            = table();
+        var another_nest    = table();
 
         tab["Aaron"] = "Aaron";
         tab["Dykes"] = "Dykes"; 
         tab["Table"] = nest;
 
-        nest["nest"] = "Another!!!";
+        nest["nest"]    = "Another!!!";
         nest["another"] = another_nest;
 
         another_nest["nest"] = "Another nest!!!!";
@@ -30,8 +29,6 @@ class Tables
     }
 
 }
-
-
 var t = Tables();
 
 t.tables();

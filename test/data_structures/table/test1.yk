@@ -2,11 +2,13 @@ class Tables
 {
     tables()
     {
-        var tab = table();
+        var tab = Table(128);
 
-        var nest = table();
-        var another_nest = table();
+        var nest = Table();
+        var another_nest = Table();
 
+        tab[69.999] = 420;
+        tab['a'] = "aa";
         tab["Aaron"] = "Aaron";
         tab["Dykes"] = "Dykes"; 
         tab["Table"] = nest;
@@ -16,7 +18,7 @@ class Tables
 
         another_nest["nest"] = "Another nest!!!!";
 
-        var t = table(); 
+        var t = Table(); 
 
         t["Table"] = tab; 
 
@@ -32,8 +34,3 @@ class Tables
     }
 
 }
-
-
-var t = Tables();
-
-t.tables();

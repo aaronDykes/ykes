@@ -51,14 +51,6 @@ element generic_obj(void *obj, obj_t type)
 	return s;
 }
 
-element key_obj(_key key)
-{
-	element s;
-	s.key  = key;
-	s.type = T_KEY;
-	return s;
-}
-
 element value_obj(value val, obj_t type)
 {
 	element s;
@@ -104,38 +96,52 @@ element Null(void)
 
 element StringCpy(const char *str, size_t size)
 {
-	value ar;
-	ar.String = NULL;
-	ar.String = (char *)str;
-	ar.len    = size;
-	return OBJ(ar, T_STR);
+	_string *ar = NULL;
+
+	ar = ALLOC(sizeof(_string));
+
+	ar->String = NULL;
+	ar->String = (char *)str;
+	ar->len    = size;
+	return GEN(ar, T_STR);
+}
+element StringEl(_string *s)
+{
+	return GEN(s, T_STR);
 }
 element String(const char *str, size_t size)
 {
 	if (size <= 0)
 		return Null();
-	value ar;
-	ar.String = NULL;
-	ar.String = ALLOC(size);
-	memcpy(ar.String, str, size);
-	ar.String[size] = '\0';
-	ar.len          = size;
-	return OBJ(ar, T_STR);
+	_string *ar = NULL;
+	ar          = ALLOC(sizeof(_string));
+	ar->String  = NULL;
+	ar->String  = ALLOC(size);
+	memcpy(ar->String, str, size);
+	ar->String[size] = '\0';
+	ar->len          = size;
+	return GEN(ar, T_STR);
 }
 
 element KeyObj(const char *str, size_t size)
 {
-	return KEY(Key(str, size));
+	return GEN(Key(str, size), T_KEY);
 }
-_key Key(const char *str, size_t size)
+element KeyEl(_key *k)
 {
-	_key ar;
-	ar.val = NULL;
-	ar.val = ALLOC(size == 1 ? 2 : size);
-	memcpy(ar.val, str, size);
-	ar.val[size] = '\0';
-	int k        = hash_key(ar.val);
-	ar.hash      = k;
+	return GEN(k, T_KEY);
+}
+
+_key *Key(const char *str, size_t size)
+{
+	_key *ar = NULL;
+	ar       = ALLOC(sizeof(_key));
+	ar->val  = NULL;
+	ar->val  = ALLOC(size == 1 ? 2 : size);
+	memcpy(ar->val, str, size);
+	ar->val[size] = '\0';
+	int k         = hash_key(ar->val);
+	ar->hash      = k;
 	return ar;
 }
 
@@ -159,19 +165,19 @@ static void println(element ar)
 	switch (ar.type)
 	{
 	case T_NATIVE:
-		printf("<native: %s>", NATIVE(ar)->name.val);
+		printf("<native: %s>", NATIVE(ar)->name->val);
 		break;
 	case T_CLOSURE:
-		printf("<fn: %s>", CLOSURE(ar)->func->name.val);
+		printf("<fn: %s>", CLOSURE(ar)->func->name->val);
 		break;
 	case T_CLASS:
-		printf("<class: %s>", CLASS(ar)->name.val);
+		printf("<class: %s>", CLASS(ar)->name->val);
 		break;
 	case T_KEY:
-		printf("<id: %s>", ar.key.val);
+		printf("<id: %s>", KEY(ar)->val);
 		break;
 	case T_INSTANCE:
-		printf("<instance: %s>", INSTANCE(ar)->classc->name.val);
+		printf("<instance: %s>", INSTANCE(ar)->classc->name->val);
 		break;
 
 	case T_VECTOR:
@@ -215,7 +221,7 @@ static void println(element ar)
 		printf("%s", (ar.val.Bool) ? "true" : "false");
 		break;
 	case T_STR:
-		parse_str(ar.val.String);
+		parse_str(STR(ar)->String);
 		break;
 	case T_NULL:
 		printf("[ null ]");
@@ -232,19 +238,19 @@ void print(element ar)
 	switch (ar.type)
 	{
 	case T_NATIVE:
-		printf("<native: %s>\n", NATIVE(ar)->name.val);
+		printf("<native: %s>\n", NATIVE(ar)->name->val);
 		break;
 	case T_CLOSURE:
-		printf("<fn: %s>\n", CLOSURE(ar)->func->name.val);
+		printf("<fn: %s>\n", CLOSURE(ar)->func->name->val);
 		break;
 	case T_CLASS:
-		printf("<class: %s>\n", CLASS(ar)->name.val);
+		printf("<class: %s>\n", CLASS(ar)->name->val);
 		break;
 	case T_KEY:
-		printf("<id: %s>\n", ar.key.val);
+		printf("<id: %s>\n", STR(ar)->String);
 		break;
 	case T_INSTANCE:
-		printf("<instance: %s>\n", INSTANCE(ar)->classc->name.val);
+		printf("<instance: %s>\n", INSTANCE(ar)->classc->name->val);
 		break;
 
 	case T_VECTOR:
@@ -306,7 +312,7 @@ void print(element ar)
 		printf("%s\n", (ar.val.Bool) ? "true" : "false");
 		break;
 	case T_STR:
-		parse_str(ar.val.String);
+		parse_str(STR(ar)->String);
 		printf("\n");
 		break;
 	case T_NULL:
