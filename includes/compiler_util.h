@@ -156,10 +156,10 @@ static int argument_list(compiler *c);
 
 static void class_declaration(compiler *c);
 static void method(compiler *c, class *class);
-static void method_body(compiler *c, compiler_t type, _key ar, class **class);
+static void method_body(compiler *c, compiler_t type, _key *ar, class **class);
 
 static void func_declaration(compiler *c);
-static void func_body(compiler *c, _key ar);
+static void func_body(compiler *c, _key *ar);
 static void func_var(compiler *c);
 
 static void var_dec(compiler *c);
@@ -235,8 +235,8 @@ static void boolean(compiler *c);
 static void str(compiler *c);
 static void fmt_str(compiler *c);
 
-static _key parse_string(compiler *c);
-static void stack_alloc(compiler *c);
+static _key *parse_string(compiler *c);
+static void  stack_alloc(compiler *c);
 
 static void _table(compiler *c);
 
@@ -249,18 +249,16 @@ static void parse_native_var_arg(compiler *c);
 static void dot(compiler *c);
 static void _this(compiler *c);
 
-static _key parse_id(compiler *c);
+static _key *parse_id(compiler *c);
 
-static int  parse_var(compiler *c, _key ar);
+static int  parse_var(compiler *c, _key *ar);
 static void id(compiler *c);
 
-static bool idcmp(_key a, _key b);
-static void declare_var(compiler *c, _key ar);
+static bool idcmp(_key *a, _key *b);
+static void declare_var(compiler *c, _key *ar);
 static void add_local(compiler *c, _key *ar);
 
 static void _array(compiler *c);
-
-static void _array_key(compiler *c);
 static void _access(compiler *c);
 
 static PRule rules[] = {
@@ -327,7 +325,6 @@ static PRule rules[] = {
     [TOKEN_SUPER]              = {NULL,                 NULL,                      PREC_NONE      },
     [TOKEN_THIS]               = {_this,                NULL,                      PREC_NONE      },
     [TOKEN_VAR]                = {NULL,                 NULL,                      PREC_NONE      },
-    [TOKEN_TYPE_ARRAY]         = {_array_key,           NULL,                      PREC_CALL      },
     [TOKEN_STORAGE_TYPE_NUM]   = {cast,                 NULL,                      PREC_CALL      },
     [TOKEN_STORAGE_TYPE_STR]   = {cast,                 NULL,                      PREC_CALL      },
     [TOKEN_STORAGE_TYPE_CHAR]  = {cast,                 NULL,                      PREC_CALL      },
@@ -338,6 +335,6 @@ static PRule rules[] = {
 };
 
 static function *end_compile(compiler *a);
-static void init_compiler(compiler *a, compiler *b, compiler_t type, _key ar);
+static void init_compiler(compiler *a, compiler *b, compiler_t type, _key *ar);
 
 #endif

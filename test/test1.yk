@@ -1,0 +1,34 @@
+class Tables
+{
+    tables()
+    {
+        var tab             = table();
+        var nest            = table();
+        var another_nest    = table();
+
+        tab["Aaron"] = "Aaron";
+        tab["Dykes"] = "Dykes"; 
+        tab["Table"] = nest;
+
+        nest["nest"]    = "Another!!!";
+        nest["another"] = another_nest;
+
+        another_nest["nest"] = "Another nest!!!!";
+
+        var t = table(); 
+
+        t["Table"] = tab; 
+
+        pout(
+            t["Table"]["Aaron"],
+            t["Table"]["Dykes"],
+            t["Table"]["Table"]["nest"],
+            t["Table"]["Table"]["another"]["nest"]
+        );
+        
+    }
+
+}
+var t = Tables();
+
+t.tables();

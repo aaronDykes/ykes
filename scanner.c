@@ -334,15 +334,12 @@ static int id_type(void)
 			switch (scan.start[1])
 			{
 			case 'a':
-				return check_keyword(2, 3, "ble", TOKEN_TYPE_TABLE);
+				return check_keyword(2, 3, "ble", TOKEN_TABLE);
 			case 'h':
 				return check_keyword(2, 2, "is", TOKEN_THIS);
 			case 'r':
 				return check_keyword(2, 2, "ue", TOKEN_TRUE);
 			}
-	case 'T':
-		return check_keyword(1, 4, "able", TOKEN_TABLE);
-
 	case 'v':
 		return check_keyword(1, 2, "ar", TOKEN_VAR);
 	case 'w':

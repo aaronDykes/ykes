@@ -24,11 +24,12 @@ static void init_chunk(chunk *c)
 	c->constants = GROW_STACK(NULL, STACK_SIZE);
 }
 
-function *_function(_key name)
+function *_function(_key *name)
 {
 	function *func = ALLOC(sizeof(function));
 	func->arity    = 0;
 	func->uargc    = 0;
+	func->name     = NULL;
 	func->name     = name;
 	init_chunk(&func->ch);
 

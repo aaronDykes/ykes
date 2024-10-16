@@ -16,6 +16,7 @@ typedef struct element        element;
 typedef struct stack          stack;
 typedef struct init_table     init_table;
 typedef struct field_stack    field_stack;
+typedef struct _string        _string;
 
 typedef struct class class;
 typedef struct table    table;

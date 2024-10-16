@@ -16,7 +16,7 @@
 #define UPPER(x) ((uint8_t)((x >> 8) & 0xFF))
 #define LOWER(x) ((uint8_t)(x & 0xFF))
 
-static void init_compiler(compiler *a, compiler *b, compiler_t type, _key name)
+static void init_compiler(compiler *a, compiler *b, compiler_t type, _key *name)
 {
 
 	local *_local     = NULL;
@@ -146,15 +146,16 @@ static void include_file(compiler *c)
 	char *remaining = NULL;
 
 	consume(TOKEN_STR, "Expect file path.", &c->parser);
-	_key inc = parse_string(c);
+	_key *inc = NULL;
+	inc       = parse_string(c);
 
-	if (resolve_include(c, &inc))
+	if (resolve_include(c, inc))
 	{
 		prev_error("Double include.", &c->parser);
 		exit(1);
 	}
 
-	write_table(c->base->lookup, inc, KEY(inc));
+	write_table(c->base->lookup, inc, GEN(inc, T_KEY));
 
 	consume(
 	    TOKEN_CH_SEMI, "Expect `;` at end of include statement.", &c->parser
@@ -164,7 +165,7 @@ static void include_file(compiler *c)
 	char path[CWD_MAX] = {0};
 
 	strcpy(path, (char *)c->base->meta.cwd);
-	strcat(path, inc.val);
+	strcat(path, inc->val);
 
 	char *file = read_file(path);
 
@@ -177,7 +178,7 @@ static void include_file(compiler *c)
 	init_scanner(result);
 	c->parser.cur = scan_token();
 
-	c->parser.current_file = get_name(inc.val);
+	c->parser.current_file = get_name(inc->val);
 
 #undef SIZE
 }
@@ -204,20 +205,21 @@ static void class_declaration(compiler *c)
 {
 	consume(TOKEN_ID, "ERROR: Expect class name.", &c->parser);
 
-	_key   ar          = parse_id(c);
+	_key *ar           = NULL;
+	ar                 = parse_id(c);
 	class *classc      = _class(ar);
 	classc->closures   = GROW_TABLE(NULL, INIT_SIZE);
 	class_compiler *cc = ALLOC(sizeof(class_compiler));
 
-	if (find_entry(&c->lookup, &ar).type != T_NULL)
-		exit_error("Duplicate class declaration: %s\n", ar.val);
+	if (find_entry(&c->lookup, ar).type != T_NULL)
+		exit_error("Duplicate class declaration: %s\n", ar->val);
 
 	write_table(c->base->lookup, ar, NumType(c->base->count.obj, T_CLASS));
 
 	c->base->stack.class[c->base->count.obj] = NULL;
 	c->base->stack.class[c->base->count.obj] = classc;
 
-	cc->name          = ar;
+	cc->name          = *ar;
 	cc->index         = c->base->count.obj;
 	cc->enclosing     = c->class_compiler;
 	c->class_compiler = cc;
@@ -245,16 +247,17 @@ static void method(compiler *c, class *class)
 {
 	consume(TOKEN_ID, "ERROR: Expect method identifier.", &c->parser);
 
-	_key       ar   = parse_id(c);
+	_key *ar        = NULL;
+	ar              = parse_id(c);
 	compiler_t type = COMPILER_TYPE_INIT;
 
-	if (ar.hash != c->base->hash.init)
+	if (ar->hash != c->base->hash.init)
 		type = COMPILER_TYPE_METHOD;
 
 	method_body(c, type, ar, &class);
 }
 
-static void method_body(compiler *c, compiler_t type, _key ar, class **class)
+static void method_body(compiler *c, compiler_t type, _key *ar, class **class)
 {
 	compiler co;
 	init_compiler(&co, c, type, ar);
@@ -342,9 +345,10 @@ static int argument_list(compiler *c)
 static void func_declaration(compiler *c)
 {
 	consume(TOKEN_ID, "Expect function name.", &c->parser);
-	_key ar = parse_id(c);
+	_key *ar = NULL;
+	ar       = parse_id(c);
 
-	if (find_entry(&c->base->lookup, &ar).type != T_NULL)
+	if (find_entry(&c->base->lookup, ar).type != T_NULL)
 		exit_error("Duplicate function declarations");
 
 	write_table(
@@ -353,7 +357,7 @@ static void func_declaration(compiler *c)
 	func_body(c, ar);
 }
 
-static void func_body(compiler *c, _key ar)
+static void func_body(compiler *c, _key *ar)
 {
 	compiler co;
 	init_compiler(&co, c, COMPILER_TYPE_FUNCTION, ar);
@@ -408,7 +412,8 @@ static void func_var(compiler *c)
 {
 	consume(TOKEN_ID, "Expect variable name.", &c->parser);
 
-	_key ar = parse_id(c);
+	_key *ar = NULL;
+	ar       = parse_id(c);
 
 	int glob = parse_var(c, ar);
 
@@ -416,7 +421,7 @@ static void func_var(compiler *c)
 
 	if (glob == -1)
 	{
-		glob = resolve_local(c, &ar);
+		glob = resolve_local(c, ar);
 		set  = OP_SET_LOCAL_PARAM;
 	}
 	emit_bytes(c, set, (uint8_t)glob);
@@ -426,15 +431,16 @@ static void var_dec(compiler *c)
 {
 	consume(TOKEN_ID, "Expect variable name.", &c->parser);
 
-	_key ar   = parse_id(c);
-	int  glob = parse_var(c, ar);
+	_key *ar = NULL;
+	ar       = parse_id(c);
+	int glob = parse_var(c, ar);
 
 	uint8_t set = 0;
 	if (glob != -1)
 		set = OP_GLOBAL_DEF;
 	else
 	{
-		glob = resolve_local(c, &ar);
+		glob = resolve_local(c, ar);
 		set  = OP_SET_LOCAL;
 	}
 
@@ -510,17 +516,18 @@ static void rm_statement(compiler *c)
 	if (match(TOKEN_ID, &c->parser))
 		;
 
-	_key    ar = parse_id(c);
+	_key *ar = NULL;
+	ar       = parse_id(c);
 	uint8_t get;
-	int     arg = resolve_local(c, &ar);
+	int     arg = resolve_local(c, ar);
 
 	if (arg != -1)
 		get = OP_GET_LOCAL;
-	else if ((arg = resolve_upvalue(c, &ar)) != -1)
+	else if ((arg = resolve_upvalue(c, ar)) != -1)
 		get = OP_GET_UPVALUE;
 	else
 	{
-		arg = add_constant(&c->func->ch, KEY(ar));
+		arg = add_constant(&c->func->ch, KeyEl(ar));
 		get = OP_GET_GLOBAL;
 	}
 	emit_bytes(c, get, (uint8_t)arg);
@@ -1255,11 +1262,11 @@ static void fmt_str(compiler *c)
 			    c->parser.pre.start, (int)(tmp - c->parser.pre.start)
 			);
 
-			re_init_scanner(str.val.String, t.line);
+			re_init_scanner(STR(str)->String, t.line);
 			c->parser.cur = scan_token();
 			expression(c);
 			emit_byte(c, OP_TO_STR);
-			FREE_OBJ(str);
+			FREE_OBJ(&str);
 
 			if (count > 0)
 			{
@@ -1293,7 +1300,7 @@ static void boolean(compiler *c)
 		emit_constant(c, Bool(*c->parser.pre.start == 't' ? true : false));
 }
 
-static _key parse_string(compiler *c)
+static _key *parse_string(compiler *c)
 {
 	return Key((char *)++c->parser.pre.start, c->parser.pre.size - 2);
 }
@@ -1304,24 +1311,12 @@ static void _table(compiler *c)
 	consume(
 	    TOKEN_CH_LPAREN, "Expect `(` prior to table allocation", &c->parser
 	);
+	consume(
+	    TOKEN_CH_RPAREN, "Expect `(` prior to table allocation", &c->parser
+	);
 
-	if (match(TOKEN_CH_RPAREN, &c->parser))
-	{
-		t = GROW_TABLE(NULL, STACK_SIZE);
-		emit_bytes(
-		    c, OP_CONSTANT, add_constant(&c->func->ch, GEN(t, T_TABLE))
-		);
-		return;
-	}
-	else
-	{
-		expression(c);
-		emit_byte(c, OP_ALLOC_TABLE);
-		consume(
-		    TOKEN_CH_RPAREN, "Expect `)` after table declaration",
-		    &c->parser
-		);
-	}
+	t = GROW_TABLE(NULL, MIN_SIZE);
+	emit_constant(c, GEN(t, T_TABLE));
 }
 
 static int resolve_native(compiler *c, _key *ar)
@@ -1337,14 +1332,15 @@ static int resolve_native(compiler *c, _key *ar)
 static void parse_native_var_arg(compiler *c)
 {
 
-	_key key = parse_id(c);
-	int  arg = resolve_native(c, &key);
+	_key *key = NULL;
+	key       = parse_id(c);
+	int arg   = resolve_native(c, key);
 	emit_bytes(c, OP_GET_OBJ, (uint8_t)arg);
 	consume(TOKEN_CH_LPAREN, "Expect `(` prior to function call", &c->parser);
 	call(c);
 }
 
-static _key parse_id(compiler *c)
+static _key *parse_id(compiler *c)
 {
 	return Key(c->parser.pre.start, c->parser.pre.size);
 }
@@ -1526,14 +1522,26 @@ static void _array(compiler *c)
 	emit_constant(c, GEN(nested_array(c), T_VECTOR));
 }
 
-static void _array_key(compiler *c)
-{
-}
-
 static void _access(compiler *c)
 {
 
-	expression(c);
+	advance_compiler(&c->parser);
+
+	switch (c->parser.pre.type)
+	{
+
+	case TOKEN_STR:
+		emit_constant(c, GEN(parse_string(c), T_KEY));
+		break;
+	case TOKEN_NUMBER:
+		num(c);
+		break;
+	case TOKEN_CHAR:
+		ch(c);
+		break;
+	default:
+		error("Invalid array access type");
+	}
 
 	consume(
 	    TOKEN_CH_RSQUARE, "Expect closing brace prior to array access",
@@ -1635,23 +1643,24 @@ static void dot(compiler *c)
 
 	match(TOKEN_ID, &c->parser);
 
-	_key ar = parse_id(c);
+	_key *ar = NULL;
+	ar       = parse_id(c);
 
-	int arg = add_constant(&c->func->ch, KEY(ar));
+	int arg = add_constant(&c->func->ch, KeyEl(ar));
 
 	c->array.get   = OP_GET_PROP;
 	c->array.set   = OP_SET_PROP;
 	c->array.index = arg;
 
-	if (ar.hash == c->base->hash.delete)
+	if (ar->hash == c->base->hash.delete)
 		array_delete(c);
-	else if (ar.hash == c->base->hash.insert)
+	else if (ar->hash == c->base->hash.insert)
 		array_insert(c);
-	else if (ar.hash == c->base->hash.push)
+	else if (ar->hash == c->base->hash.push)
 		array_push(c);
-	else if (ar.hash == c->base->hash.pop)
+	else if (ar->hash == c->base->hash.pop)
 		array_pop(c);
-	else if (ar.hash == c->base->hash.len)
+	else if (ar->hash == c->base->hash.len)
 		emit_byte(c, OP_LEN);
 
 	else if (match(TOKEN_OP_ASSIGN, &c->parser))
@@ -1682,10 +1691,11 @@ static void id(compiler *c)
 
 	match(TOKEN_ID, &c->parser);
 
-	_key    ar  = parse_id(c);
+	_key *ar    = NULL;
+	ar          = parse_id(c);
 	uint8_t get = OP_GET_GLOBAL, set = OP_SET_GLOBAL;
 
-	int arg = resolve_call(c, &ar);
+	int arg = resolve_call(c, ar);
 
 	if (arg != -1)
 	{
@@ -1693,7 +1703,7 @@ static void id(compiler *c)
 		return;
 	}
 
-	if ((arg = resolve_class(c, &ar)) != -1)
+	if ((arg = resolve_class(c, ar)) != -1)
 	{
 		uint8_t init = 0;
 
@@ -1713,18 +1723,18 @@ static void id(compiler *c)
 		return;
 	}
 
-	if ((arg = resolve_local(c, &ar)) != -1)
+	if ((arg = resolve_local(c, ar)) != -1)
 	{
 		get = OP_GET_LOCAL;
 		set = OP_SET_LOCAL;
 	}
-	else if ((arg = resolve_upvalue(c, &ar)) != -1)
+	else if ((arg = resolve_upvalue(c, ar)) != -1)
 	{
 		get = OP_GET_UPVALUE;
 		set = OP_SET_UPVALUE;
 	}
 	else
-		arg = add_constant(&c->func->ch, KEY(ar));
+		arg = add_constant(&c->func->ch, KeyEl(ar));
 
 	c->array.set   = set;
 	c->array.get   = get;
@@ -1739,23 +1749,23 @@ static void id(compiler *c)
 		emit_bytes(c, get, (uint8_t)arg);
 }
 
-static int parse_var(compiler *c, _key ar)
+static int parse_var(compiler *c, _key *ar)
 {
 	declare_var(c, ar);
 	if (c->count.scope > 0)
 		return -1;
-	return add_constant(&c->func->ch, KEY(ar));
+	return add_constant(&c->func->ch, KeyEl(ar));
 }
 
-static bool idcmp(_key a, _key b)
+static bool idcmp(_key *a, _key *b)
 {
-	return a.hash == b.hash;
+	return a->hash == b->hash;
 }
 
 static int resolve_local(compiler *c, _key *name)
 {
 	for (int i = c->count.local - 1; i >= 0; i--)
-		if (idcmp(*name, c->stack.local[i].name))
+		if (idcmp(name, &c->stack.local[i].name))
 			return i;
 	return -1;
 }
@@ -1805,7 +1815,7 @@ static int add_upvalue(compiler *c, int index, bool islocal)
 	return c->count.upvalue++;
 }
 
-static void declare_var(compiler *c, _key ar)
+static void declare_var(compiler *c, _key *ar)
 {
 	if (c->count.scope == 0)
 		return;
@@ -1817,14 +1827,14 @@ static void declare_var(compiler *c, _key ar)
 		if (_local->depth != 0 && _local->depth < c->count.scope)
 			break;
 
-		if (idcmp(ar, _local->name))
+		if (idcmp(ar, &_local->name))
 			prev_error(
 			    "ERROR: Duplicate variable identifiers in scope",
 			    &c->parser
 			);
 	}
 
-	add_local(c, &ar);
+	add_local(c, ar);
 }
 
 static void add_local(compiler *c, _key *ar)

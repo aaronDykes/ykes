@@ -1,5 +1,6 @@
 
 #include "error.h"
+#include "table.h"
 #include "vector.h"
 
 void push_value(vector **v, element *obj)
@@ -180,7 +181,7 @@ static void insert_2d_vector(_3d_vector **v, _2d_vector *obj, int index)
 	(*v)->len++;
 }
 
-static void insert_char(value **v, char Char, int index)
+static void insert_char(_string **v, char Char, int index)
 {
 	if (index > (*v)->len)
 		exit_error(
@@ -213,7 +214,7 @@ void _insert(element **vect, element *obj, int index)
 	vector     *v  = NULL;
 	_2d_vector *v2 = NULL;
 	_3d_vector *v3 = NULL;
-	value      *va = NULL;
+	_string    *va = NULL;
 
 	switch ((*vect)->type)
 	{
@@ -230,7 +231,7 @@ void _insert(element **vect, element *obj, int index)
 		insert_2d_vector(&v3, _2D_VECTOR((*obj)), index);
 		break;
 	case T_STR:
-		va = &(*vect)->val;
+		va = STR((**vect));
 		insert_char(&va, obj->val.Char, index);
 		break;
 	default:
@@ -283,7 +284,7 @@ static void delete_2d_vector_index(_3d_vector **v, Long index)
 	--(*v)->count;
 }
 
-static void delete_string_index(value **String, Long index)
+static void delete_string_index(_string **String, Long index)
 {
 	if (index > (*String)->len)
 		exit_error(
@@ -302,7 +303,7 @@ void delete_index(element **obj, Long index)
 	vector     *v  = NULL;
 	_2d_vector *v2 = NULL;
 	_3d_vector *v3 = NULL;
-	value      *av = NULL;
+	_string    *av = NULL;
 
 	switch ((*obj)->type)
 	{
@@ -319,7 +320,7 @@ void delete_index(element **obj, Long index)
 		delete_2d_vector_index(&v3, index);
 		break;
 	case T_STR:
-		av = &(*obj)->val;
+		av = STR((**obj));
 		delete_string_index(&av, index);
 		break;
 	default:
@@ -406,7 +407,7 @@ static void set_3d_vector_index(int index, _2d_vector *obj, _3d_vector **v)
 	replace_2d_vector_index(&(*v)->of, index, obj);
 }
 
-static void set_string_index(int index, char Char, value **v)
+static void set_string_index(int index, char Char, _string **v)
 {
 	if (index > (*v)->len)
 		exit_error(
@@ -418,12 +419,14 @@ static void set_string_index(int index, char Char, value **v)
 	replace_string_index(&(*v)->String, index, Char);
 }
 
-void _set_index(int index, element *obj, element **vect)
+void _set_index(element *i, element *obj, element **vect)
 {
-	vector     *v  = NULL;
-	_2d_vector *v2 = NULL;
-	_3d_vector *v3 = NULL;
-	value      *av = NULL;
+	vector     *v     = NULL;
+	_2d_vector *v2    = NULL;
+	_3d_vector *v3    = NULL;
+	_string    *av    = NULL;
+	table      *t     = NULL;
+	int         index = i->val.Num;
 
 	switch ((*vect)->type)
 	{
@@ -439,8 +442,12 @@ void _set_index(int index, element *obj, element **vect)
 		v3 = _3D_VECTOR((**vect));
 		set_3d_vector_index(index, _2D_VECTOR((*obj)), &v3);
 		break;
+	case T_TABLE:
+		t = TABLE((**vect));
+		write_table(t, KEY((*i)), *obj);
+		break;
 	case T_STR:
-		av = &(*vect)->val;
+		av = STR((**vect));
 		set_string_index(index, obj->val.Char, &av);
 		break;
 	default:
@@ -480,18 +487,21 @@ static element get_3d_vector_index(int index, _3d_vector *v)
 	return GEN(*(v->of + index), T_VECTOR_2D);
 }
 
-static element get_string_index(int index, value v)
+static element get_string_index(int index, _string *v)
 {
-	if (index > v.len)
+	if (index > v->len)
 	{
 		error("String index: %d, out of bounds", index);
 		return Null();
 	}
-	return Char(*(v.String + index));
+	return Char(*(v->String + index));
 }
 
-element _get_index(int index, element *obj)
+element _get_index(element *i, element *obj)
 {
+	int    index = i->val.Num;
+	table *t     = NULL;
+
 	switch (obj->type)
 	{
 	case T_VECTOR:
@@ -500,8 +510,11 @@ element _get_index(int index, element *obj)
 		return get_2d_vector_index(index, _2D_VECTOR((*obj)));
 	case T_VECTOR_3D:
 		return get_3d_vector_index(index, _3D_VECTOR((*obj)));
+	case T_TABLE:
+		t = TABLE((*obj));
+		return find_entry(&t, KEY((*i)));
 	case T_STR:
-		return get_string_index(index, obj->val);
+		return get_string_index(index, STR((*obj)));
 	default:
 		error("Attempting to access invalid object");
 		return Null();

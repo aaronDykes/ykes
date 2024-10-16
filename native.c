@@ -36,12 +36,12 @@ static element get_file(const char *path)
 	size_t bytesRead  = fread(buffer, sizeof(char), fileSize, file);
 	buffer[bytesRead] = '\0';
 
-	value el;
-	el.String = buffer;
-	el.len    = bytesRead;
+	element e;
+
+	e = String(buffer, bytesRead);
 
 	fclose(file);
-	return OBJ(el, T_STR);
+	return e;
 }
 
 static void append_file(const char *path, const char *data)
@@ -99,15 +99,15 @@ static void write_file(const char *path, const char *data)
 
 element file_native(int argc, element *argv)
 {
-	switch (*argv->val.String)
+	switch (*STR((*argv))->String)
 	{
 	case 'r':
-		return get_file(argv[1].val.String);
+		return get_file(STR(argv[1])->String);
 	case 'w':
-		write_file(argv[1].val.String, argv[2].val.String);
+		write_file(STR(argv[1])->String, STR(argv[2])->String);
 		return Null();
 	case 'a':
-		append_file(argv[1].val.String, argv[2].val.String);
+		append_file(STR(argv[1])->String, STR(argv[2])->String);
 		return Null();
 	default:
 		return Null();
@@ -127,7 +127,7 @@ element string_native(int argc, element *el)
 	return Null();
 }
 
-static void define_native(stack **stk, _key ar, NativeFn n, uint8_t index)
+static void define_native(stack **stk, _key *ar, NativeFn n, uint8_t index)
 {
 	element el            = GEN(_native(n, ar), T_NATIVE);
 	*((*stk)->as + index) = el;

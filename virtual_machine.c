@@ -19,14 +19,14 @@ void initVM(void)
 	machine.stack.obj        = NULL;
 	machine.stack.init_field = NULL;
 
-	machine.glob = NULL;
-	// machine.init_fields = NULL;
+	machine.glob        = NULL;
 	machine.open_upvals = NULL;
 	machine.caller      = NULL;
 	machine.repl_native = NULL;
 
-	machine.stack.main = GROW_STACK(NULL, STACK_SIZE);
-	machine.glob       = GROW_TABLE(NULL, STACK_SIZE);
+	machine.stack.main       = GROW_STACK(NULL, STACK_SIZE);
+	machine.stack.init_field = _fstack();
+	machine.glob             = GROW_TABLE(NULL, STACK_SIZE);
 
 	machine.count.argc   = 0;
 	machine.count.frame  = 0;
@@ -72,10 +72,10 @@ static void runtime_error(const char *format, ...)
 		function  *func  = frame->closure->func;
 		int        line  = frame->closure->func->ch.lines[i];
 
-		if (!func->name.val)
+		if (!func->name->val)
 			fprintf(stderr, "script\n");
 		else
-			fprintf(stderr, "%s()\n", func->name.val);
+			fprintf(stderr, "%s()\n", func->name->val);
 		fprintf(stderr, "[line %d] in script\n", line);
 	}
 
@@ -241,7 +241,6 @@ static bool not_null(element el)
 	switch (el.type)
 	{
 	case T_STR:
-		return el.val.String ? true : false;
 	case T_TABLE:
 	case T_CLOSURE:
 	case T_CLASS:
@@ -257,7 +256,6 @@ static bool null(element el)
 	switch (el.type)
 	{
 	case T_STR:
-		return el.val.String ? false : true;
 	case T_TABLE:
 	case T_CLOSURE:
 	case T_CLASS:
@@ -279,7 +277,7 @@ Interpretation run(void)
 	uint16_t          offset = 0;
 	uint8_t           argc   = 0;
 	element           obj;
-	_key              key;
+	_key             *key = NULL;
 
 #define READ_BYTE() (*ip++)
 #define READ_CONSTANT()                                                        \
@@ -309,7 +307,7 @@ Interpretation run(void)
 
 #define SET_OBJ(n, el) ((NOB_JECT(n) = el))
 
-#define GET(ar)   (find_entry(&machine.glob, &ar))
+#define GET(ar)   (find_entry(&machine.glob, ar))
 #define SET(a, b) (write_table(machine.glob, a, b))
 
 	for (;;)
@@ -478,7 +476,7 @@ Interpretation run(void)
 
 			write_table(
 			    ifield ? IFIELD()->fields : INSTANCE(inst)->fields,
-			    READ_CONSTANT().key, obj
+			    KEY(READ_CONSTANT()), obj
 			);
 			PUSH(obj);
 		}
@@ -497,13 +495,13 @@ Interpretation run(void)
 				return INTERPRET_RUNTIME_ERR;
 			}
 
-			key = READ_CONSTANT().key;
+			key = KEY(READ_CONSTANT());
 
 			if (ifield)
-				obj = find_entry(&IFIELD()->fields, &key);
+				obj = find_entry(&IFIELD()->fields, key);
 			else
 			{
-				obj = find_entry(&INSTANCE(inst)->fields, &key);
+				obj = find_entry(&INSTANCE(inst)->fields, key);
 				machine.caller = INSTANCE(inst);
 			}
 
@@ -512,36 +510,25 @@ Interpretation run(void)
 				PUSH(obj);
 				break;
 			}
-			runtime_error("ERROR: Undefined property '%s'.", key.val);
+			runtime_error("ERROR: Undefined property '%s'.", key->val);
 			return INTERPRET_RUNTIME_ERR;
 		}
 		case OP_SET_ACCESS:
 		{
-			if (NPEEK(1).type != T_NUM)
-			{
-				runtime_error(
-				    "Attempting to access array with invalid type"
-				);
-				return INTERPRET_RUNTIME_ERR;
-			}
 			element *el   = NULL;
 			element *vect = NULL;
-			el            = POP();
-			obj           = *POP();
-			vect          = POP();
+			element *obj  = NULL;
 
-			_set_index((Long)obj.val.Num, el, &vect);
+			el   = POP();
+			obj  = POP();
+			vect = POP();
+
+			_set_index(obj, el, &vect);
 			break;
 		}
 		case OP_GET_ACCESS:
-			if ((obj = PEEK()).type != T_NUM)
-			{
-				runtime_error(
-				    "Attempting to access array with invalid type"
-				);
-				return INTERPRET_RUNTIME_ERR;
-			}
-			if ((obj = _get_index(POP()->val.Num, POP())).type == T_NULL)
+
+			if ((obj = _get_index(POP(), POP())).type == T_NULL)
 			{
 				runtime_error("Invalid array access");
 				return INTERPRET_RUNTIME_ERR;
@@ -633,7 +620,7 @@ Interpretation run(void)
 			PUSH(_len(POP()));
 			break;
 		case OP_RM:
-			FREE_OBJ(*POP());
+			FREE_OBJ(POP());
 			break;
 		case OP_DELETE_VAL:
 		{
@@ -677,7 +664,7 @@ Interpretation run(void)
 			PUSH(GEN(GROW_TABLE(NULL, POP()->val.Num), T_TABLE));
 			break;
 		case OP_GET_GLOBAL:
-			key = READ_CONSTANT().key;
+			key = KEY(READ_CONSTANT());
 			obj = GET(key);
 
 			if (obj.type != T_NULL)
@@ -686,10 +673,10 @@ Interpretation run(void)
 				break;
 			}
 
-			runtime_error("ERROR: Undefined property '%s'.", key.val);
+			runtime_error("ERROR: Undefined property '%s'.", key->val);
 			return INTERPRET_RUNTIME_ERR;
 		case OP_GLOBAL_DEF:
-			key = READ_CONSTANT().key;
+			key = KEY(READ_CONSTANT());
 			obj = *POP();
 
 			if (GET(key).type != T_NULL)
@@ -697,7 +684,7 @@ Interpretation run(void)
 				error(
 				    "Duplicate global variable "
 				    "identifier: %s\n",
-				    key.val
+				    key->val
 				);
 				return INTERPRET_RUNTIME_ERR;
 			}
@@ -705,10 +692,10 @@ Interpretation run(void)
 			SET(key, obj);
 			break;
 		case OP_SET_GLOBAL:
-			SET(READ_CONSTANT().key, *POP());
+			SET(KEY(READ_CONSTANT()), *POP());
 			break;
 		case OP_SET_FUNC_VAR:
-			key = READ_CONSTANT().key;
+			key = KEY(READ_CONSTANT());
 			obj = (machine.count.cargc < machine.count.argc)
 			          ? *(frame->slots + machine.count.cargc++)
 			          : *POP();

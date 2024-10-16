@@ -345,7 +345,7 @@ element _len(element *a)
 	switch (a->type)
 	{
 	case T_STR:
-		return Num(a->val.len);
+		return Num(STR((*a))->len);
 	case T_VECTOR:
 		return Num(VECTOR((*a))->count);
 	case T_VECTOR_2D:

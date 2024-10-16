@@ -1,10 +1,12 @@
 #ifndef _OBJECT_UTIL_H
 #define _OBJECT_UTIL_H
 #include <object_type.h>
+#include <opcode.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
+#define KEY(el)        ((_key *)el.obj)
 #define CLOSURE(el)    ((closure *)(el.obj))
 #define FUNC(el)       ((function *)(el.obj))
 #define NATIVE(el)     ((native *)(el.obj))
@@ -16,110 +18,7 @@
 #define TABLE(el)      ((table *)(el.obj))
 #define STACK(el)      ((stack *)(el.obj))
 #define UPVAL(el)      ((upval *)(el.obj))
-
-typedef enum
-{
-	OP_CONSTANT,
-	OP_CLOSURE,
-	OP_PRINT,
-
-	OP_CLASS,
-	OP_GET_INSTANCE,
-	OP_ALLOC_TABLE,
-	OP_ALLOC_VECTOR,
-	OP_ALLOC_2D_VECTOR,
-	OP_INIT_VECTOR,
-	OP_INIT_2D_VECTOR,
-	OP_INIT_3D_VECTOR,
-	OP_THIS,
-	OP_GET_ACCESS,
-	OP_SET_ACCESS,
-
-	OP_POP,
-	OP_POPN,
-	OP_RM,
-	OP_CLOSE_UPVAL,
-	OP_LEN,
-
-	OP_GET_PROP,
-	OP_SET_PROP,
-	OP_SET_FIELD,
-	OP_GET_FIELD,
-
-	OP_DELETE_VAL,
-	OP_INSERT_VAL,
-
-	OP_PUSH_VAL,
-	OP_POP_VAL,
-
-	OP_GET_METHOD,
-	OP_ALLOC_INSTANCE,
-	OP_RST_CALLER,
-	OP_GET_OBJ,
-	OP_SET_OBJ,
-
-	OP_GLOBAL_DEF,
-	OP_GET_GLOBAL,
-	OP_SET_GLOBAL,
-
-	OP_SET_FUNC_VAR,
-
-	OP_RESET_ARGC,
-	OP_GET_LOCAL,
-	OP_SET_LOCAL,
-	OP_SET_LOCAL_PARAM,
-
-	OP_GET_UPVALUE,
-	OP_SET_UPVALUE,
-
-	OP_ADD_ASSIGN,
-	OP_SUB_ASSIGN,
-	OP_MUL_ASSIGN,
-	OP_DIV_ASSIGN,
-	OP_MOD_ASSIGN,
-	OP_AND_ASSIGN,
-	OP__OR_ASSIGN,
-
-	OP_CAST,
-
-	OP_NEG,
-	OP_INC,
-	OP_DEC,
-	OP_ADD,
-	OP_SUB,
-	OP_MUL,
-	OP_MOD,
-	OP_DIV,
-
-	OP_BIT_AND,
-	OP_BIT_OR,
-
-	OP_AND,
-	OP_OR,
-
-	OP_EQ,
-	OP_NE,
-	OP_LT,
-	OP_LE,
-	OP_GT,
-	OP_GE,
-
-	OP_JMP_NIL,
-	OP_JMP_NOT_NIL,
-	OP_JMPL,
-	OP_JMPF,
-	OP_JMPT,
-	OP_JMP,
-	OP_LOOP,
-
-	OP_CALL,
-	OP_INSTANCE,
-	OP_METHOD,
-	OP_TO_STR,
-
-	OP_NOOP,
-	OP_RETURN,
-} opcode_t;
+#define STR(el)        ((_string *)el.obj)
 
 typedef enum
 {
@@ -167,15 +66,14 @@ struct _key
 	char *val;
 };
 
+struct _string
+{
+	int   len;
+	char *String;
+};
+
 union value
 {
-
-	struct
-	{
-		int   len;
-		char *String;
-	};
-
 	double Num;
 	char   Char;
 	bool   Bool;
@@ -232,7 +130,7 @@ struct function
 	uint8_t arity;
 	uint8_t uargc;
 	uint8_t objc;
-	_key    name;
+	_key   *name;
 	chunk   ch;
 };
 
@@ -246,7 +144,7 @@ struct closure
 struct native
 {
 	uint8_t  arity;
-	_key     name;
+	_key    *name;
 	NativeFn fn;
 };
 
@@ -257,7 +155,6 @@ struct element
 	union
 	{
 		value val;
-		_key  key;
 		void *obj;
 	};
 };
@@ -271,7 +168,7 @@ struct upval
 struct class
 {
 	closure *init;
-	_key     name;
+	_key    *name;
 	table   *closures;
 };
 
@@ -290,7 +187,7 @@ struct stack
 
 struct record
 {
-	_key    key;
+	_key   *key;
 	element val;
 	record *next;
 };
