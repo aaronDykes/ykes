@@ -5,15 +5,10 @@
 #include <stdlib.h>
 
 #ifndef GLOBAL_MEM_ARENA
-
-#define ALLOC(size) malloc(size)
-
+#define ALLOC(size)        malloc(size)
 #define REALLOC(ptr, size) realloc(ptr, size)
-
-#define CALLOC(val, size) calloc(val, size)
-
-#define FREE(ptr) free(ptr)
-
+#define CALLOC(val, size)  calloc(val, size)
+#define FREE(ptr)          free(ptr)
 #else
 #define ALLOC(size)                  _malloc_(size + OFFSET)
 #define REALLOC(ptr, old_size, size) _realloc_(ptr, old_size, size)
@@ -27,7 +22,6 @@
 #define OFFSET sizeof(_free)
 
 typedef union _free   _free;
-typedef struct _mem_  _mem_;
 typedef long long int Long;
 
 union _free
@@ -39,15 +33,6 @@ union _free
 	};
 	Long align;
 };
-
-struct _mem_
-{
-	size_t size;
-	void  *glob;
-};
-
-static _free *mem = NULL;
-static _mem_  arena;
 
 void initialize_global_mem(void);
 void destroy_global_memory(void);

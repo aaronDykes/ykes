@@ -229,14 +229,12 @@ static void emit_bytes(compiler *c, uint8_t b1, uint8_t b2);
 static void emit_constant(compiler *c, element ar);
 static void emit_return(compiler *c);
 
-static void num(compiler *c);
-static void ch(compiler *c);
-static void boolean(compiler *c);
-static void str(compiler *c);
-static void fmt_str(compiler *c);
-
+static void  num(compiler *c);
+static void  ch(compiler *c);
+static void  boolean(compiler *c);
+static void  str(compiler *c);
+static void  fmt_str(compiler *c);
 static _key *parse_string(compiler *c);
-static void  stack_alloc(compiler *c);
 
 static void _table(compiler *c);
 

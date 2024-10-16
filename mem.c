@@ -4,6 +4,9 @@
 
 #define ARM64_PAGE 16384
 
+static _free *mem = NULL;
+static void   merge_list(void);
+
 static void *request_system_memory(size_t size)
 {
 	return mmap(
@@ -17,8 +20,7 @@ void initialize_global_mem(void)
 	mem = NULL;
 }
 
-static void merge_list(void);
-void        destroy_global_memory(void)
+void destroy_global_memory(void)
 {
 
 	_free *tmp = NULL;
@@ -43,7 +45,7 @@ static void merge_list(void)
 
 		prev = next;
 		if (next->next &&
-		    ((char *)next + OFFSET + next->size) == (char *)next->next)
+		    (((char *)next + OFFSET + next->size) == (char *)next->next))
 		{
 			prev->size += next->next->size;
 			prev->next = next->next->next;
