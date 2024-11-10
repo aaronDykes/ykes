@@ -6,5 +6,5 @@
 ./build
 c
 cd ../
-./ykes ./test/test$1.yk
+./ykes ./test/file/nested_import.yk
 

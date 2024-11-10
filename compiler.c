@@ -737,7 +737,6 @@ static void elif_statement(compiler *c)
 static void ternary_statement(compiler *c)
 {
 	int exit = emit_jump(c, OP_JMPF);
-	// emit_byte(c, OP_POP);
 	expression(c);
 	consume(
 	    TOKEN_CH_COLON, "Expect `:` between ternary expressions.", &c->parser
@@ -753,7 +752,7 @@ static void null_coalescing_statement(compiler *c)
 	emit_byte(c, OP_POP);
 	expression(c);
 	patch_jump(c, exit);
-	// emit_byte(c, OP_POP);
+	emit_byte(c, OP_POP);
 }
 
 static void return_statement(compiler *c)
@@ -1707,7 +1706,7 @@ static void id(compiler *c)
 	{
 		uint8_t init = 0;
 
-		if (c->base->stack.class[arg] -> init)
+		if (c->base->stack.class[arg]->init)
 		{
 			match(TOKEN_CH_LPAREN, &c->parser);
 			emit_bytes(c, OP_CLASS, (uint8_t)arg);

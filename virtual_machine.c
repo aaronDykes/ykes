@@ -41,7 +41,6 @@ void freeVM(void)
 		FREE(machine.repl_native);
 	}
 
-	// FREE_TABLE(&machine.repl_native);
 	FREE_TABLE(&machine.glob);
 	FREE_STACK(&machine.stack.main);
 	FREE_STACK(&machine.stack.obj);
@@ -236,26 +235,15 @@ static void close_upvalues(void)
 		;
 }
 
-static bool not_null(element el)
-{
-	switch (el.type)
-	{
-	case T_STR:
-	case T_TABLE:
-	case T_CLOSURE:
-	case T_CLASS:
-	case T_INSTANCE:
-	case T_STACK:
-		return el.obj ? true : false;
-	default:
-		return false;
-	}
-}
 static bool null(element el)
 {
 	switch (el.type)
 	{
 	case T_STR:
+	case T_KEY:
+	case T_VECTOR:
+	case T_VECTOR_2D:
+	case T_VECTOR_3D:
 	case T_TABLE:
 	case T_CLOSURE:
 	case T_CLASS:
@@ -273,7 +261,6 @@ Interpretation run(void)
 	CallFrame *frame = machine.frames + (machine.count.frame - 1);
 
 	register uint8_t *ip     = frame->ip;
-	register uint8_t *ip_tmp = NULL;
 	uint16_t          offset = 0;
 	uint8_t           argc   = 0;
 	element           obj;
@@ -302,9 +289,8 @@ Interpretation run(void)
 #define LOCAL()   (*(frame->slots + READ_BYTE()))
 #define NLOCAL(n) (*(frame->slots + n))
 
-#define OBJECT()    (*(machine.stack.obj->as + READ_BYTE()))
-#define NOB_JECT(n) (*(machine.stack.obj->as + n))
-
+#define OBJECT()       (*(machine.stack.obj->as + READ_BYTE()))
+#define NOB_JECT(n)    (*(machine.stack.obj->as + n))
 #define SET_OBJ(n, el) ((NOB_JECT(n) = el))
 
 #define GET(ar)   (find_entry(&machine.glob, ar))
@@ -537,8 +523,9 @@ Interpretation run(void)
 			break;
 		case OP_CALL:
 		{
-			uint8_t argc       = READ_BYTE();
-			uint8_t is_closure = 0;
+			uint8_t  argc       = READ_BYTE();
+			uint8_t *ip_tmp     = NULL;
+			uint8_t  is_closure = 0;
 
 			if (NPEEK(argc).type == T_CLOSURE)
 			{
@@ -586,7 +573,7 @@ Interpretation run(void)
 			break;
 		case OP_JMP_NOT_NIL:
 			offset = UPPER(), offset |= LOWER();
-			if (not_null(PEEK()))
+			if (!null(PEEK()))
 				ip += offset;
 			break;
 		case OP_JMP:

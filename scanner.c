@@ -93,8 +93,6 @@ token scan_token(void)
 			return strict_toke(TOKEN_OP_SNE);
 		return make_token(match('=') ? TOKEN_OP_NE : TOKEN_OP_BANG);
 	case '=':
-		if (check('=') && check_peek(1, '='))
-			return strict_toke(TOKEN_OP_SEQ);
 		return make_token(match('=') ? TOKEN_OP_EQ : TOKEN_OP_ASSIGN);
 	case '>':
 		return make_token(match('=') ? TOKEN_OP_GE : TOKEN_OP_GT);
