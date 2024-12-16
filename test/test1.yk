@@ -1,34 +1,29 @@
-class Tables
+
+
+sr func()
 {
-    tables()
-    {
-        var tab             = table();
-        var nest            = table();
-        var another_nest    = table();
 
-        tab["Aaron"] = "Aaron";
-        tab["Dykes"] = "Dykes"; 
-        tab["Table"] = nest;
+      var a = [1, 2, 3, 4, 5, 6, 7, 8];
 
-        nest["nest"]    = "Another!!!";
-        nest["another"] = another_nest;
 
-        another_nest["nest"] = "Another nest!!!!";
+      a.insert(4, 69);
+      a.insert(5, 420);
+      a.delete(0);
+      a.delete(0);
 
-        var t = table(); 
 
-        t["Table"] = tab; 
+      pout(a);
 
-        pout(
-            t["Table"]["Aaron"],
-            t["Table"]["Dykes"],
-            t["Table"]["Table"]["nest"],
-            t["Table"]["Table"]["another"]["nest"]
-        );
-        
-    }
 
+
+      for (var i = 0; i < a.len; i++)
+            pout(a[i]);
+
+      pout(a);
+
+      pout(`length of vector a: ${a.len}`);
 }
-var t = Tables();
 
-t.tables();
+
+
+func();

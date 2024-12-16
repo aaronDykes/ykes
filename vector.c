@@ -74,12 +74,12 @@ void push_obj(element **vect, element *obj)
 
 static void insert_value(vector **v, element *obj, int index)
 {
+
+	if (((*v)->count + 1 > (*v)->len))
+		*v = _realloc_vector(v, (*v)->len * INC);
 	if (index > (*v)->len)
-		exit_error(
-		    "Vector index out of range, current length: %d, provided "
-		    "index: %d",
-		    (*v)->len, index
-		);
+		*v = _realloc_vector(v, index * INC);
+
 
 	if ((*v)->type == T_GEN)
 		(*v)->type = obj->type;
@@ -89,33 +89,20 @@ static void insert_value(vector **v, element *obj, int index)
 		    "Inserting vector element at index %d with invalid type", index
 		);
 
-	int    size = (*v)->len + 1;
-	value *tmp  = NULL;
-
-	tmp = ALLOC(size * sizeof(value));
-
-	for (int i = 0; i < index; i++)
-		*(tmp + i) = *((*v)->of + i);
-
-	*(tmp + index) = obj->val;
-
-	for (int i = index; i < (*v)->len; i++)
-		*(tmp + i + 1) = *((*v)->of + i);
-
-	FREE((*v)->of);
-	(*v)->of = NULL;
-	(*v)->of = tmp;
 	(*v)->count++;
-	(*v)->len++;
+
+	for (int i = (*v)->count - 1; i > index; i--)
+		*((*v)->of + i) = *((*v)->of + i - 1);
+
+	*((*v)->of + index) = obj->val;
+
 }
 static void insert_vector(_2d_vector **v, vector *obj, int index)
 {
+	if ((*v)->count + 1 > (*v)->len)
+		*v = _realloc_2d_vector(v, (*v)->len * INC);
 	if (index > (*v)->len)
-		exit_error(
-		    "Vector index out of range, current length: %d, provided "
-		    "index: %d",
-		    (*v)->len, index
-		);
+		*v = _realloc_2d_vector(v, index * INC);
 
 	if ((*v)->type == T_GEN)
 		(*v)->type = obj->type;
@@ -125,33 +112,21 @@ static void insert_vector(_2d_vector **v, vector *obj, int index)
 		    "Inserting vector element at index %d with invalid type", index
 		);
 
-	int      size = (*v)->len + 1;
-	vector **tmp  = NULL;
-
-	tmp = ALLOC(size * sizeof(vector));
-
-	for (int i = 0; i < index; i++)
-		*(tmp + i) = *((*v)->of + i);
-
-	*(tmp + index) = obj;
-
-	for (int i = index; i < (*v)->len; i++)
-		*(tmp + i + 1) = *((*v)->of + i);
-
-	FREE((*v)->of);
-	(*v)->of = NULL;
-	(*v)->of = tmp;
 	(*v)->count++;
-	(*v)->len++;
+
+	for (int i = (*v)->count - 1; i >= index; i--)
+		*((*v)->of + i) = *((*v)->of + i - 1);
+
+	*((*v)->of + index - 1) = obj;
+
 }
 static void insert_2d_vector(_3d_vector **v, _2d_vector *obj, int index)
 {
+	if ((*v)->count + 1 > (*v)->len)
+		*v = _realloc_3d_vector(v, (*v)->len * INC);
 	if (index > (*v)->len)
-		exit_error(
-		    "Vector index out of range, current length: %d, provided "
-		    "index: %d",
-		    (*v)->len, index
-		);
+		*v = _realloc_3d_vector(v, index * INC);
+
 
 	if ((*v)->type == T_GEN)
 		(*v)->type = obj->type;
@@ -161,52 +136,30 @@ static void insert_2d_vector(_3d_vector **v, _2d_vector *obj, int index)
 		    "Inserting vector element at index %d with invalid type", index
 		);
 
-	int          size = (*v)->len + 1;
-	_2d_vector **tmp  = NULL;
-
-	tmp = ALLOC(size * sizeof(_2d_vector));
-
-	for (int i = 0; i < index; i++)
-		*(tmp + i) = *((*v)->of + i);
-
-	*(tmp + index) = obj;
-
-	for (int i = index; i < (*v)->len; i++)
-		*(tmp + i + 1) = *((*v)->of + i);
-
-	FREE((*v)->of);
-	(*v)->of = NULL;
-	(*v)->of = tmp;
 	(*v)->count++;
-	(*v)->len++;
+
+	for (int i = (*v)->count - 1; i >= index; i--)
+		*((*v)->of + i) = *((*v)->of + i - 1);
+
+	*((*v)->of + index - 1) = obj;
 }
 
 static void insert_char(_string **v, char Char, int index)
 {
 	if (index > (*v)->len)
-		exit_error(
-		    "Vector index out of range, current length: %d, provided "
-		    "index: %d",
-		    (*v)->len, index
-		);
+	{
+		size_t size = index + 1;
+		(*v)->String = REALLOC((*v)->String, (*v)->len, size);
+		(*v)->len = size;
+	}
 
-	int   size = (*v)->len + 1;
-	char *tmp  = NULL;
+	for (int i = (*v)->len - 1; i >= index; i--)
+		*((*v)->String + i) = *((*v)->String + i - 1);
 
-	tmp = ALLOC(size);
+	*((*v)->String + index - 1) = Char;
 
-	for (int i = 0; i < index; i++)
-		*(tmp + i) = *((*v)->String + i);
 
-	*(tmp + index) = Char;
 
-	for (int i = index; i < (*v)->len; i++)
-		*(tmp + i + 1) = *((*v)->String + i);
-
-	FREE((*v)->String);
-	(*v)->String = NULL;
-	(*v)->String = tmp;
-	(*v)->len++;
 }
 
 void _insert(element **vect, element *obj, int index)

@@ -2,34 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 
-/*
-static int hash(element key)
-{
-    int index = 2166136261u;
-
-    switch (key.type)
-    {
-    case T_STR:
-        for (char *s = key.val.String; *s; s++)
-        {
-            index ^= (int)*s;
-            index *= 16777619;
-        }
-        break;
-    case T_NUM:
-        index ^= (Long)key.val.Num;
-        index = (index * 16777669);
-        break;
-    case T_CHAR:
-        index ^= key.val.Char;
-        index = (index * 16742069);
-        break;
-    default:
-        return 0;
-    }
-    return index;
-}
-*/
 int hash_key(char *str)
 {
 	int index = 2166136261u;

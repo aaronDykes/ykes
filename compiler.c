@@ -1539,6 +1539,9 @@ static void _access(compiler *c)
 	case TOKEN_CHAR:
 		ch(c);
 		break;
+	case TOKEN_ID:
+		id(c);
+		break;
 	default:
 		error("Invalid array access type");
 	}
