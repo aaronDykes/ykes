@@ -114,10 +114,10 @@ static void insert_vector(_2d_vector **v, vector *obj, int index)
 
 	(*v)->count++;
 
-	for (int i = (*v)->count - 1; i >= index; i--)
+	for (int i = (*v)->count - 1; i > index; i--)
 		*((*v)->of + i) = *((*v)->of + i - 1);
 
-	*((*v)->of + index - 1) = obj;
+	*((*v)->of + index) = obj;
 
 }
 static void insert_2d_vector(_3d_vector **v, _2d_vector *obj, int index)
@@ -138,10 +138,10 @@ static void insert_2d_vector(_3d_vector **v, _2d_vector *obj, int index)
 
 	(*v)->count++;
 
-	for (int i = (*v)->count - 1; i >= index; i--)
+	for (int i = (*v)->count - 1; i > index; i--)
 		*((*v)->of + i) = *((*v)->of + i - 1);
 
-	*((*v)->of + index - 1) = obj;
+	*((*v)->of + index) = obj;
 }
 
 static void insert_char(_string **v, char Char, int index)
@@ -153,10 +153,10 @@ static void insert_char(_string **v, char Char, int index)
 		(*v)->len = size;
 	}
 
-	for (int i = (*v)->len - 1; i >= index; i--)
+	for (int i = (*v)->len - 1; i > index; i--)
 		*((*v)->String + i) = *((*v)->String + i - 1);
 
-	*((*v)->String + index - 1) = Char;
+	*((*v)->String + index) = Char;
 
 
 
