@@ -109,7 +109,7 @@ _key *Key(const char *str, size_t size)
 	_key *ar = NULL;
 	ar       = ALLOC(sizeof(_key));
 	ar->val  = NULL;
-	ar->val  = ALLOC(size == 1 ? 2 : size);
+	ar->val  = ALLOC(size + 1);
 	memcpy(ar->val, str, size);
 	ar->val[size] = '\0';
 	int k         = hash_key(ar->val);

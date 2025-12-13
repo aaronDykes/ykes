@@ -99,6 +99,7 @@ static void write_file(const char *path, const char *data)
 
 element file_native(int argc, element *argv)
 {
+	(void)argc;
 	switch (*STR((*argv))->String)
 	{
 	case 'r':
@@ -116,14 +117,19 @@ element file_native(int argc, element *argv)
 
 element square_native(int argc, element *argv)
 {
+	(void)argc;
 	return _sqr(argv);
 }
 element clock_native(int argc, element *el)
 {
+	(void)argc;
+	(void)el;
 	return Num((double)clock() / CLOCKS_PER_SEC);
 }
 element string_native(int argc, element *el)
 {
+	(void)argc;
+	(void)el;
 	return Null();
 }
 

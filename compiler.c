@@ -2,9 +2,11 @@
 #include "compiler.h"
 #include "compiler_util.h"
 #include "error.h"
+#include "ffi.h"
 #include "object_string.h"
 #include "table.h"
 #include "vector.h"
+#include "virtual_machine.h"
 #ifdef DEBUG_TRACE_EXECUTION
 #include "debug.h"
 #endif
@@ -81,35 +83,6 @@ static void advance_compiler(parser *parser)
 		current_err(parser->cur.start, parser);
 	}
 }
-static char *read_file(const char *path)
-{
-
-	FILE *file = fopen(path, "rb");
-
-	if (!file)
-	{
-		fprintf(stderr, "Could not open file \"%s\".\n", path);
-		exit(74);
-	}
-
-	fseek(file, 0L, SEEK_END);
-	size_t fileSize = ftell(file);
-	rewind(file);
-
-	char *buffer = NULL;
-	buffer       = ALLOC(fileSize + 1);
-
-	if (!buffer)
-	{
-		fprintf(stderr, "Not enough memory to read \"%s\".\n", path);
-		exit(74);
-	}
-	size_t bytesRead  = fread(buffer, sizeof(char), fileSize, file);
-	buffer[bytesRead] = '\0';
-
-	fclose(file);
-	return buffer;
-}
 
 static bool resolve_include(compiler *c, _key *ar)
 {
@@ -134,16 +107,13 @@ static char *get_name(char *path)
 }
 static void include_file(compiler *c)
 {
-
-#define SIZE(x, y) (strlen(x) + strlen(y) + 2)
-
 	if (c->meta.type != COMPILER_TYPE_SCRIPT)
 	{
-		prev_error("Can only include files at top level.", &c->parser);
-		exit(1);
+		prev_error(
+		    "Can only include/import files at top level.", &c->parser
+		);
+		return;
 	}
-
-	char *remaining = NULL;
 
 	consume(TOKEN_STR, "Expect file path.", &c->parser);
 	_key *inc = NULL;
@@ -151,42 +121,96 @@ static void include_file(compiler *c)
 
 	if (resolve_include(c, inc))
 	{
-		prev_error("Double include.", &c->parser);
-		exit(1);
+		prev_error("Double include/import.", &c->parser);
+		return;
 	}
 
-	write_table(c->base->lookup, inc, GEN(inc, T_KEY));
-
-	consume(
-	    TOKEN_CH_SEMI, "Expect `;` at end of include statement.", &c->parser
-	);
-	remaining = (char *)c->parser.cur.start;
-
 	char path[CWD_MAX] = {0};
-
 	strcpy(path, (char *)c->base->meta.cwd);
 	strcat(path, inc->val);
 
-	char *file = read_file(path);
+	/* Load and execute the module at compile-time; its globals become
+	 * available. */
+	char *err = NULL;
+	int   rc  = yk_load_module(path, &err);
+	if (rc != 0)
+	{
+		if (err)
+		{
+			prev_error(err, &c->parser);
+			FREE(err);
+		}
+		else
+			prev_error("Could not import file.", &c->parser);
+		return;
+	}
 
-	char *result = NULL;
-	result       = ALLOC(SIZE(file, remaining));
+	/* Mark this module as imported in the compiler lookup to avoid duplicate
+	 * imports. */
+	write_table(c->base->lookup, inc, GEN(inc, T_KEY));
 
-	strcpy(result, file);
+	/* Bind exported names from the module into the current compile-time
+	 * lookup and record pending imports for runtime prefill. */
+	{
+		char realbuf[PATH_MAX];
+		if (realpath(path, realbuf))
+		{
+			_key   *mod_key = Key(realbuf, (int)strlen(realbuf));
+			element mod_el  = find_entry(&machine.modules, mod_key);
+			if (mod_el.type == T_TABLE)
+			{
+				table *mod_tbl = (table *)mod_el.obj;
+				for (size_t i = 0; i < mod_tbl->len; i++)
+				{
+					record *rec = &mod_tbl->records[i];
+					if (!rec->key || !rec->key->val)
+						continue;
+					element val = rec->val;
 
-	strcat(result, remaining);
-	init_scanner(result);
-	c->parser.cur = scan_token();
+					/* Reserve an object slot in the compiler and bind
+					 * the exported name to that slot. */
+					int   idx       = c->base->count.obj++;
+					obj_t bind_type = val.type;
+					if (val.type == T_CLOSURE)
+						bind_type = T_FUNCTION;
+					write_table(
+					    c->base->lookup, rec->key,
+					    NumType(idx, bind_type)
+					);
+
+					/* Record pending import to copy the element into
+					 * the runtime object slots when executing the
+					 * compiled program. */
+					if (!machine.pending_imports)
+						machine.pending_imports =
+						    GROW_TABLE(NULL, INIT_SIZE);
+
+					char idxbuf[32];
+					int  n =
+					    snprintf(idxbuf, sizeof(idxbuf), "%d", idx);
+					write_table(
+					    machine.pending_imports, Key(idxbuf, n), val
+					);
+				}
+			}
+		}
+	}
+
+	consume(
+	    TOKEN_CH_SEMI, "Expect `;` at end of include/import statement.",
+	    &c->parser
+	);
 
 	c->parser.current_file = get_name(inc->val);
-
-#undef SIZE
 }
-
 static void declaration(compiler *c)
 {
 
-	if (match(TOKEN_INCLUDE, &c->parser))
+	/* Export prefix: mark the following top-level declaration as exported */
+	if (match(TOKEN_EXPORT, &c->parser))
+		c->meta.flags |= EXPORT_FLAG;
+
+	if (match(TOKEN_IMPORT, &c->parser) || match(TOKEN_INCLUDE, &c->parser))
 		include_file(c);
 	else if (match(TOKEN_FUNC, &c->parser))
 		func_declaration(c);
@@ -227,6 +251,12 @@ static void class_declaration(compiler *c)
 	emit_bytes(c, OP_SET_OBJ, c->base->count.obj++);
 	emit_byte(c, add_constant(&c->func->ch, GEN(classc, T_CLASS)));
 
+	if (c->meta.flags & EXPORT_FLAG)
+	{
+		yk_record_export(ar);
+		c->meta.flags &= ~EXPORT_FLAG;
+	}
+
 	if (match(TOKEN_CH_SEMI, &c->parser))
 	{
 		c->class_compiler = c->class_compiler->enclosing;
@@ -235,8 +265,8 @@ static void class_declaration(compiler *c)
 
 	consume(TOKEN_CH_LCURL, "ERROR: Expect ze `{` curl brace", &c->parser);
 
-	while (!check(TOKEN_CH_RCURL, &c->parser) && !check(TOKEN_EOF, &c->parser)
-	)
+	while (!check(TOKEN_CH_RCURL, &c->parser) &&
+	       !check(TOKEN_EOF, &c->parser))
 		method(c, classc);
 
 	consume(TOKEN_CH_RCURL, "ERROR: Expect ze `}` curl brace", &c->parser);
@@ -354,6 +384,11 @@ static void func_declaration(compiler *c)
 	write_table(
 	    c->base->lookup, ar, NumType(c->base->count.obj++, T_FUNCTION)
 	);
+	if (c->meta.flags & EXPORT_FLAG)
+	{
+		yk_record_export(ar);
+		c->meta.flags &= ~EXPORT_FLAG;
+	}
 	func_body(c, ar);
 }
 
@@ -455,6 +490,12 @@ static void var_dec(compiler *c)
 	consume(
 	    TOKEN_CH_SEMI, "Expect ';' after variable declaration.", &c->parser
 	);
+
+	if (c->meta.flags & EXPORT_FLAG)
+	{
+		yk_record_export(ar);
+		c->meta.flags &= ~EXPORT_FLAG;
+	}
 }
 
 static void synchronize(parser *parser)
@@ -861,8 +902,8 @@ static void end_scope(compiler *c)
 
 static void parse_block(compiler *c)
 {
-	while (!check(TOKEN_CH_RCURL, &c->parser) && !check(TOKEN_EOF, &c->parser)
-	)
+	while (!check(TOKEN_CH_RCURL, &c->parser) &&
+	       !check(TOKEN_EOF, &c->parser))
 		declaration(c);
 	consume(TOKEN_CH_RCURL, "Expect `}` after block statement", &c->parser);
 }
@@ -1710,7 +1751,7 @@ static void id(compiler *c)
 	{
 		uint8_t init = 0;
 
-		if (c->base->stack.class[arg] -> init)
+		if (c->base->stack.class[arg]->init)
 		{
 			match(TOKEN_CH_LPAREN, &c->parser);
 			emit_bytes(c, OP_CLASS, (uint8_t)arg);

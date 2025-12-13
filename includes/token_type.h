@@ -79,6 +79,8 @@ typedef enum
 	TOKEN_STORAGE_TYPE_STR,
 
 	TOKEN_INCLUDE,
+	TOKEN_IMPORT,
+	TOKEN_EXPORT,
 
 	// Keywords.
 	TOKEN_CLASS,

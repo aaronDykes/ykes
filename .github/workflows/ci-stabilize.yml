@@ -1,0 +1,50 @@
+name: CI-Stabilize
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-matrix:
+    name: Build matrix (Linux/macOS)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        clang: [clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang make
+      - name: Build (ASan on Linux)
+        run: |
+          make clean || true
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            make CFLAGS='-g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer -Wall -Wextra -pedantic' CC=clang
+          else
+            make CC=clang
+          fi
+      - name: Run tests (basic)
+        run: |
+          ./ykes test/test1.yk || true
+
+  valgrind-docker:
+    name: Valgrind (docker)
+    runs-on: ubuntu-latest
+    needs: build-matrix
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build valgrind image
+        run: docker build -f Dockerfile.valgrind -t ykes-valgrind:ci .
+      - name: Run valgrind (container)
+        run: |
+          mkdir -p valgrind-logs
+          docker run --rm -v "$PWD/valgrind-logs":/workspace/valgrind-logs ykes-valgrind:ci
+      - name: Upload logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: valgrind-logs
+          path: valgrind-logs

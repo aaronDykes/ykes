@@ -11,6 +11,9 @@
 #define INSTANCE_SET 0x01 /* 0000 0001 */
 #define INSTANCE_CLR 0xFE /* 1111 1110 */
 
+/* Flag used by compiler to mark next top-level declaration as exported */
+#define EXPORT_FLAG 0x02
+
 #define FLAG_INSTANCE(n) (n & INSTANCE_SET)
 
 typedef enum

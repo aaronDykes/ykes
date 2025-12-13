@@ -1,6 +1,7 @@
 #include "object_string.h"
 #include "virtual_machine.h"
 #include <fcntl.h>
+#include <limits.h>
 #include <pwd.h>
 #include <stdio.h>
 #include <string.h>
@@ -99,16 +100,14 @@ static char *get_name(char *path)
 
 static char *get_full_path(char *path)
 {
-	// char res[PATH_MAX] = {0};
+	char resolved[PATH_MAX] = {0};
 
 	char *ptr = NULL;
-	char *tmp = NULL;
-	tmp       = realpath(path, NULL);
 
-	if (tmp)
+	if (realpath(path, resolved) != NULL)
 	{
-		ptr = ALLOC(strlen(tmp));
-		strcpy(ptr, tmp);
+		ptr = ALLOC(strlen(resolved) + 1);
+		strcpy(ptr, resolved);
 	}
 	else
 	{

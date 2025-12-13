@@ -1,5 +1,5 @@
-import "leet/prime.yk";
-import "leet/fib.yk";
+import "prime.yk";
+import "fib.yk";
 
 
 var p = Prime(100000);

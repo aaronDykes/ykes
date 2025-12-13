@@ -240,6 +240,8 @@ static int id_type(void)
 			case 'i':
 				return check_keyword(3, 1, "f", TOKEN_ELIF);
 			}
+		case 'x':
+			return check_keyword(2, 4, "port", TOKEN_EXPORT);
 		}
 	case 'f':
 		if (scan.current - scan.start > 1)
@@ -258,7 +260,7 @@ static int id_type(void)
 		switch (scan.start[1])
 		{
 		case 'm':
-			return check_keyword(2, 4, "port", TOKEN_INCLUDE);
+			return check_keyword(2, 4, "port", TOKEN_IMPORT);
 		}
 		return check_keyword(1, 1, "f", TOKEN_IF);
 	case 'n':

@@ -1,0 +1,5 @@
+[file: module_export.yk, line: 1:0] Error at '{': Expect `;` after expression.
+[file: module_export.yk, line: 3:98134878] Error at '}': ERROR: Expect expression.
+ERROR: Undefined property 'hello'.
+SCRIPT()
+[line 1] in script

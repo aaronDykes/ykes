@@ -19,14 +19,18 @@ void initVM(void)
 	machine.stack.obj        = NULL;
 	machine.stack.init_field = NULL;
 
-	machine.glob        = NULL;
-	machine.open_upvals = NULL;
-	machine.caller      = NULL;
-	machine.repl_native = NULL;
+	machine.glob            = NULL;
+	machine.modules         = NULL;
+	machine.pending_exports = NULL;
+	machine.pending_imports = NULL;
+	machine.open_upvals     = NULL;
+	machine.caller          = NULL;
+	machine.repl_native     = NULL;
 
 	machine.stack.main       = GROW_STACK(NULL, STACK_SIZE);
 	machine.stack.init_field = _fstack();
 	machine.glob             = GROW_TABLE(NULL, STACK_SIZE);
+	machine.modules          = GROW_TABLE(NULL, INIT_SIZE);
 
 	machine.count.argc   = 0;
 	machine.count.frame  = 0;
@@ -43,6 +47,9 @@ void freeVM(void)
 
 	// FREE_TABLE(&machine.repl_native);
 	FREE_TABLE(&machine.glob);
+	FREE_TABLE(&machine.modules);
+	FREE_TABLE(&machine.pending_exports);
+	FREE_TABLE(&machine.pending_imports);
 	FREE_STACK(&machine.stack.main);
 	FREE_STACK(&machine.stack.obj);
 	free_field_stack(&machine.stack.init_field);
@@ -51,6 +58,8 @@ void freeVM(void)
 	machine.repl_native = NULL;
 	machine.stack.main  = NULL;
 	machine.stack.obj   = NULL;
+
+	machine.pending_imports = NULL;
 
 #ifdef GLOBAL_MEM_ARENA
 	destroy_global_memory();
@@ -170,6 +179,29 @@ interpret_path(const char *src, const char *path, const char *name)
 	machine.stack.obj = GROW_STACK(NULL, func->objc);
 
 	define_natives(&machine.stack.obj);
+
+	/* Prefill object slots for any pending imports recorded during compile
+	 * time. Keys in `machine.pending_imports` are stringified integer
+	 * indices that correspond to object slots reserved by the compiler. */
+	if (machine.pending_imports && machine.stack.obj && machine.stack.obj->as)
+	{
+		for (size_t i = 0; i < machine.pending_imports->len; i++)
+		{
+			record *rec = &machine.pending_imports->records[i];
+			if (!rec->key || !rec->key->val)
+				continue;
+
+			int idx = atoi(rec->key->val);
+			if (idx >= 0 && idx < (int)machine.stack.obj->len)
+			{
+				*((machine.stack.obj)->as + idx) = rec->val;
+			}
+		}
+		/* pending_imports used for this run; clear it so future module
+		 * loads don't reapply stale mappings. */
+		FREE_TABLE(&machine.pending_imports);
+		machine.pending_imports = NULL;
+	}
 	push(&machine.stack.main, GEN(clos, T_CLOSURE));
 
 	close_upvalues();
@@ -657,8 +689,10 @@ Interpretation run(void)
 		case OP_ALLOC_TABLE:
 			if (PEEK().type != T_NUM)
 			{
-				runtime_error("ERROR: table argument must be "
-				              "a numeric value.");
+				runtime_error(
+				    "ERROR: table argument must be "
+				    "a numeric value."
+				);
 				return INTERPRET_RUNTIME_ERR;
 			}
 			PUSH(GEN(GROW_TABLE(NULL, POP()->val.Num), T_TABLE));
