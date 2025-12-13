@@ -119,12 +119,6 @@ static void include_file(compiler *c)
 	_key *inc = NULL;
 	inc       = parse_string(c);
 
-	if (resolve_include(c, inc))
-	{
-		prev_error("Double include/import.", &c->parser);
-		return;
-	}
-
 	char path[CWD_MAX] = {0};
 	strcpy(path, (char *)c->base->meta.cwd);
 	strcat(path, inc->val);
@@ -151,47 +145,43 @@ static void include_file(compiler *c)
 
 	/* Bind exported names from the module into the current compile-time
 	 * lookup and record pending imports for runtime prefill. */
+	char realbuf[PATH_MAX];
+	if (realpath(path, realbuf))
 	{
-		char realbuf[PATH_MAX];
-		if (realpath(path, realbuf))
+		_key   *mod_key = Key(realbuf, (int)strlen(realbuf));
+		element mod_el  = find_entry(&machine.pending_exports, mod_key);
+		if (mod_el.type == T_TABLE)
 		{
-			_key   *mod_key = Key(realbuf, (int)strlen(realbuf));
-			element mod_el  = find_entry(&machine.modules, mod_key);
-			if (mod_el.type == T_TABLE)
+			table *mod_tbl = (table *)mod_el.obj;
+			for (size_t i = 0; i < mod_tbl->len; i++)
 			{
-				table *mod_tbl = (table *)mod_el.obj;
-				for (size_t i = 0; i < mod_tbl->len; i++)
-				{
-					record *rec = &mod_tbl->records[i];
-					if (!rec->key || !rec->key->val)
-						continue;
-					element val = rec->val;
+				record *rec = &mod_tbl->records[i];
+				if (!rec->key || !rec->key->val)
+					continue;
+				element val = rec->val;
 
-					/* Reserve an object slot in the compiler and bind
-					 * the exported name to that slot. */
-					int   idx       = c->base->count.obj++;
-					obj_t bind_type = val.type;
-					if (val.type == T_CLOSURE)
-						bind_type = T_FUNCTION;
-					write_table(
-					    c->base->lookup, rec->key,
-					    NumType(idx, bind_type)
-					);
+				/* Reserve an object slot in the compiler and bind
+				 * the exported name to that slot. */
+				int   idx       = c->base->count.obj++;
+				obj_t bind_type = val.type;
+				if (val.type == T_CLOSURE)
+					bind_type = T_FUNCTION;
+				write_table(
+				    c->base->lookup, rec->key, NumType(idx, bind_type)
+				);
 
-					/* Record pending import to copy the element into
-					 * the runtime object slots when executing the
-					 * compiled program. */
-					if (!machine.pending_imports)
-						machine.pending_imports =
-						    GROW_TABLE(NULL, INIT_SIZE);
+				/* Record pending import to copy the element into
+				 * the runtime object slots when executing the
+				 * compiled program. */
+				if (!machine.pending_imports)
+					machine.pending_imports =
+					    GROW_TABLE(NULL, INIT_SIZE);
 
-					char idxbuf[32];
-					int  n =
-					    snprintf(idxbuf, sizeof(idxbuf), "%d", idx);
-					write_table(
-					    machine.pending_imports, Key(idxbuf, n), val
-					);
-				}
+				char idxbuf[32];
+				int  n = snprintf(idxbuf, sizeof(idxbuf), "%d", idx);
+				write_table(
+				    machine.pending_imports, Key(idxbuf, n), val
+				);
 			}
 		}
 	}
@@ -208,9 +198,23 @@ static void declaration(compiler *c)
 
 	/* Export prefix: mark the following top-level declaration as exported */
 	if (match(TOKEN_EXPORT, &c->parser))
-		c->meta.flags |= EXPORT_FLAG;
+	{
+		consume(TOKEN_ID, "Expected name of export", &c->parser);
 
-	if (match(TOKEN_IMPORT, &c->parser) || match(TOKEN_INCLUDE, &c->parser))
+		// emit_bytes(OP_GET_GLOBAL, )
+
+		// yk_record_export(parse_id(c));
+
+		consume(
+		    TOKEN_CH_SEMI, "Expect `;` at end of include/import statement.",
+		    &c->parser
+		);
+
+		c->meta.flags |= EXPORT_FLAG;
+	}
+
+	else if (match(TOKEN_IMPORT, &c->parser) ||
+	         match(TOKEN_INCLUDE, &c->parser))
 		include_file(c);
 	else if (match(TOKEN_FUNC, &c->parser))
 		func_declaration(c);
@@ -250,12 +254,6 @@ static void class_declaration(compiler *c)
 
 	emit_bytes(c, OP_SET_OBJ, c->base->count.obj++);
 	emit_byte(c, add_constant(&c->func->ch, GEN(classc, T_CLASS)));
-
-	if (c->meta.flags & EXPORT_FLAG)
-	{
-		yk_record_export(ar);
-		c->meta.flags &= ~EXPORT_FLAG;
-	}
 
 	if (match(TOKEN_CH_SEMI, &c->parser))
 	{

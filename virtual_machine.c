@@ -183,6 +183,7 @@ interpret_path(const char *src, const char *path, const char *name)
 	/* Prefill object slots for any pending imports recorded during compile
 	 * time. Keys in `machine.pending_imports` are stringified integer
 	 * indices that correspond to object slots reserved by the compiler. */
+
 	if (machine.pending_imports && machine.stack.obj && machine.stack.obj->as)
 	{
 		for (size_t i = 0; i < machine.pending_imports->len; i++)

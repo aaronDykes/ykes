@@ -153,6 +153,7 @@ int yk_load_module(const char *path, char **err_out)
 
 	/* If module already loaded, nothing to do */
 	_key *mod_key = Key(realbuf, (int)strlen(realbuf));
+
 	if (machine.modules &&
 	    find_entry(&machine.modules, mod_key).type != T_NULL)
 		return 0;
@@ -161,21 +162,25 @@ int yk_load_module(const char *path, char **err_out)
 	char name[PATH_MAX];
 	split_path(realbuf, dir, sizeof(dir), name, sizeof(name));
 
-	char *src = read_entire_file(realbuf);
+	char *src = NULL;
+	src       = read_entire_file(realbuf);
+
 	if (!src)
 		return 3;
 
+	Interpretation r = interpret_path(src, dir, name);
 	/* Snapshot existing globals into a temporary table */
-	table *pre = GROW_TABLE(NULL, INIT_SIZE);
-	if (machine.glob && machine.glob->records)
-	{
-		for (size_t i = 0; i < machine.glob->len; i++)
+	table *pre = NULL;
+	pre        = GROW_TABLE(NULL, INIT_SIZE);
+
+	if (machine.pending_exports && machine.pending_exports->records)
+		for (size_t i = 0; i < machine.pending_exports->len; i++)
 		{
-			record *rec = &machine.glob->records[i];
+			record *rec = NULL;
+			rec         = &machine.pending_exports->records[i];
 			if (rec->key && rec->key->val)
-				write_table(pre, rec->key, Null());
+				write_table(pre, rec->key, rec->val);
 		}
-	}
 
 	/* Prepare explicit-export capture table */
 	if (machine.pending_exports)
@@ -185,7 +190,6 @@ int yk_load_module(const char *path, char **err_out)
 	/* Execute module source (this will populate machine.glob with module's
 	 * globals). Compiler may call yk_record_export() to populate
 	 * machine.pending_exports. */
-	Interpretation r = interpret_path(src, dir, name);
 	FREE(src);
 
 	if (r != INTERPRET_SUCCESS)
@@ -217,7 +221,7 @@ int yk_load_module(const char *path, char **err_out)
 			if (!rec->key || !rec->key->val)
 				continue;
 
-			element val = find_entry(&machine.glob, rec->key);
+			element val = find_entry(&machine.pending_exports, rec->key);
 			if (val.type != T_NULL)
 				write_table(mod_tbl, rec->key, val);
 		}
