@@ -1,6 +1,9 @@
-import "prime.yk";
+import "fib.yk";
 
 
-var p = Prime(100000);
-p.res();
+var f = FIB(10);
+
+f.res();
+
+
 

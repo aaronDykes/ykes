@@ -121,17 +121,6 @@ static void split_path(
 	}
 }
 
-void yk_record_export(_key *name)
-{
-	if (!name)
-		return;
-
-	if (!machine.pending_exports)
-		machine.pending_exports = GROW_TABLE(NULL, INIT_SIZE);
-
-	write_table(machine.pending_exports, name, Null());
-}
-
 int yk_load_module(const char *path, char **err_out)
 {
 	if (!path)
@@ -148,7 +137,7 @@ int yk_load_module(const char *path, char **err_out)
 	if (!realpath(path, realbuf))
 	{
 		/* could not resolve path */
-		return 2;
+		return 1;
 	}
 
 	/* If module already loaded, nothing to do */
@@ -169,91 +158,6 @@ int yk_load_module(const char *path, char **err_out)
 		return 3;
 
 	Interpretation r = interpret_path(src, dir, name);
-	/* Snapshot existing globals into a temporary table */
-	table *pre = NULL;
-	pre        = GROW_TABLE(NULL, INIT_SIZE);
 
-	if (machine.pending_exports && machine.pending_exports->records)
-		for (size_t i = 0; i < machine.pending_exports->len; i++)
-		{
-			record *rec = NULL;
-			rec         = &machine.pending_exports->records[i];
-			if (rec->key && rec->key->val)
-				write_table(pre, rec->key, rec->val);
-		}
-
-	/* Prepare explicit-export capture table */
-	if (machine.pending_exports)
-		FREE_TABLE(&machine.pending_exports);
-	machine.pending_exports = GROW_TABLE(NULL, INIT_SIZE);
-
-	/* Execute module source (this will populate machine.glob with module's
-	 * globals). Compiler may call yk_record_export() to populate
-	 * machine.pending_exports. */
-	FREE(src);
-
-	if (r != INTERPRET_SUCCESS)
-	{
-		FREE_TABLE(&pre);
-		if (machine.pending_exports)
-		{
-			FREE_TABLE(&machine.pending_exports);
-			machine.pending_exports = NULL;
-		}
-		if (err_out)
-		{
-			*err_out = ALLOC(64);
-			strcpy(*err_out, "Compilation or runtime error in module");
-		}
-		return 4;
-	}
-
-	/* Collect module exports. If the module used explicit `export`
-	 * declarations, use those. Otherwise fall back to the old behavior of
-	 * taking any newly-created globals. */
-	table *mod_tbl = GROW_TABLE(NULL, INIT_SIZE);
-	if (machine.pending_exports && machine.pending_exports->records &&
-	    machine.pending_exports->count > 0)
-	{
-		for (size_t i = 0; i < machine.pending_exports->len; i++)
-		{
-			record *rec = &machine.pending_exports->records[i];
-			if (!rec->key || !rec->key->val)
-				continue;
-
-			element val = find_entry(&machine.pending_exports, rec->key);
-			if (val.type != T_NULL)
-				write_table(mod_tbl, rec->key, val);
-		}
-	}
-	else if (machine.glob && machine.glob->records)
-	{
-		for (size_t i = 0; i < machine.glob->len; i++)
-		{
-			record *rec = &machine.glob->records[i];
-			if (!rec->key || !rec->key->val)
-				continue;
-
-			if (find_entry(&pre, rec->key).type == T_NULL)
-			{
-				/* not present before -> exported by module */
-				element val = find_entry(&machine.glob, rec->key);
-				write_table(mod_tbl, rec->key, val);
-			}
-		}
-	}
-
-	/* Store module exports in machine.modules under the resolved path */
-	if (!machine.modules)
-		machine.modules = GROW_TABLE(NULL, INIT_SIZE);
-	write_table(machine.modules, mod_key, GEN(mod_tbl, T_TABLE));
-
-	FREE_TABLE(&pre);
-	if (machine.pending_exports)
-	{
-		FREE_TABLE(&machine.pending_exports);
-		machine.pending_exports = NULL;
-	}
-
-	return 0;
+	return (r != INTERPRET_SUCCESS) ? 1 : 0;
 }

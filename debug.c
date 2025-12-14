@@ -138,6 +138,9 @@ int disassemble_instruction(chunk *c, int offset)
 	case OP_NOOP:
 		return simple_instruction("OP_NOOP", offset);
 
+	case OP_EXPORT_MODULE:
+		return simple_instruction("OP_EXPORT_MODULE", offset);
+
 	case OP_GET_LOCAL:
 		return byte_instruction("OP_GET_LOCAL", c, offset);
 

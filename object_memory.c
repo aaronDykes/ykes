@@ -254,9 +254,9 @@ void free_table(table **t)
 		return;
 	}
 
-	for (size_t i = 0; i < (*t)->len; i++)
-		if ((*t)->records[i].key->val)
-			free_entry_list((*t)->records[i]);
+	// for (size_t i = 0; i < (*t)->len; i++)
+	// if ((*t)->records[i].key->val)
+	// free_entry_list((*t)->records[i]);
 
 	FREE((*t)->records);
 	(*t)->records = NULL;

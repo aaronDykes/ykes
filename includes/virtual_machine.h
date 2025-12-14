@@ -56,12 +56,10 @@ struct vm
 	instance *caller;
 	table    *glob;
 	table    *repl_native;
-	table    *pending_exports;
-	table    *pending_imports;
 	table    *modules;
 };
 
-static vm machine;
+vm machine;
 
 void initVM(void);
 void init_natives(void);
