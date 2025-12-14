@@ -157,7 +157,7 @@ int yk_load_module(const char *path, char **err_out)
 	if (!src)
 		return 3;
 
-	Interpretation r = interpret_path(src, dir, name);
+	Interpretation r = interpret_export(src, dir, name);
 
 	return (r != INTERPRET_SUCCESS) ? 1 : 0;
 }

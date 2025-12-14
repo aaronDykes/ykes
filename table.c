@@ -1,6 +1,6 @@
 #include "table.h"
 
-static record *alloc_entry(record *el)
+record *alloc_entry(record *el)
 {
 	record *tmp = NULL;
 	tmp         = ALLOC(sizeof(record));
@@ -58,7 +58,7 @@ element find_entry(table **t, _key *hash)
 	return Null();
 }
 
-static record Entry(_key *key, element val)
+record Entry(_key *key, element val)
 {
 	record el;
 	el.key  = key;

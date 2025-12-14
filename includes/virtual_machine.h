@@ -70,4 +70,7 @@ Interpretation interpret(const char *source);
 Interpretation
 interpret_path(const char *source, const char *path, const char *name);
 
+Interpretation
+interpret_export(const char *src, const char *path, const char *name);
+
 #endif

@@ -1,3 +1,5 @@
+class String {};
+
 class Prime
 {
 
@@ -35,6 +37,4 @@ class Prime
 }
 
 
-
 export Prime;
-    

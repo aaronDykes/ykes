@@ -180,6 +180,16 @@ interpret_path(const char *src, const char *path, const char *name)
 	return run();
 }
 
+Interpretation
+interpret_export(const char *src, const char *path, const char *name)
+{
+
+	function *func = NULL;
+
+	return (!(func = compile_path(src, path, name))) ? INTERPRET_COMPILE_ERR
+	                                                 : INTERPRET_SUCCESS;
+}
+
 static uint8_t ifield_init(void)
 {
 	if (IFIELD_COUNT() > 0)
@@ -439,7 +449,11 @@ Interpretation run(void)
 
 		case OP_CLASS:
 		{
-			class *c = CLASS(OBJECT());
+			element e = OBJECT();
+			class  *c = NULL;
+
+			c = (e.type == T_MODULE) ? CLASS(RECORD(e)->val) : CLASS(e);
+
 			push_itab(
 			    &machine.stack.init_field, 1, copy_table(c->closures)
 			);

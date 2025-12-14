@@ -14,5 +14,7 @@ element find_entry(table **t, _key *key);
 table  *alloc_table(size_t size);
 table  *realloc_table(table **t, size_t size);
 table  *copy_table(table *t);
+record  Entry(_key *key, element val);
+record *alloc_entry(record *el);
 
 #endif

@@ -11,6 +11,7 @@
 #define FUNC(el)       ((function *)(el.obj))
 #define NATIVE(el)     ((native *)(el.obj))
 #define CLASS(el)      ((class *)(el.obj))
+#define RECORD(el)     ((record *)(el.obj))
 #define INSTANCE(el)   ((instance *)(el.obj))
 #define VECTOR(el)     ((vector *)(el.obj))
 #define _2D_VECTOR(el) ((_2d_vector *)(el.obj))
@@ -57,6 +58,7 @@ typedef enum
 	T_METHOD,
 	T_STACK,
 	T_TABLE,
+	T_MODULE,
 	T_NULL
 } obj_t;
 

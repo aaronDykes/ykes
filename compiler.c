@@ -127,7 +127,13 @@ static void include_file(compiler *c)
 	 * available. */
 	char *err = NULL;
 
-	int rc = yk_load_module(path, &err);
+	consume(
+	    TOKEN_CH_SEMI, "Expect `;` at end of include/import statement.",
+	    &c->parser
+	);
+
+	const char *s  = c->parser.cur.start;
+	int         rc = yk_load_module(path, &err);
 
 	if (rc != 0)
 	{
@@ -146,8 +152,8 @@ static void include_file(compiler *c)
 
 	element e = find_entry(&machine.modules, inc);
 
-	if (e.type != T_NULL)
-		write_table(c->base->lookup, inc, e);
+	// if (e.type != T_NULL)
+	// write_table(c->base->lookup, inc, e);
 
 	// write_table(c->base->lookup, inc, GEN(inc, T_KEY));
 
@@ -161,12 +167,12 @@ static void include_file(compiler *c)
 	      element mod_el  = find_entry(&machine.modules, mod_key);
 	} */
 
-	consume(
-	    TOKEN_CH_SEMI, "Expect `;` at end of include/import statement.",
-	    &c->parser
-	);
+	c->parser.cur.start = s;
+	c->parser.pre.start = s;
+	// c->parser.cur = c->parser.pre;
+	// advance_compiler(&c->parser);
 
-	c->parser.current_file = get_name(inc->val);
+	// c->parser.current_file = get_name(inc->val);
 }
 static void declaration(compiler *c)
 {
@@ -176,11 +182,13 @@ static void declaration(compiler *c)
 	{
 		consume(TOKEN_ID, "Expected name of export", &c->parser);
 
-		_key *k = NULL;
-		k       = parse_id(c);
+		_key *file = NULL;
+		_key *k    = NULL;
+		// k       = parse_id(c);
 
-		// if (resolve_class(c, k))
-		// ;
+		file =
+		    Key(c->parser.current_file, strlen(c->parser.current_file) + 1);
+		k = parse_id(c);
 
 		do
 		{
@@ -188,23 +196,20 @@ static void declaration(compiler *c)
 			element e = find_entry(&c->base->lookup, k);
 
 			if (machine.modules && e.type != T_NULL)
-				write_table(machine.modules, k, e);
+			{
+
+				record entry = Entry(k, e);
+				element new  = GEN(alloc_entry(&entry), T_MODULE);
+
+				write_table(machine.modules, file, new);
+			}
 
 		} while (match(TOKEN_CH_COMMA, &c->parser));
 
 		match(TOKEN_CH_SEMI, &c->parser);
-
-		// emit_bytes(OP_GET_GLOBAL, )
-
-		// yk_record_export(parse_id(c));
-
-		// c->meta.flags |= EXPORT_FLAG;
-
-		// id(c);
 	}
 
-	else if (match(TOKEN_IMPORT, &c->parser) ||
-	         match(TOKEN_INCLUDE, &c->parser))
+	else if (match(TOKEN_IMPORT, &c->parser))
 		include_file(c);
 	else if (match(TOKEN_FUNC, &c->parser))
 		func_declaration(c);
@@ -1586,9 +1591,8 @@ static int resolve_class(compiler *c, _key *ar)
 	if (el.type == T_CLASS)
 		return el.val.Num;
 
-	if ((el = find_entry(&machine.modules, ar)).type == T_CLASS)
-		return el.val.Num;
-
+	if ((el = find_entry(&machine.modules, ar)).type == T_MODULE)
+		return 1;
 	return -1;
 }
 
