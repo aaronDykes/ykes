@@ -132,8 +132,33 @@ static void include_file(compiler *c)
 	    &c->parser
 	);
 
-	const char *s  = c->parser.cur.start;
-	int         rc = yk_load_module(path, &err);
+	parser *p = NULL;
+	p         = ALLOC(sizeof(parser));
+	*p        = c->parser;
+
+	/* snapshot scanner state (compiler.c can access the static `scan`) */
+	scanner saved_scan = scan;
+
+	fprintf(
+	    stderr,
+	    "[include_file] before yk_load_module: pre=%d cur=%d file=%s "
+	    "cur_start=\"%.32s\"\n",
+	    c->parser.pre.type, c->parser.cur.type,
+	    c->parser.current_file ? c->parser.current_file : "(null)",
+	    c->parser.cur.start ? c->parser.cur.start : ""
+	);
+
+	int rc = yk_load_module(path, &err);
+
+	fprintf(
+	    stderr,
+	    "[include_file] after yk_load_module: pre=%d cur=%d file=%s "
+	    "cur_start=\"%.32s\" rc=%d err=\"%s\"\n",
+	    c->parser.pre.type, c->parser.cur.type,
+	    c->parser.current_file ? c->parser.current_file : "(null)",
+	    c->parser.cur.start ? c->parser.cur.start : "", rc,
+	    err ? err : "(null)"
+	);
 
 	if (rc != 0)
 	{
@@ -152,6 +177,10 @@ static void include_file(compiler *c)
 
 	element e = find_entry(&machine.modules, inc);
 
+	c->parser = *p;
+	scan      = saved_scan;
+	FREE(p);
+
 	// if (e.type != T_NULL)
 	// write_table(c->base->lookup, inc, e);
 
@@ -167,8 +196,6 @@ static void include_file(compiler *c)
 	      element mod_el  = find_entry(&machine.modules, mod_key);
 	} */
 
-	c->parser.cur.start = s;
-	c->parser.pre.start = s;
 	// c->parser.cur = c->parser.pre;
 	// advance_compiler(&c->parser);
 

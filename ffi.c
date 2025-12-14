@@ -137,7 +137,7 @@ int yk_load_module(const char *path, char **err_out)
 	if (!realpath(path, realbuf))
 	{
 		/* could not resolve path */
-		return 1;
+		return 2;
 	}
 
 	/* If module already loaded, nothing to do */

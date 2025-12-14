@@ -1,4 +1,6 @@
-import "FIB.yk";var f = FIB(15);f.res();
+import "FIB.yk";
+var f=FIB(15);
+f.res();
 
 
 
